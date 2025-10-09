@@ -1,0 +1,315 @@
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { UserPlus, Check, X } from 'lucide-react';
+
+const relationshipTypes = [
+  { value: 'pai', label: 'Pai' },
+  { value: 'mae', label: 'Mãe' },
+  { value: 'filho', label: 'Filho' },
+  { value: 'filha', label: 'Filha' },
+  { value: 'irmao', label: 'Irmão' },
+  { value: 'irma', label: 'Irmã' },
+  { value: 'avo', label: 'Avô' },
+  { value: 'avó', label: 'Avó' },
+  { value: 'neto', label: 'Neto' },
+  { value: 'neta', label: 'Neta' },
+  { value: 'tio', label: 'Tio' },
+  { value: 'tia', label: 'Tia' },
+  { value: 'sobrinho', label: 'Sobrinho' },
+  { value: 'sobrinha', label: 'Sobrinha' },
+  { value: 'primo', label: 'Primo' },
+  { value: 'prima', label: 'Prima' },
+  { value: 'conjuge', label: 'Cônjuge' },
+  { value: 'outro', label: 'Outro' }
+];
+
+export function ConnectionsSection() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [connections, setConnections] = useState<any[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  const [searchEmail, setSearchEmail] = useState('');
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [relationship, setRelationship] = useState('');
+  const [theirRelationship, setTheirRelationship] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      loadConnections();
+      loadPendingRequests();
+    }
+  }, [user]);
+
+  const loadConnections = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('connections')
+      .select(`
+        *,
+        requester:requester_id(id, full_name, avatar_url),
+        receiver:receiver_id(id, full_name, avatar_url)
+      `)
+      .eq('status', 'accepted')
+      .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);
+
+    if (!error && data) {
+      setConnections(data);
+    }
+  };
+
+  const loadPendingRequests = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('connections')
+      .select(`
+        *,
+        requester:requester_id(id, full_name, avatar_url)
+      `)
+      .eq('receiver_id', user.id)
+      .eq('status', 'pending');
+
+    if (!error && data) {
+      setPendingRequests(data);
+    }
+  };
+
+  const searchUser = async () => {
+    if (!searchEmail) return;
+
+    setLoading(true);
+    
+    // Search by checking if user exists with email in auth metadata
+    const { data: profiles, error } = await supabase
+      .from('profiles')
+      .select('*, id')
+      .limit(100);
+
+    if (error || !profiles) {
+      toast({
+        title: 'Erro na busca',
+        description: 'Não foi possível buscar usuários.',
+        variant: 'destructive'
+      });
+      setLoading(false);
+      return;
+    }
+
+    // For now, just search by name similarity since we can't directly query by email
+    // In a production app, you'd want to implement a proper search function
+    const found = profiles.find(p => 
+      p.full_name.toLowerCase().includes(searchEmail.toLowerCase())
+    );
+
+    if (!found) {
+      toast({
+        title: 'Usuário não encontrado',
+        description: 'Busque pelo nome da pessoa.',
+        variant: 'destructive'
+      });
+    } else {
+      setSelectedUser(found);
+    }
+    setLoading(false);
+  };
+
+  const sendRequest = async () => {
+    if (!user || !selectedUser || !relationship || !theirRelationship) return;
+
+    const { error } = await supabase
+      .from('connections')
+      .insert([{
+        requester_id: user.id,
+        receiver_id: selectedUser.id,
+        relationship_from_requester: relationship as any,
+        relationship_from_receiver: theirRelationship as any
+      }]);
+
+    if (error) {
+      toast({
+        title: 'Erro ao enviar solicitação',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } else {
+      toast({
+        title: 'Solicitação enviada!',
+        description: `${selectedUser.full_name} receberá sua solicitação.`
+      });
+      setSelectedUser(null);
+      setSearchEmail('');
+      setRelationship('');
+      setTheirRelationship('');
+    }
+  };
+
+  const handleRequest = async (connectionId: string, accept: boolean) => {
+    const { error } = await supabase
+      .from('connections')
+      .update({ status: accept ? 'accepted' : 'rejected' })
+      .eq('id', connectionId);
+
+    if (!error) {
+      toast({
+        title: accept ? 'Conexão aceita!' : 'Conexão recusada',
+        description: accept ? 'Vocês agora estão conectados.' : 'A solicitação foi recusada.'
+      });
+      loadConnections();
+      loadPendingRequests();
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5" />
+            Nova Conexão Familiar
+          </CardTitle>
+          <CardDescription>Busque pessoas pelo email e crie vínculos familiares</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>Adicionar Familiar</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Adicionar Familiar</DialogTitle>
+                <DialogDescription>Busque a pessoa pelo email e defina o grau de parentesco</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Nome da pessoa"
+                    value={searchEmail}
+                    onChange={(e) => setSearchEmail(e.target.value)}
+                  />
+                  <Button onClick={searchUser} disabled={loading}>
+                    Buscar
+                  </Button>
+                </div>
+
+                {selectedUser && (
+                  <div className="space-y-4 p-4 border rounded-lg">
+                    <p className="font-medium">{selectedUser.full_name}</p>
+                    
+                    <div className="space-y-2">
+                      <Label>Essa pessoa é meu/minha:</Label>
+                      <Select value={relationship} onValueChange={setRelationship}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o parentesco" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {relationshipTypes.map(type => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Eu sou o/a {relationship || '...'} dessa pessoa, então eu sou:</Label>
+                      <Select value={theirRelationship} onValueChange={setTheirRelationship}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione seu parentesco" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {relationshipTypes.map(type => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Button onClick={sendRequest} className="w-full">
+                      Enviar Solicitação
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        </CardContent>
+      </Card>
+
+      {pendingRequests.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Solicitações Pendentes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {pendingRequests.map((request) => (
+                <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <p className="font-medium">{request.requester.full_name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Quer ser seu/sua {request.relationship_from_receiver}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => handleRequest(request.id, true)}>
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="destructive" onClick={() => handleRequest(request.id, false)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Minhas Conexões</CardTitle>
+          <CardDescription>{connections.length} conexões familiares</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {connections.map((connection) => {
+              const otherPerson = connection.requester_id === user?.id 
+                ? connection.receiver 
+                : connection.requester;
+              const relationship = connection.requester_id === user?.id
+                ? connection.relationship_from_requester
+                : connection.relationship_from_receiver;
+
+              return (
+                <div key={connection.id} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <p className="font-medium">{otherPerson.full_name}</p>
+                    <p className="text-sm text-muted-foreground capitalize">{relationship}</p>
+                  </div>
+                </div>
+              );
+            })}
+            {connections.length === 0 && (
+              <p className="text-muted-foreground text-center py-8">
+                Você ainda não tem conexões. Comece adicionando familiares!
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

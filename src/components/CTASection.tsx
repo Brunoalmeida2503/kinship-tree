@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { TreePine } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const CTASection = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="py-20 px-4 bg-gradient-hero relative overflow-hidden">
       <div className="absolute inset-0 bg-black/10" />
@@ -22,6 +25,7 @@ const CTASection = () => {
             variant="secondary" 
             size="xl"
             className="shadow-2xl hover:shadow-3xl"
+            onClick={() => navigate("/auth")}
           >
             Criar Minha Árvore Gratuita
           </Button>
