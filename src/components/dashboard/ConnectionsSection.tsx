@@ -28,6 +28,7 @@ const relationshipTypes = [
   { value: 'primo', label: 'Primo' },
   { value: 'prima', label: 'Prima' },
   { value: 'conjuge', label: 'Cônjuge' },
+  { value: 'ancestral', label: 'Ancestral' },
   { value: 'outro', label: 'Outro' }
 ];
 
@@ -126,13 +127,17 @@ export function ConnectionsSection() {
   const sendRequest = async () => {
     if (!user || !selectedUser || !relationship || !theirRelationship) return;
 
+    const isAncestor = relationship === 'ancestral' || theirRelationship === 'ancestral';
+
     const { error } = await supabase
       .from('connections')
       .insert([{
         requester_id: user.id,
         receiver_id: selectedUser.id,
         relationship_from_requester: relationship as any,
-        relationship_from_receiver: theirRelationship as any
+        relationship_from_receiver: theirRelationship as any,
+        is_ancestor: isAncestor,
+        ancestor_confirmed_by: isAncestor ? [] : null
       }]);
 
     if (error) {
@@ -144,7 +149,9 @@ export function ConnectionsSection() {
     } else {
       toast({
         title: 'Solicitação enviada!',
-        description: `${selectedUser.full_name} receberá sua solicitação.`
+        description: isAncestor 
+          ? `Solicitação de ancestral enviada para ${selectedUser.full_name}. Seus parentes diretos precisarão confirmar.`
+          : `${selectedUser.full_name} receberá sua solicitação.`
       });
       setSelectedUser(null);
       setSearchEmail('');

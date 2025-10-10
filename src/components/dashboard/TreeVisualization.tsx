@@ -43,6 +43,12 @@ export function TreeVisualization() {
     }
   };
 
+  const getFirstAndLastName = (fullName: string) => {
+    const names = fullName.trim().split(' ');
+    if (names.length === 1) return names[0];
+    return `${names[0]} ${names[names.length - 1]}`;
+  };
+
   const buildTree = (connections: any[]) => {
     if (!user) return;
 
@@ -61,7 +67,7 @@ export function TreeVisualization() {
 
       root.children.push({
         id: otherPerson.id,
-        name: otherPerson.full_name,
+        name: getFirstAndLastName(otherPerson.full_name),
         relationship: relationship,
         children: []
       });

@@ -16,8 +16,10 @@ export type Database = {
     Tables: {
       connections: {
         Row: {
+          ancestor_confirmed_by: string[] | null
           created_at: string | null
           id: string
+          is_ancestor: boolean | null
           receiver_id: string
           relationship_from_receiver: Database["public"]["Enums"]["relationship_type"]
           relationship_from_requester: Database["public"]["Enums"]["relationship_type"]
@@ -26,8 +28,10 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ancestor_confirmed_by?: string[] | null
           created_at?: string | null
           id?: string
+          is_ancestor?: boolean | null
           receiver_id: string
           relationship_from_receiver: Database["public"]["Enums"]["relationship_type"]
           relationship_from_requester: Database["public"]["Enums"]["relationship_type"]
@@ -36,8 +40,10 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ancestor_confirmed_by?: string[] | null
           created_at?: string | null
           id?: string
+          is_ancestor?: boolean | null
           receiver_id?: string
           relationship_from_receiver?: Database["public"]["Enums"]["relationship_type"]
           relationship_from_requester?: Database["public"]["Enums"]["relationship_type"]
