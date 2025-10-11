@@ -16,10 +16,8 @@ interface Post {
   image_url: string | null;
   created_at: string;
   user_id: string;
-  profiles: {
-    full_name: string;
-    avatar_url: string | null;
-  };
+  author_name?: string;
+  author_avatar?: string | null;
 }
 
 const Feed = () => {
@@ -41,19 +39,33 @@ const Feed = () => {
 
   const fetchPosts = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: postsData, error: postsError } = await supabase
         .from("posts")
-        .select(`
-          *,
-          profiles (
-            full_name,
-            avatar_url
-          )
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setPosts(data || []);
+      if (postsError) throw postsError;
+
+      // Fetch profiles for all posts
+      const userIds = [...new Set(postsData?.map(p => p.user_id) || [])];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .in("id", userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Combine posts with profile data
+      const postsWithProfiles = postsData?.map(post => {
+        const profile = profilesData?.find(p => p.id === post.user_id);
+        return {
+          ...post,
+          author_name: profile?.full_name || "Usuário",
+          author_avatar: profile?.avatar_url
+        };
+      }) || [];
+
+      setPosts(postsWithProfiles);
     } catch (error) {
       console.error("Error fetching posts:", error);
       toast({
@@ -152,13 +164,13 @@ const Feed = () => {
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <Avatar>
-                      <AvatarImage src={post.profiles.avatar_url || ""} />
+                      <AvatarImage src={post.author_avatar || ""} />
                       <AvatarFallback>
-                        {post.profiles.full_name.charAt(0)}
+                        {post.author_name?.charAt(0) || "U"}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-semibold">{post.profiles.full_name}</p>
+                      <p className="font-semibold">{post.author_name}</p>
                       <p className="text-sm text-muted-foreground">
                         {new Date(post.created_at).toLocaleDateString("pt-BR", {
                           day: "2-digit",
