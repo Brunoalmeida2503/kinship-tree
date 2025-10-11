@@ -7,7 +7,8 @@ import { ProfileSection } from '@/components/dashboard/ProfileSection';
 import { ConnectionsSection } from '@/components/dashboard/ConnectionsSection';
 import { GroupsSection } from '@/components/dashboard/GroupsSection';
 import { TreeVisualization } from '@/components/dashboard/TreeVisualization';
-import { LogOut, Users, Network, TreePine, UserCircle } from 'lucide-react';
+import MapVisualization from '@/components/dashboard/MapVisualization';
+import { LogOut, Users, Network, TreePine, UserCircle, Map } from 'lucide-react';
 
 export default function Dashboard() {
   const { user, signOut, loading } = useAuth();
@@ -46,10 +47,14 @@ export default function Dashboard() {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-5 lg:w-auto">
             <TabsTrigger value="tree" className="flex items-center gap-2">
               <TreePine className="h-4 w-4" />
               <span className="hidden sm:inline">Árvore</span>
+            </TabsTrigger>
+            <TabsTrigger value="map" className="flex items-center gap-2">
+              <Map className="h-4 w-4" />
+              <span className="hidden sm:inline">Mapa</span>
             </TabsTrigger>
             <TabsTrigger value="connections" className="flex items-center gap-2">
               <Network className="h-4 w-4" />
@@ -67,6 +72,10 @@ export default function Dashboard() {
 
           <TabsContent value="tree" className="space-y-4">
             <TreeVisualization />
+          </TabsContent>
+
+          <TabsContent value="map" className="space-y-4">
+            <MapVisualization />
           </TabsContent>
 
           <TabsContent value="connections" className="space-y-4">

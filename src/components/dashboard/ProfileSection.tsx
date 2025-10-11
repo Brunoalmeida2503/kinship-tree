@@ -21,7 +21,9 @@ export function ProfileSection() {
     birth_date: '',
     bio: '',
     location: '',
-    avatar_url: ''
+    avatar_url: '',
+    latitude: null as number | null,
+    longitude: null as number | null
   });
 
   useEffect(() => {
@@ -50,7 +52,9 @@ export function ProfileSection() {
         birth_date: data.birth_date || '',
         bio: data.bio || '',
         location: data.location || '',
-        avatar_url: data.avatar_url || ''
+        avatar_url: data.avatar_url || '',
+        latitude: data.latitude || null,
+        longitude: data.longitude || null
       });
     }
   };
@@ -195,6 +199,44 @@ export function ProfileSection() {
               onChange={(e) => setProfile({ ...profile, location: e.target.value })}
             />
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="latitude">Latitude</Label>
+              <Input
+                id="latitude"
+                type="number"
+                step="0.000001"
+                placeholder="-23.550520"
+                value={profile.latitude || ''}
+                onChange={(e) => setProfile({ ...profile, latitude: e.target.value ? parseFloat(e.target.value) : null })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="longitude">Longitude</Label>
+              <Input
+                id="longitude"
+                type="number"
+                step="0.000001"
+                placeholder="-46.633308"
+                value={profile.longitude || ''}
+                onChange={(e) => setProfile({ ...profile, longitude: e.target.value ? parseFloat(e.target.value) : null })}
+              />
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            Obtenha as coordenadas no{' '}
+            <a 
+              href="https://www.google.com/maps" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              Google Maps
+            </a>
+            {' '}clicando com o botão direito no local
+          </p>
 
           <div className="space-y-2">
             <Label htmlFor="bio">Biografia</Label>
