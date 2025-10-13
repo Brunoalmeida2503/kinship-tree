@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,13 +7,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, Image, Video, X } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { Input } from "@/components/ui/input";
 
 interface Post {
   id: string;
   content: string;
   image_url: string | null;
+  video_url: string | null;
   created_at: string;
   user_id: string;
   author_name?: string;
@@ -28,6 +30,11 @@ const Feed = () => {
   const [loading, setLoading] = useState(true);
   const [newPost, setNewPost] = useState("");
   const [posting, setPosting] = useState(false);
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) {
@@ -39,9 +46,33 @@ const Feed = () => {
 
   const fetchPosts = async () => {
     try {
+      if (!user) return;
+
+      // Get user's connections (accepted only)
+      const { data: connections, error: connectionsError } = await supabase
+        .from("connections")
+        .select("requester_id, receiver_id")
+        .eq("status", "accepted");
+
+      if (connectionsError) throw connectionsError;
+
+      // Build list of connected user IDs
+      const connectedUserIds = new Set<string>();
+      connectedUserIds.add(user.id); // Include own posts
+
+      connections?.forEach((conn) => {
+        if (conn.requester_id === user.id) {
+          connectedUserIds.add(conn.receiver_id);
+        } else if (conn.receiver_id === user.id) {
+          connectedUserIds.add(conn.requester_id);
+        }
+      });
+
+      // Fetch posts from connected users
       const { data: postsData, error: postsError } = await supabase
         .from("posts")
         .select("*")
+        .in("user_id", Array.from(connectedUserIds))
         .order("created_at", { ascending: false });
 
       if (postsError) throw postsError;
@@ -78,19 +109,77 @@ const Feed = () => {
     }
   };
 
+  const handleMediaSelect = (file: File, type: 'image' | 'video') => {
+    setMediaFile(file);
+    const preview = URL.createObjectURL(file);
+    setMediaPreview(preview);
+  };
+
+  const handleRemoveMedia = () => {
+    if (mediaPreview) {
+      URL.revokeObjectURL(mediaPreview);
+    }
+    setMediaFile(null);
+    setMediaPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (videoInputRef.current) videoInputRef.current.value = "";
+  };
+
+  const uploadMedia = async (file: File): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user!.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('posts')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('posts')
+        .getPublicUrl(fileName);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error("Error uploading media:", error);
+      return null;
+    }
+  };
+
   const handleCreatePost = async () => {
-    if (!newPost.trim() || !user) return;
+    if ((!newPost.trim() && !mediaFile) || !user) return;
 
     setPosting(true);
+    setUploadingMedia(true);
+
     try {
+      let imageUrl = null;
+      let videoUrl = null;
+
+      // Upload media if present
+      if (mediaFile) {
+        const uploadedUrl = await uploadMedia(mediaFile);
+        if (uploadedUrl) {
+          if (mediaFile.type.startsWith('image/')) {
+            imageUrl = uploadedUrl;
+          } else if (mediaFile.type.startsWith('video/')) {
+            videoUrl = uploadedUrl;
+          }
+        }
+      }
+
       const { error } = await supabase.from("posts").insert({
         content: newPost,
         user_id: user.id,
+        image_url: imageUrl,
+        video_url: videoUrl,
       });
 
       if (error) throw error;
 
       setNewPost("");
+      handleRemoveMedia();
       toast({
         title: "Post criado!",
         description: "Seu post foi publicado com sucesso",
@@ -105,6 +194,7 @@ const Feed = () => {
       });
     } finally {
       setPosting(false);
+      setUploadingMedia(false);
     }
   };
 
@@ -134,17 +224,73 @@ const Feed = () => {
               onChange={(e) => setNewPost(e.target.value)}
               className="min-h-[100px]"
             />
-            <div className="flex justify-end">
+            
+            {/* Media Preview */}
+            {mediaPreview && (
+              <div className="relative rounded-lg overflow-hidden border">
+                {mediaFile?.type.startsWith('image/') ? (
+                  <img src={mediaPreview} alt="Preview" className="w-full max-h-96 object-cover" />
+                ) : (
+                  <video src={mediaPreview} controls className="w-full max-h-96" />
+                )}
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-2 right-2"
+                  onClick={handleRemoveMedia}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between">
+              <div className="flex gap-2">
+                <Input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => e.target.files?.[0] && handleMediaSelect(e.target.files[0], 'image')}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={!!mediaFile}
+                >
+                  <Image className="h-4 w-4" />
+                </Button>
+
+                <Input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/*"
+                  className="hidden"
+                  onChange={(e) => e.target.files?.[0] && handleMediaSelect(e.target.files[0], 'video')}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => videoInputRef.current?.click()}
+                  disabled={!!mediaFile}
+                >
+                  <Video className="h-4 w-4" />
+                </Button>
+              </div>
+
               <Button
                 onClick={handleCreatePost}
-                disabled={!newPost.trim() || posting}
+                disabled={(!newPost.trim() && !mediaFile) || posting}
               >
                 {posting ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : (
                   <Send className="h-4 w-4 mr-2" />
                 )}
-                Publicar
+                {uploadingMedia ? "Enviando..." : "Publicar"}
               </Button>
             </div>
           </CardContent>
@@ -184,12 +330,21 @@ const Feed = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="whitespace-pre-wrap">{post.content}</p>
+                  {post.content && (
+                    <p className="whitespace-pre-wrap mb-4">{post.content}</p>
+                  )}
                   {post.image_url && (
                     <img
                       src={post.image_url}
                       alt="Post"
-                      className="mt-4 rounded-lg w-full object-cover max-h-96"
+                      className="rounded-lg w-full object-cover max-h-96"
+                    />
+                  )}
+                  {post.video_url && (
+                    <video
+                      src={post.video_url}
+                      controls
+                      className="rounded-lg w-full max-h-96"
                     />
                   )}
                 </CardContent>
