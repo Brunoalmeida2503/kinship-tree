@@ -4,11 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TreePine, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface TreeNode {
   id: string;
   name: string;
   relationship: string;
+  avatar_url?: string;
   children: TreeNode[];
   x?: number;
   y?: number;
@@ -32,8 +34,8 @@ export function TreeVisualization() {
       .from('connections')
       .select(`
         *,
-        requester:requester_id(id, full_name),
-        receiver:receiver_id(id, full_name)
+        requester:requester_id(id, full_name, avatar_url),
+        receiver:receiver_id(id, full_name, avatar_url)
       `)
       .eq('status', 'accepted')
       .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);
@@ -49,13 +51,21 @@ export function TreeVisualization() {
     return `${names[0]} ${names[names.length - 1]}`;
   };
 
-  const buildTree = (connections: any[]) => {
+  const buildTree = async (connections: any[]) => {
     if (!user) return;
+
+    // Get current user profile
+    const { data: currentUserProfile } = await supabase
+      .from('profiles')
+      .select('avatar_url')
+      .eq('id', user.id)
+      .single();
 
     const root: TreeNode = {
       id: user.id,
       name: 'Você',
       relationship: 'root',
+      avatar_url: currentUserProfile?.avatar_url,
       children: []
     };
 
@@ -69,6 +79,7 @@ export function TreeVisualization() {
         id: otherPerson.id,
         name: getFirstAndLastName(otherPerson.full_name),
         relationship: relationship,
+        avatar_url: otherPerson.avatar_url,
         children: []
       });
     });
@@ -141,14 +152,15 @@ export function TreeVisualization() {
                 strokeWidth="2"
                 className="transition-all hover:stroke-primary"
               />
-              <circle
-                cx="30"
-                cy="30"
-                r="18"
-                fill="hsl(var(--primary))"
-                opacity="0.2"
-              />
-              <foreignObject x="50" y="15" width="100" height="60">
+              <foreignObject x="8" y="10" width="50" height="50">
+                <Avatar className="w-12 h-12 border-2 border-primary">
+                  <AvatarImage src={node.avatar_url} alt={node.name} />
+                  <AvatarFallback className="bg-primary/20">
+                    <User className="w-6 h-6 text-primary" />
+                  </AvatarFallback>
+                </Avatar>
+              </foreignObject>
+              <foreignObject x="60" y="15" width="90" height="60">
                 <div className="text-sm">
                   <p className="font-semibold text-foreground truncate">{node.name}</p>
                   {node.relationship !== 'root' && (
@@ -156,12 +168,6 @@ export function TreeVisualization() {
                   )}
                 </div>
               </foreignObject>
-              <User
-                className="absolute"
-                style={{ left: '18px', top: '18px' }}
-                size={16}
-                color="hsl(var(--primary))"
-              />
             </g>
           ))}
         </svg>
