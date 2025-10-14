@@ -57,15 +57,16 @@ export function GroupsSection() {
       return;
     }
 
-    const { data: groupData, error: groupError } = await supabase
+    const groupId = crypto.randomUUID();
+
+    const { error: groupError } = await supabase
       .from('groups')
       .insert({
+        id: groupId,
         name: newGroup.name,
         description: newGroup.description,
         created_by: session.user.id
-      })
-      .select()
-      .single();
+      });
 
     if (groupError) {
       toast({
@@ -80,7 +81,7 @@ export function GroupsSection() {
     const { error: memberError } = await supabase
       .from('group_members')
       .insert({
-        group_id: groupData.id,
+        group_id: groupId,
         user_id: user.id
       });
 
