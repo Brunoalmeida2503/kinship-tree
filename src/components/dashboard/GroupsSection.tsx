@@ -44,12 +44,25 @@ export function GroupsSection() {
 
     setLoading(true);
 
+    // Get current session to ensure we have the latest auth state
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.user) {
+      toast({
+        title: 'Erro',
+        description: 'Você precisa estar autenticado para criar um grupo',
+        variant: 'destructive'
+      });
+      setLoading(false);
+      return;
+    }
+
     const { data: groupData, error: groupError } = await supabase
       .from('groups')
       .insert({
         name: newGroup.name,
         description: newGroup.description,
-        created_by: user.id
+        created_by: session.user.id
       })
       .select()
       .single();
