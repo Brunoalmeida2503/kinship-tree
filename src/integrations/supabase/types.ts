@@ -175,12 +175,49 @@ export type Database = {
         }
         Relationships: []
       }
+      post_groups: {
+        Row: {
+          created_at: string | null
+          group_id: string
+          id: string
+          post_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          group_id: string
+          id?: string
+          post_id: string
+        }
+        Update: {
+          created_at?: string | null
+          group_id?: string
+          id?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_groups_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_groups_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           content: string
           created_at: string | null
           id: string
           image_url: string | null
+          share_with_tree: boolean | null
           updated_at: string | null
           user_id: string
           video_url: string | null
@@ -190,6 +227,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           image_url?: string | null
+          share_with_tree?: boolean | null
           updated_at?: string | null
           user_id: string
           video_url?: string | null
@@ -199,6 +237,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           image_url?: string | null
+          share_with_tree?: boolean | null
           updated_at?: string | null
           user_id?: string
           video_url?: string | null

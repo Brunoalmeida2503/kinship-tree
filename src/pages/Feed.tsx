@@ -7,9 +7,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Image, Video, X } from "lucide-react";
+import { Loader2, Send, Image, Video, X, Users, UserPlus } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface Post {
   id: string;
@@ -18,8 +25,15 @@ interface Post {
   video_url: string | null;
   created_at: string;
   user_id: string;
+  share_with_tree: boolean;
   author_name?: string;
   author_avatar?: string | null;
+}
+
+interface Group {
+  id: string;
+  name: string;
+  avatar_url: string | null;
 }
 
 const Feed = () => {
@@ -33,6 +47,9 @@ const Feed = () => {
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [shareWithTree, setShareWithTree] = useState(false);
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+  const [userGroups, setUserGroups] = useState<Group[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
@@ -42,7 +59,39 @@ const Feed = () => {
       return;
     }
     fetchPosts();
+    fetchUserGroups();
   }, [user, navigate]);
+
+  const fetchUserGroups = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: groupMembers, error: membersError } = await supabase
+        .from("group_members")
+        .select("group_id")
+        .eq("user_id", user.id);
+
+      if (membersError) throw membersError;
+
+      const groupIds = groupMembers?.map(gm => gm.group_id) || [];
+      
+      if (groupIds.length === 0) {
+        setUserGroups([]);
+        return;
+      }
+
+      const { data: groups, error: groupsError } = await supabase
+        .from("groups")
+        .select("id, name, avatar_url")
+        .in("id", groupIds);
+
+      if (groupsError) throw groupsError;
+
+      setUserGroups(groups || []);
+    } catch (error) {
+      console.error("Error fetching groups:", error);
+    }
+  };
 
   const fetchPosts = async () => {
     try {
@@ -169,17 +218,38 @@ const Feed = () => {
         }
       }
 
-      const { error } = await supabase.from("posts").insert({
-        content: newPost,
-        user_id: user.id,
-        image_url: imageUrl,
-        video_url: videoUrl,
-      });
+      const { data: postData, error } = await supabase
+        .from("posts")
+        .insert({
+          content: newPost,
+          user_id: user.id,
+          image_url: imageUrl,
+          video_url: videoUrl,
+          share_with_tree: shareWithTree,
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
+      // Insert post_groups relationships
+      if (selectedGroups.length > 0 && postData) {
+        const postGroupInserts = selectedGroups.map(groupId => ({
+          post_id: postData.id,
+          group_id: groupId,
+        }));
+
+        const { error: groupsError } = await supabase
+          .from("post_groups")
+          .insert(postGroupInserts);
+
+        if (groupsError) throw groupsError;
+      }
+
       setNewPost("");
       handleRemoveMedia();
+      setShareWithTree(false);
+      setSelectedGroups([]);
       toast({
         title: "Post criado!",
         description: "Seu post foi publicado com sucesso",
@@ -243,6 +313,63 @@ const Feed = () => {
                 </Button>
               </div>
             )}
+
+            {/* Sharing Options */}
+            <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="share-tree"
+                  checked={shareWithTree}
+                  onCheckedChange={(checked) => setShareWithTree(checked as boolean)}
+                />
+                <Label htmlFor="share-tree" className="flex items-center gap-2 cursor-pointer">
+                  <Users className="h-4 w-4" />
+                  Compartilhar com árvore
+                </Label>
+              </div>
+
+              {userGroups.length > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Grupos ({selectedGroups.length})
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Compartilhar com grupos</h4>
+                      <div className="space-y-2">
+                        {userGroups.map((group) => (
+                          <div key={group.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`group-${group.id}`}
+                              checked={selectedGroups.includes(group.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedGroups([...selectedGroups, group.id]);
+                                } else {
+                                  setSelectedGroups(selectedGroups.filter(id => id !== group.id));
+                                }
+                              }}
+                            />
+                            <Label htmlFor={`group-${group.id}`} className="flex items-center gap-2 cursor-pointer">
+                              {group.avatar_url ? (
+                                <Avatar className="h-6 w-6">
+                                  <AvatarImage src={group.avatar_url} />
+                                  <AvatarFallback>{group.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                              ) : null}
+                              <span>{group.name}</span>
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
 
             <div className="flex items-center justify-between">
               <div className="flex gap-2">
