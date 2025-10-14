@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Send, Image, Video, X, Users, UserPlus } from "lucide-react";
-import Navbar from "@/components/Navbar";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -278,9 +277,8 @@ const Feed = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
       <main className="container max-w-2xl mx-auto py-8 px-4">
-        <h1 className="text-3xl font-bold mb-8">Feed</h1>
+        <h1 className="text-3xl font-bold mb-8">Timeline</h1>
 
         {/* Create Post */}
         <Card className="mb-6">

@@ -1,0 +1,91 @@
+import { Home, GitBranch, Map, Users, UsersRound, User, LogOut } from "lucide-react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarHeader,
+  SidebarFooter,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+
+const menuItems = [
+  { title: "Timeline", url: "/", icon: Home },
+  { title: "Árvore", url: "/tree", icon: GitBranch },
+  { title: "Mapa", url: "/map", icon: Map },
+  { title: "Conexões", url: "/connections", icon: Users },
+  { title: "Grupos", url: "/groups", icon: UsersRound },
+  { title: "Perfil", url: "/profile", icon: User },
+];
+
+export function AppSidebar() {
+  const { state } = useSidebar();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const currentPath = location.pathname;
+  const collapsed = state === "collapsed";
+
+  const isActive = (path: string) => currentPath === path;
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
+
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarHeader>
+        <div className={`flex items-center gap-2 px-4 py-3 ${collapsed ? 'justify-center' : ''}`}>
+          <GitBranch className="h-6 w-6 text-primary" />
+          {!collapsed && <span className="font-bold text-xl">Echos</span>}
+        </div>
+      </SidebarHeader>
+
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Navegação</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {menuItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                    <NavLink to={item.url} end>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2"
+              >
+                <LogOut />
+                <span>Sair</span>
+              </button>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
