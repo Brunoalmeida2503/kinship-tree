@@ -1,4 +1,4 @@
-import { Home, GitBranch, Map, Users, UsersRound, User, LogOut } from "lucide-react";
+import { Home, GitBranch, Map, Users, UsersRound, User, Target, LogOut } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -22,6 +22,7 @@ const menuItems = [
   { title: "Timeline", url: "/", icon: Home },
   { title: "Árvore", url: "/tree", icon: GitBranch },
   { title: "Mapa", url: "/map", icon: Map },
+  { title: "Missões", url: "/missions", icon: Target },
   { title: "Conexões", url: "/connections", icon: Users },
   { title: "Grupos", url: "/groups", icon: UsersRound },
   { title: "Perfil", url: "/profile", icon: User },

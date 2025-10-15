@@ -175,6 +175,115 @@ export type Database = {
         }
         Relationships: []
       }
+      mission_actions: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          degree: number
+          id: string
+          metadata: Json | null
+          mission_id: string
+          target_user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          degree: number
+          id?: string
+          metadata?: Json | null
+          mission_id: string
+          target_user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          degree?: number
+          id?: string
+          metadata?: Json | null
+          mission_id?: string
+          target_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mission_actions_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "missions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mission_suggestions: {
+        Row: {
+          common_connections: number | null
+          connection_strength: number | null
+          created_at: string | null
+          degree: number
+          id: string
+          mission_id: string
+          suggested_user_id: string
+        }
+        Insert: {
+          common_connections?: number | null
+          connection_strength?: number | null
+          created_at?: string | null
+          degree: number
+          id?: string
+          mission_id: string
+          suggested_user_id: string
+        }
+        Update: {
+          common_connections?: number | null
+          connection_strength?: number | null
+          created_at?: string | null
+          degree?: number
+          id?: string
+          mission_id?: string
+          suggested_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mission_suggestions_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "missions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      missions: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          current_degree: number
+          id: string
+          path: Json | null
+          status: string
+          target_id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          current_degree?: number
+          id?: string
+          path?: Json | null
+          status?: string
+          target_id: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          current_degree?: number
+          id?: string
+          path?: Json | null
+          status?: string
+          target_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       post_groups: {
         Row: {
           created_at: string | null
