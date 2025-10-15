@@ -12,6 +12,7 @@ import Feed from "./pages/Feed";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Missions from "./pages/Missions";
+import Memories from "./pages/Memories";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const App = () => (
                           <Route path="/groups" element={<div className="p-8">Grupos em desenvolvimento...</div>} />
                           <Route path="/profile" element={<div className="p-8">Perfil em desenvolvimento...</div>} />
                           <Route path="/missions" element={<Missions />} />
+                          <Route path="/memories" element={<Memories />} />
                           <Route path="/dashboard" element={<Dashboard />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>
