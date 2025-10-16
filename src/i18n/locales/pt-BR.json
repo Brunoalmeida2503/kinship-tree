@@ -1,0 +1,32 @@
+{
+  "profile": {
+    "title": "Meu Perfil",
+    "description": "Atualize suas informações pessoais",
+    "fullName": "Nome Completo",
+    "birthDate": "Data de Nascimento",
+    "location": "Localização",
+    "locationPlaceholder": "Cidade, Estado",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "coordinatesHelper": "Obtenha as coordenadas no Google Maps clicando com o botão direito no local",
+    "bio": "Biografia",
+    "bioPlaceholder": "Conte um pouco sobre você...",
+    "language": "Idioma",
+    "changePhoto": "Alterar Foto",
+    "uploading": "Enviando...",
+    "saving": "Salvando...",
+    "saveProfile": "Salvar Perfil",
+    "photoUpdated": "Foto atualizada",
+    "photoUpdatedDescription": "Sua foto de perfil foi atualizada com sucesso!",
+    "uploadError": "Erro ao fazer upload",
+    "profileUpdated": "Perfil atualizado",
+    "profileUpdatedDescription": "Suas informações foram salvas com sucesso!",
+    "saveError": "Erro ao salvar"
+  },
+  "languages": {
+    "pt-BR": "Português (Brasil)",
+    "en": "English",
+    "es": "Español",
+    "fr": "Français"
+  }
+}

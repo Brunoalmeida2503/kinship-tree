@@ -8,11 +8,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Camera } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export function ProfileSection() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t, i18n } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -23,7 +26,8 @@ export function ProfileSection() {
     location: '',
     avatar_url: '',
     latitude: null as number | null,
-    longitude: null as number | null
+    longitude: null as number | null,
+    language: 'pt-BR'
   });
 
   useEffect(() => {
@@ -47,6 +51,7 @@ export function ProfileSection() {
     }
 
     if (data) {
+      const userLanguage = data.language || 'pt-BR';
       setProfile({
         full_name: data.full_name || '',
         birth_date: data.birth_date || '',
@@ -54,8 +59,11 @@ export function ProfileSection() {
         location: data.location || '',
         avatar_url: data.avatar_url || '',
         latitude: data.latitude || null,
-        longitude: data.longitude || null
+        longitude: data.longitude || null,
+        language: userLanguage
       });
+      // Update i18n language
+      i18n.changeLanguage(userLanguage);
     }
   };
 
@@ -95,12 +103,12 @@ export function ProfileSection() {
       setProfile({ ...profile, avatar_url: publicUrl });
       
       toast({
-        title: 'Foto atualizada',
-        description: 'Sua foto de perfil foi atualizada com sucesso!'
+        title: t('profile.photoUpdated'),
+        description: t('profile.photoUpdatedDescription')
       });
     } catch (error: any) {
       toast({
-        title: 'Erro ao fazer upload',
+        title: t('profile.uploadError'),
         description: error.message,
         variant: 'destructive'
       });
@@ -122,14 +130,16 @@ export function ProfileSection() {
 
     if (error) {
       toast({
-        title: 'Erro ao salvar',
+        title: t('profile.saveError'),
         description: error.message,
         variant: 'destructive'
       });
     } else {
+      // Update i18n language
+      i18n.changeLanguage(profile.language);
       toast({
-        title: 'Perfil atualizado',
-        description: 'Suas informações foram salvas com sucesso!'
+        title: t('profile.profileUpdated'),
+        description: t('profile.profileUpdatedDescription')
       });
     }
 
@@ -139,8 +149,8 @@ export function ProfileSection() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Meu Perfil</CardTitle>
-        <CardDescription>Atualize suas informações pessoais</CardDescription>
+        <CardTitle>{t('profile.title')}</CardTitle>
+        <CardDescription>{t('profile.description')}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -159,7 +169,7 @@ export function ProfileSection() {
               disabled={uploading}
             >
               <Camera className="h-4 w-4 mr-2" />
-              {uploading ? 'Enviando...' : 'Alterar Foto'}
+              {uploading ? t('profile.uploading') : t('profile.changePhoto')}
             </Button>
             <input
               ref={fileInputRef}
@@ -171,7 +181,7 @@ export function ProfileSection() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="full_name">Nome Completo</Label>
+            <Label htmlFor="full_name">{t('profile.fullName')}</Label>
             <Input
               id="full_name"
               value={profile.full_name}
@@ -181,7 +191,7 @@ export function ProfileSection() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="birth_date">Data de Nascimento</Label>
+            <Label htmlFor="birth_date">{t('profile.birthDate')}</Label>
             <Input
               id="birth_date"
               type="date"
@@ -191,18 +201,36 @@ export function ProfileSection() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="location">Localização</Label>
+            <Label htmlFor="location">{t('profile.location')}</Label>
             <Input
               id="location"
-              placeholder="Cidade, Estado"
+              placeholder={t('profile.locationPlaceholder')}
               value={profile.location}
               onChange={(e) => setProfile({ ...profile, location: e.target.value })}
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="language">{t('profile.language')}</Label>
+            <Select
+              value={profile.language}
+              onValueChange={(value) => setProfile({ ...profile, language: value })}
+            >
+              <SelectTrigger id="language">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pt-BR">{t('languages.pt-BR')}</SelectItem>
+                <SelectItem value="en">{t('languages.en')}</SelectItem>
+                <SelectItem value="es">{t('languages.es')}</SelectItem>
+                <SelectItem value="fr">{t('languages.fr')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="latitude">Latitude</Label>
+              <Label htmlFor="latitude">{t('profile.latitude')}</Label>
               <Input
                 id="latitude"
                 type="number"
@@ -213,7 +241,7 @@ export function ProfileSection() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="longitude">Longitude</Label>
+              <Label htmlFor="longitude">{t('profile.longitude')}</Label>
               <Input
                 id="longitude"
                 type="number"
@@ -226,7 +254,7 @@ export function ProfileSection() {
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Obtenha as coordenadas no{' '}
+            {t('profile.coordinatesHelper')}{' '}
             <a 
               href="https://www.google.com/maps" 
               target="_blank" 
@@ -235,14 +263,13 @@ export function ProfileSection() {
             >
               Google Maps
             </a>
-            {' '}clicando com o botão direito no local
           </p>
 
           <div className="space-y-2">
-            <Label htmlFor="bio">Biografia</Label>
+            <Label htmlFor="bio">{t('profile.bio')}</Label>
             <Textarea
               id="bio"
-              placeholder="Conte um pouco sobre você..."
+              placeholder={t('profile.bioPlaceholder')}
               value={profile.bio}
               onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
               rows={4}
@@ -250,7 +277,7 @@ export function ProfileSection() {
           </div>
 
           <Button type="submit" disabled={loading}>
-            {loading ? 'Salvando...' : 'Salvar Perfil'}
+            {loading ? t('profile.saving') : t('profile.saveProfile')}
           </Button>
         </form>
       </CardContent>

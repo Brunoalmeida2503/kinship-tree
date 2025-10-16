@@ -688,6 +688,7 @@ export type Database = {
           created_at: string | null
           full_name: string
           id: string
+          language: string | null
           latitude: number | null
           location: string | null
           longitude: number | null
@@ -700,6 +701,7 @@ export type Database = {
           created_at?: string | null
           full_name: string
           id: string
+          language?: string | null
           latitude?: number | null
           location?: string | null
           longitude?: number | null
@@ -712,6 +714,7 @@ export type Database = {
           created_at?: string | null
           full_name?: string
           id?: string
+          language?: string | null
           latitude?: number | null
           location?: string | null
           longitude?: number | null
