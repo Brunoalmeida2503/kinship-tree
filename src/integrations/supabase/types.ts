@@ -313,9 +313,11 @@ export type Database = {
         Row: {
           created_at: string | null
           description: string | null
-          event_date: string
+          end_date: string | null
           id: string
           image_url: string | null
+          share_with_tree: boolean | null
+          start_date: string
           title: string
           updated_at: string | null
           user_id: string
@@ -323,9 +325,11 @@ export type Database = {
         Insert: {
           created_at?: string | null
           description?: string | null
-          event_date: string
+          end_date?: string | null
           id?: string
           image_url?: string | null
+          share_with_tree?: boolean | null
+          start_date: string
           title: string
           updated_at?: string | null
           user_id: string
@@ -333,9 +337,11 @@ export type Database = {
         Update: {
           created_at?: string | null
           description?: string | null
-          event_date?: string
+          end_date?: string | null
           id?: string
           image_url?: string | null
+          share_with_tree?: boolean | null
+          start_date?: string
           title?: string
           updated_at?: string | null
           user_id?: string
@@ -373,6 +379,55 @@ export type Database = {
             columns: ["memory_id"]
             isOneToOne: false
             referencedRelation: "memories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      memory_shares: {
+        Row: {
+          created_at: string
+          id: string
+          memory_id: string
+          shared_by: string
+          shared_with_group_id: string | null
+          shared_with_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          memory_id: string
+          shared_by: string
+          shared_with_group_id?: string | null
+          shared_with_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          memory_id?: string
+          shared_by?: string
+          shared_with_group_id?: string | null
+          shared_with_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "memory_shares_memory_id_fkey"
+            columns: ["memory_id"]
+            isOneToOne: false
+            referencedRelation: "memories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memory_shares_shared_with_group_id_fkey"
+            columns: ["shared_with_group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memory_shares_shared_with_user_id_fkey"
+            columns: ["shared_with_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

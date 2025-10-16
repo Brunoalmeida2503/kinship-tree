@@ -11,7 +11,8 @@ import { Calendar as CalendarIcon, Play } from 'lucide-react';
 interface Memory {
   id: string;
   title: string;
-  event_date: string;
+  start_date: string;
+  end_date: string | null;
   description: string | null;
   image_url: string | null;
   created_at: string;
@@ -31,7 +32,7 @@ export function MemoryCalendar() {
       const { data, error } = await supabase
         .from('memories')
         .select('*')
-        .order('event_date', { ascending: false });
+        .order('start_date', { ascending: false });
 
       if (error) throw error;
       setMemories(data || []);
@@ -43,11 +44,22 @@ export function MemoryCalendar() {
     }
   };
 
-  const memoriesForSelectedDate = memories.filter((memory) =>
-    selectedDate ? isSameDay(new Date(memory.event_date), selectedDate) : false
-  );
+  const memoriesForSelectedDate = memories.filter((memory) => {
+    if (!selectedDate) return false;
+    const start = new Date(memory.start_date);
+    const end = memory.end_date ? new Date(memory.end_date) : start;
+    return selectedDate >= start && selectedDate <= end;
+  });
 
-  const datesWithMemories = memories.map((m) => new Date(m.event_date));
+  const datesWithMemories = memories.flatMap((m) => {
+    const start = new Date(m.start_date);
+    const end = m.end_date ? new Date(m.end_date) : start;
+    const dates = [];
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      dates.push(new Date(d));
+    }
+    return dates;
+  });
 
   const isVideo = (url: string | null) => {
     if (!url) return false;
@@ -141,7 +153,9 @@ export function MemoryCalendar() {
                         {memory.title}
                       </h4>
                       <Badge variant="secondary">
-                        {format(new Date(memory.event_date), 'dd/MM/yyyy', { locale: ptBR })}
+                        {memory.end_date && memory.start_date !== memory.end_date
+                          ? `${format(new Date(memory.start_date), 'dd/MM/yyyy')} - ${format(new Date(memory.end_date), 'dd/MM/yyyy')}`
+                          : format(new Date(memory.start_date), 'dd/MM/yyyy')}
                       </Badge>
                     </div>
                     {memory.description && (

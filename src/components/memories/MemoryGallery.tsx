@@ -2,15 +2,18 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Play } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar, Play, Share2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { ShareMemoryDialog } from './ShareMemoryDialog';
 
 interface Memory {
   id: string;
   title: string;
-  event_date: string;
+  start_date: string;
+  end_date: string | null;
   description: string | null;
   image_url: string | null;
   created_at: string;
@@ -19,6 +22,8 @@ interface Memory {
 export function MemoryGallery() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [selectedMemoryId, setSelectedMemoryId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMemories();
@@ -29,7 +34,7 @@ export function MemoryGallery() {
       const { data, error } = await supabase
         .from('memories')
         .select('*')
-        .order('event_date', { ascending: false });
+        .order('start_date', { ascending: false });
 
       if (error) throw error;
       setMemories(data || []);
@@ -44,6 +49,12 @@ export function MemoryGallery() {
   const isVideo = (url: string | null) => {
     if (!url) return false;
     return url.includes('.mp4') || url.includes('.webm') || url.includes('.mov');
+  };
+
+  const handleShare = (memoryId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedMemoryId(memoryId);
+    setShareDialogOpen(true);
   };
 
   if (loading) {
@@ -109,11 +120,23 @@ export function MemoryGallery() {
             )}
           </div>
           <CardContent className="p-4">
-            <h3 className="font-semibold text-foreground mb-1 line-clamp-1">
-              {memory.title}
-            </h3>
+            <div className="flex items-start justify-between gap-2 mb-1">
+              <h3 className="font-semibold text-foreground line-clamp-1 flex-1">
+                {memory.title}
+              </h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 flex-shrink-0"
+                onClick={(e) => handleShare(memory.id, e)}
+              >
+                <Share2 className="h-4 w-4" />
+              </Button>
+            </div>
             <Badge variant="secondary" className="mb-2">
-              {format(new Date(memory.event_date), 'dd/MM/yyyy', { locale: ptBR })}
+              {memory.end_date && memory.start_date !== memory.end_date
+                ? `${format(new Date(memory.start_date), 'dd/MM/yyyy')} - ${format(new Date(memory.end_date), 'dd/MM/yyyy')}`
+                : format(new Date(memory.start_date), 'dd/MM/yyyy')}
             </Badge>
             {memory.description && (
               <p className="text-sm text-muted-foreground line-clamp-2">
@@ -123,6 +146,14 @@ export function MemoryGallery() {
           </CardContent>
         </Card>
       ))}
+      
+      {selectedMemoryId && (
+        <ShareMemoryDialog
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+          memoryId={selectedMemoryId}
+        />
+      )}
     </div>
   );
 }

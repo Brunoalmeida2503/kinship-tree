@@ -21,7 +21,8 @@ interface AddMemoryDialogProps {
 export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [eventDate, setEventDate] = useState<Date>();
+  const [startDate, setStartDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -64,8 +65,8 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title.trim() || !eventDate) {
-      toast.error('Preencha o título e a data do evento');
+    if (!title.trim() || !startDate) {
+      toast.error('Preencha o título e a data inicial');
       return;
     }
 
@@ -84,8 +85,10 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
         user_id: user.id,
         title: title.trim(),
         description: description.trim() || null,
-        event_date: format(eventDate, 'yyyy-MM-dd'),
+        start_date: format(startDate, 'yyyy-MM-dd'),
+        end_date: endDate ? format(endDate, 'yyyy-MM-dd') : null,
         image_url: imageUrl,
+        share_with_tree: false,
       });
 
       if (error) throw error;
@@ -105,7 +108,8 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
   const resetForm = () => {
     setTitle('');
     setDescription('');
-    setEventDate(undefined);
+    setStartDate(undefined);
+    setEndDate(undefined);
     setMediaFile(null);
     setMediaPreview(null);
   };
@@ -132,27 +136,56 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
           </div>
 
           <div className="space-y-2">
-            <Label>Data do Evento *</Label>
+            <Label>Data Inicial *</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
                     'w-full justify-start text-left font-normal',
-                    !eventDate && 'text-muted-foreground'
+                    !startDate && 'text-muted-foreground'
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {eventDate ? format(eventDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'Selecione a data'}
+                  {startDate ? format(startDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'Selecione a data inicial'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={eventDate}
-                  onSelect={setEventDate}
+                  selected={startDate}
+                  onSelect={setStartDate}
                   locale={ptBR}
                   initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Data Final (Opcional)</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    'w-full justify-start text-left font-normal',
+                    !endDate && 'text-muted-foreground'
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {endDate ? format(endDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'Selecione a data final'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={endDate}
+                  onSelect={setEndDate}
+                  locale={ptBR}
+                  disabled={(date) => startDate ? date < startDate : false}
+                  className="pointer-events-auto"
                 />
               </PopoverContent>
             </Popover>
