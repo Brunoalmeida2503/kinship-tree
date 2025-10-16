@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -17,11 +16,11 @@ interface ZoomConfig {
   icon: React.ReactNode;
 }
 
+const MAPBOX_TOKEN = 'pk.eyJ1IjoidHJlZS1zb2NpYWwiLCJhIjoiY21nbTlid2J6MWU4NzJrcHFxbDc0NDhpZyJ9.BTX2-dUn_I-MyG-NBnL1Ew';
+
 const MapVisualization = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const [mapboxToken, setMapboxToken] = useState('');
-  const [tokenSet, setTokenSet] = useState(false);
   const [currentZoom, setCurrentZoom] = useState<ZoomLevel>('world');
   const { user } = useAuth();
 
@@ -178,9 +177,9 @@ const MapVisualization = () => {
   };
 
   const initializeMap = () => {
-    if (!mapContainer.current || !tokenSet || !mapboxToken) return;
+    if (!mapContainer.current) return;
 
-    mapboxgl.accessToken = mapboxToken;
+    mapboxgl.accessToken = MAPBOX_TOKEN;
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
@@ -211,53 +210,12 @@ const MapVisualization = () => {
   };
 
   useEffect(() => {
-    if (tokenSet && mapboxToken) {
-      initializeMap();
-    }
+    initializeMap();
 
     return () => {
       map.current?.remove();
     };
-  }, [tokenSet, mapboxToken]);
-
-  if (!tokenSet) {
-    return (
-      <Card className="p-6">
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Configurar Mapbox</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Para visualizar o mapa de conexões, você precisa fornecer um token público do Mapbox.
-              Você pode obter um em{' '}
-              <a 
-                href="https://mapbox.com/" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                mapbox.com
-              </a>
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Input
-              type="text"
-              placeholder="Cole seu Mapbox Public Token aqui"
-              value={mapboxToken}
-              onChange={(e) => setMapboxToken(e.target.value)}
-            />
-            <Button 
-              onClick={() => setTokenSet(true)}
-              disabled={!mapboxToken}
-              className="w-full"
-            >
-              Ativar Mapa
-            </Button>
-          </div>
-        </div>
-      </Card>
-    );
-  }
+  }, []);
 
   return (
     <Card className="p-6">
