@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      aura_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          response: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          response: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          response?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      aura_personality: {
+        Row: {
+          common_topics: Json
+          id: string
+          interactions_count: number
+          interests: Json
+          personality_traits: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          common_topics?: Json
+          id?: string
+          interactions_count?: number
+          interests?: Json
+          personality_traits?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          common_topics?: Json
+          id?: string
+          interactions_count?: number
+          interests?: Json
+          personality_traits?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       calendar_shares: {
         Row: {
           created_at: string

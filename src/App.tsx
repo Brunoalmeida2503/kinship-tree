@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { AuraButton } from "@/components/aura/AuraButton";
 import Index from "./pages/Index";
 import Feed from "./pages/Feed";
 import Auth from "./pages/Auth";
@@ -61,6 +62,7 @@ const App = () => (
                         </Routes>
                       </div>
                     </main>
+                    <AuraButton />
                   </div>
                 </SidebarProvider>
               }
