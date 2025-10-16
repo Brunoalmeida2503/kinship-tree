@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { GroupFeed } from '@/components/groups/GroupFeed';
 import { GroupMembers } from '@/components/groups/GroupMembers';
 import { GroupSettings } from '@/components/groups/GroupSettings';
+import { GroupMemories } from '@/components/groups/GroupMemories';
 
 interface Group {
   id: string;
@@ -19,6 +20,7 @@ interface Group {
   avatar_url: string | null;
   created_by: string;
   created_at: string;
+  is_private: boolean;
 }
 
 export default function Group() {
@@ -167,8 +169,9 @@ export default function Group() {
         </div>
 
         <Tabs defaultValue="feed" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="feed">Feed</TabsTrigger>
+            <TabsTrigger value="memories">Memórias</TabsTrigger>
             <TabsTrigger value="members">
               <Users className="h-4 w-4 mr-2" />
               Membros
@@ -183,6 +186,10 @@ export default function Group() {
 
           <TabsContent value="feed">
             <GroupFeed groupId={groupId!} />
+          </TabsContent>
+
+          <TabsContent value="memories">
+            <GroupMemories groupId={groupId!} />
           </TabsContent>
 
           <TabsContent value="members">

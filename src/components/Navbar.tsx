@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { NotificationBell } from "./notifications/NotificationBell";
 import logo from "@/assets/logo.png";
 
 const Navbar = () => {
@@ -36,6 +37,7 @@ const Navbar = () => {
           <div className="flex items-center gap-3">
             {user ? (
               <>
+                <NotificationBell />
                 <Button variant="ghost" onClick={() => navigate("/dashboard")}>
                   Dashboard
                 </Button>

@@ -201,6 +201,85 @@ export type Database = {
           },
         ]
       }
+      group_memories: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_date: string | null
+          group_id: string
+          id: string
+          start_date: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          group_id: string
+          id?: string
+          start_date: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          group_id?: string
+          id?: string
+          start_date?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_memories_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_memory_media: {
+        Row: {
+          created_at: string
+          display_order: number
+          group_memory_id: string
+          id: string
+          media_type: string
+          media_url: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          group_memory_id: string
+          id?: string
+          media_type: string
+          media_url: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          group_memory_id?: string
+          id?: string
+          media_type?: string
+          media_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_memory_media_group_memory_id_fkey"
+            columns: ["group_memory_id"]
+            isOneToOne: false
+            referencedRelation: "group_memories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_post_media: {
         Row: {
           created_at: string
@@ -278,6 +357,7 @@ export type Database = {
           created_by: string
           description: string | null
           id: string
+          is_private: boolean
           name: string
           updated_at: string | null
         }
@@ -287,6 +367,7 @@ export type Database = {
           created_by: string
           description?: string | null
           id?: string
+          is_private?: boolean
           name: string
           updated_at?: string | null
         }
@@ -296,6 +377,7 @@ export type Database = {
           created_by?: string
           description?: string | null
           id?: string
+          is_private?: boolean
           name?: string
           updated_at?: string | null
         }
@@ -541,6 +623,39 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          link: string | null
+          message: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message: string
+          read?: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       post_comments: {
         Row: {
           content: string
@@ -730,6 +845,16 @@ export type Database = {
       is_group_member: {
         Args: { _group_id: string; _user_id: string }
         Returns: boolean
+      }
+      notify_user: {
+        Args: {
+          _link?: string
+          _message: string
+          _title: string
+          _type: string
+          _user_id: string
+        }
+        Returns: string
       }
     }
     Enums: {
