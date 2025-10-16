@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { Users, TreePine } from "lucide-react";
+import { Users } from "lucide-react";
 import heroTree from "@/assets/hero-tree.jpg";
+import logo from "@/assets/logo.png";
 
 const HeroSection = () => {
   return (
@@ -16,14 +17,9 @@ const HeroSection = () => {
       
       <div className="container relative z-10 mx-auto px-4 py-20">
         <div className="max-w-4xl mx-auto text-center animate-fade-in">
-          <div className="mb-6 inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-primary font-medium animate-slide-up">
-            <TreePine className="w-5 h-5" />
-            <span>Conecte sua história</span>
+          <div className="mb-8 animate-slide-up">
+            <img src={logo} alt="Tree Logo" className="h-32 w-auto mx-auto" />
           </div>
-          
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-hero bg-clip-text text-transparent animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            Tree
-          </h1>
           
           <p className="text-xl md:text-2xl text-foreground/80 mb-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
             A rede social que une gerações

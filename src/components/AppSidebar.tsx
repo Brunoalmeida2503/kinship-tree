@@ -1,6 +1,7 @@
-import { Home, GitBranch, User, Target, Images, LogOut } from "lucide-react";
+import { Home, User, Target, Images, LogOut, GitBranch } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import logo from "@/assets/logo.png";
 import {
   Sidebar,
   SidebarContent,
@@ -44,9 +45,8 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className={`flex items-center gap-2 px-4 py-3 ${collapsed ? 'justify-center' : ''}`}>
-          <GitBranch className="h-6 w-6 text-primary" />
-          {!collapsed && <span className="font-bold text-xl">Echos</span>}
+        <div className={`flex items-center px-4 py-3 ${collapsed ? 'justify-center' : ''}`}>
+          <img src={logo} alt="Tree Logo" className={collapsed ? "h-8 w-auto" : "h-10 w-auto"} />
         </div>
       </SidebarHeader>
 

@@ -1,15 +1,14 @@
-import { TreePine } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 const Footer = () => {
   return (
     <footer className="bg-foreground/5 border-t border-border py-12 px-4">
       <div className="container mx-auto max-w-6xl">
         <div className="grid md:grid-cols-4 gap-8 mb-8">
-          <div>
-            <div className="flex items-center gap-2 font-bold text-xl text-primary mb-4">
-              <TreePine className="w-6 h-6" />
-              <span>Tree</span>
-            </div>
+        <div>
+          <div className="mb-4">
+            <img src={logo} alt="Tree Logo" className="h-12 w-auto" />
+          </div>
             <p className="text-muted-foreground text-sm">
               Conectando gerações através da tecnologia.
             </p>
