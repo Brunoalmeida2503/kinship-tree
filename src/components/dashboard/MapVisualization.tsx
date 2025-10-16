@@ -7,13 +7,30 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { Globe, Map, MapPin } from 'lucide-react';
+
+type ZoomLevel = 'world' | 'continent' | 'country' | 'state';
+
+interface ZoomConfig {
+  zoom: number;
+  label: string;
+  icon: React.ReactNode;
+}
 
 const MapVisualization = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState('');
   const [tokenSet, setTokenSet] = useState(false);
+  const [currentZoom, setCurrentZoom] = useState<ZoomLevel>('world');
   const { user } = useAuth();
+
+  const zoomLevels: Record<ZoomLevel, ZoomConfig> = {
+    world: { zoom: 2, label: 'Mundo', icon: <Globe className="w-4 h-4" /> },
+    continent: { zoom: 4, label: 'Continente', icon: <Map className="w-4 h-4" /> },
+    country: { zoom: 6, label: 'País', icon: <MapPin className="w-4 h-4" /> },
+    state: { zoom: 8, label: 'Estado', icon: <MapPin className="w-4 h-4" /> }
+  };
 
   const loadConnections = async () => {
     if (!user || !map.current) return;
@@ -56,20 +73,33 @@ const MapVisualization = () => {
         markers[0].remove();
       }
 
-      // Adicionar marcadores no mapa
+      // Adicionar marcadores no mapa com estilo personalizado
       profiles?.forEach(profile => {
         const el = document.createElement('div');
-        el.className = 'marker';
-        el.style.backgroundImage = 'url(https://docs.mapbox.com/mapbox-gl-js/assets/custom_marker.png)';
-        el.style.width = '40px';
-        el.style.height = '40px';
-        el.style.backgroundSize = '100%';
+        el.className = 'family-marker';
+        el.style.width = '32px';
+        el.style.height = '32px';
+        el.style.borderRadius = '50%';
+        el.style.backgroundColor = 'hsl(var(--primary))';
+        el.style.border = '3px solid hsl(var(--background))';
+        el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
         el.style.cursor = 'pointer';
+        el.style.transition = 'all 0.3s ease';
+        
+        el.addEventListener('mouseenter', () => {
+          el.style.transform = 'scale(1.2)';
+          el.style.zIndex = '1000';
+        });
+        
+        el.addEventListener('mouseleave', () => {
+          el.style.transform = 'scale(1)';
+          el.style.zIndex = '1';
+        });
 
-        const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(
-          `<div style="padding: 8px;">
-            <h3 style="margin: 0 0 4px 0; font-weight: bold;">${profile.full_name}</h3>
-            <p style="margin: 0; font-size: 12px; color: #666;">${profile.location || 'Localização não especificada'}</p>
+        const popup = new mapboxgl.Popup({ offset: 25, className: 'family-popup' }).setHTML(
+          `<div style="padding: 12px; min-width: 180px;">
+            <h3 style="margin: 0 0 8px 0; font-weight: bold; font-size: 16px; color: hsl(var(--foreground));">${profile.full_name}</h3>
+            <p style="margin: 0; font-size: 13px; color: hsl(var(--muted-foreground));">${profile.location || 'Localização não especificada'}</p>
           </div>`
         );
 
@@ -120,25 +150,39 @@ const MapVisualization = () => {
           source: 'connections',
           paint: {
             'line-color': 'hsl(var(--primary))',
-            'line-width': 2,
-            'line-opacity': 0.6
+            'line-width': 3,
+            'line-opacity': 0.5,
+            'line-blur': 1
           }
         });
       }
 
-      // Ajustar zoom para mostrar todos os pontos
-      if (profiles && profiles.length > 0) {
+      // Ajustar visualização inicial
+      if (profiles && profiles.length > 0 && currentZoom === 'world') {
         const bounds = new mapboxgl.LngLatBounds();
         profiles.forEach(profile => {
           bounds.extend([profile.longitude as number, profile.latitude as number]);
         });
-        map.current.fitBounds(bounds, { padding: 50 });
+        map.current.fitBounds(bounds, { padding: 80, maxZoom: 10 });
       }
 
     } catch (error) {
       console.error('Erro ao carregar conexões:', error);
       toast.error('Erro ao carregar conexões no mapa');
     }
+  };
+
+  const handleZoomLevel = (level: ZoomLevel) => {
+    if (!map.current) return;
+    
+    setCurrentZoom(level);
+    const config = zoomLevels[level];
+    
+    map.current.flyTo({
+      zoom: config.zoom,
+      duration: 1500,
+      essential: true
+    });
   };
 
   const initializeMap = () => {
@@ -148,10 +192,12 @@ const MapVisualization = () => {
     
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
+      style: 'mapbox://styles/mapbox/light-v11',
       projection: 'globe' as any,
       zoom: 2,
       center: [0, 20],
+      minZoom: 1,
+      maxZoom: 12
     });
 
     map.current.addControl(
@@ -224,20 +270,43 @@ const MapVisualization = () => {
   return (
     <Card className="p-6">
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Mapa de Conexões Globais</h3>
-          <Button onClick={loadConnections} variant="outline" size="sm">
-            Atualizar
-          </Button>
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <h3 className="text-lg font-semibold">Mapa de Conexões da Família</h3>
+          <div className="flex items-center gap-2">
+            <Button onClick={loadConnections} variant="outline" size="sm">
+              Atualizar
+            </Button>
+          </div>
         </div>
+        
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-sm text-muted-foreground">Nível de Zoom:</span>
+          {(Object.keys(zoomLevels) as ZoomLevel[]).map((level) => (
+            <Button
+              key={level}
+              onClick={() => handleZoomLevel(level)}
+              variant={currentZoom === level ? "default" : "outline"}
+              size="sm"
+              className="gap-2"
+            >
+              {zoomLevels[level].icon}
+              {zoomLevels[level].label}
+            </Button>
+          ))}
+        </div>
+        
         <div 
           ref={mapContainer} 
-          className="w-full h-[600px] rounded-lg shadow-lg"
+          className="w-full h-[600px] rounded-lg shadow-lg overflow-hidden border border-border"
         />
-        <p className="text-sm text-muted-foreground">
-          Use o mouse para navegar: arrastar para mover, scroll para zoom. 
-          Clique nos marcadores para ver detalhes das conexões.
-        </p>
+        
+        <div className="flex items-start gap-2 text-sm text-muted-foreground">
+          <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <p>
+            Use os botões de zoom para alternar entre visão mundial, continental, país e estado. 
+            As linhas conectam membros da família. Clique nos marcadores para ver detalhes.
+          </p>
+        </div>
       </div>
     </Card>
   );
