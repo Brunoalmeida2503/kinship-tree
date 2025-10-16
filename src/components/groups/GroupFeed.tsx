@@ -73,7 +73,7 @@ export function GroupFeed({ groupId }: GroupFeedProps) {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPosts(data || []);
+      setPosts((data || []) as GroupPost[]);
     } catch (error) {
       console.error('Error fetching posts:', error);
       toast.error('Erro ao carregar posts');
