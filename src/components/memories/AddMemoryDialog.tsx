@@ -12,6 +12,7 @@ import { Calendar as CalendarIcon, Upload, X, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface AddMemoryDialogProps {
   open: boolean;
@@ -22,7 +23,8 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState<Date>();
-  const [endDate, setEndDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date>();
+  const [isPeriod, setIsPeriod] = useState(false);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -70,6 +72,11 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
       return;
     }
 
+    if (isPeriod && !endDate) {
+      toast.error('Preencha a data final do período');
+      return;
+    }
+
     setUploading(true);
 
     try {
@@ -86,9 +93,8 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
         title: title.trim(),
         description: description.trim() || null,
         start_date: format(startDate, 'yyyy-MM-dd'),
-        end_date: endDate ? format(endDate, 'yyyy-MM-dd') : null,
+        end_date: isPeriod && endDate ? format(endDate, 'yyyy-MM-dd') : null,
         image_url: imageUrl,
-        share_with_tree: false,
       });
 
       if (error) throw error;
@@ -110,6 +116,7 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
     setDescription('');
     setStartDate(undefined);
     setEndDate(undefined);
+    setIsPeriod(false);
     setMediaFile(null);
     setMediaPreview(null);
   };
@@ -136,7 +143,18 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
           </div>
 
           <div className="space-y-2">
-            <Label>Data Inicial *</Label>
+            <div className="flex items-center gap-2 mb-2">
+              <Checkbox
+                id="is-period"
+                checked={isPeriod}
+                onCheckedChange={(checked) => setIsPeriod(checked as boolean)}
+              />
+              <Label htmlFor="is-period" className="cursor-pointer text-sm">
+                Período (data inicial e final)
+              </Label>
+            </div>
+
+            <Label>{isPeriod ? 'Data Inicial *' : 'Data do Evento *'}</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -147,7 +165,7 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {startDate ? format(startDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'Selecione a data inicial'}
+                  {startDate ? format(startDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'Selecione a data'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -163,33 +181,36 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
             </Popover>
           </div>
 
-          <div className="space-y-2">
-            <Label>Data Final (Opcional)</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'w-full justify-start text-left font-normal',
-                    !endDate && 'text-muted-foreground'
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {endDate ? format(endDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'Selecione a data final'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={endDate}
-                  onSelect={setEndDate}
-                  locale={ptBR}
-                  disabled={(date) => startDate ? date < startDate : false}
-                  className="pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+          {isPeriod && (
+            <div className="space-y-2">
+              <Label>Data Final *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !endDate && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {endDate ? format(endDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'Selecione a data'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={setEndDate}
+                    locale={ptBR}
+                    disabled={(date) => startDate ? date < startDate : false}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="description">Descrição</Label>

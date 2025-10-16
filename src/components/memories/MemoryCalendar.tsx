@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
-import { format, isSameDay } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { Calendar as CalendarIcon, Play } from 'lucide-react';
@@ -51,14 +51,16 @@ export function MemoryCalendar() {
     return selectedDate >= start && selectedDate <= end;
   });
 
-  const datesWithMemories = memories.flatMap((m) => {
-    const start = new Date(m.start_date);
-    const end = m.end_date ? new Date(m.end_date) : start;
-    const dates = [];
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      dates.push(new Date(d));
+  // Destacar datas que têm memórias
+  const datesWithMemories: Date[] = [];
+  memories.forEach((memory) => {
+    const start = new Date(memory.start_date);
+    const end = memory.end_date ? new Date(memory.end_date) : start;
+    const current = new Date(start);
+    while (current <= end) {
+      datesWithMemories.push(new Date(current));
+      current.setDate(current.getDate() + 1);
     }
-    return dates;
   });
 
   const isVideo = (url: string | null) => {
@@ -101,7 +103,7 @@ export function MemoryCalendar() {
                 color: 'hsl(var(--primary-foreground))',
               },
             }}
-            className="rounded-md border"
+            className="rounded-md border pointer-events-auto"
           />
         </CardContent>
       </Card>
@@ -153,9 +155,10 @@ export function MemoryCalendar() {
                         {memory.title}
                       </h4>
                       <Badge variant="secondary">
-                        {memory.end_date && memory.start_date !== memory.end_date
+                        {memory.end_date 
                           ? `${format(new Date(memory.start_date), 'dd/MM/yyyy')} - ${format(new Date(memory.end_date), 'dd/MM/yyyy')}`
-                          : format(new Date(memory.start_date), 'dd/MM/yyyy')}
+                          : format(new Date(memory.start_date), 'dd/MM/yyyy')
+                        }
                       </Badge>
                     </div>
                     {memory.description && (
