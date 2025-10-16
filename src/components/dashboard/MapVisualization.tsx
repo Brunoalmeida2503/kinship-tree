@@ -60,7 +60,7 @@ const MapVisualization = () => {
 
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, full_name, latitude, longitude, location')
+        .select('id, full_name, latitude, longitude, location, avatar_url')
         .in('id', Array.from(userIds))
         .not('latitude', 'is', null)
         .not('longitude', 'is', null);
@@ -73,21 +73,45 @@ const MapVisualization = () => {
         markers[0].remove();
       }
 
-      // Adicionar marcadores no mapa com estilo personalizado
+      // Adicionar marcadores com foto do perfil
       profiles?.forEach(profile => {
         const el = document.createElement('div');
         el.className = 'family-marker';
-        el.style.width = '32px';
-        el.style.height = '32px';
+        el.style.width = '56px';
+        el.style.height = '56px';
         el.style.borderRadius = '50%';
-        el.style.backgroundColor = 'hsl(var(--primary))';
-        el.style.border = '3px solid hsl(var(--background))';
-        el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+        el.style.border = '3px solid hsl(var(--primary))';
+        el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
         el.style.cursor = 'pointer';
         el.style.transition = 'all 0.3s ease';
+        el.style.overflow = 'hidden';
+        el.style.backgroundColor = 'hsl(var(--background))';
+        
+        // Adicionar imagem de perfil
+        if (profile.avatar_url) {
+          el.style.backgroundImage = `url(${profile.avatar_url})`;
+          el.style.backgroundSize = 'cover';
+          el.style.backgroundPosition = 'center';
+        } else {
+          // Avatar padrão com iniciais
+          el.style.display = 'flex';
+          el.style.alignItems = 'center';
+          el.style.justifyContent = 'center';
+          el.style.backgroundColor = 'hsl(var(--primary))';
+          el.style.color = 'hsl(var(--primary-foreground))';
+          el.style.fontSize = '20px';
+          el.style.fontWeight = 'bold';
+          const initials = profile.full_name
+            .split(' ')
+            .map(n => n[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+          el.textContent = initials;
+        }
         
         el.addEventListener('mouseenter', () => {
-          el.style.transform = 'scale(1.2)';
+          el.style.transform = 'scale(1.15)';
           el.style.zIndex = '1000';
         });
         
@@ -96,8 +120,16 @@ const MapVisualization = () => {
           el.style.zIndex = '1';
         });
 
-        const popup = new mapboxgl.Popup({ offset: 25, className: 'family-popup' }).setHTML(
-          `<div style="padding: 12px; min-width: 180px;">
+        const popup = new mapboxgl.Popup({ 
+          offset: 35, 
+          className: 'family-popup',
+          closeButton: false
+        }).setHTML(
+          `<div style="padding: 16px; min-width: 200px; text-align: center;">
+            ${profile.avatar_url ? 
+              `<img src="${profile.avatar_url}" 
+                    style="width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 12px; display: block; object-fit: cover; border: 2px solid hsl(var(--primary));" />` 
+              : ''}
             <h3 style="margin: 0 0 8px 0; font-weight: bold; font-size: 16px; color: hsl(var(--foreground));">${profile.full_name}</h3>
             <p style="margin: 0; font-size: 13px; color: hsl(var(--muted-foreground));">${profile.location || 'Localização não especificada'}</p>
           </div>`
@@ -109,53 +141,7 @@ const MapVisualization = () => {
           .addTo(map.current!);
       });
 
-      // Desenhar linhas entre conexões
-      const lineFeatures = connections?.map(conn => {
-        const requester = profiles?.find(p => p.id === conn.requester_id);
-        const receiver = profiles?.find(p => p.id === conn.receiver_id);
-        
-        if (requester && receiver) {
-          return {
-            type: 'Feature' as const,
-            geometry: {
-              type: 'LineString' as const,
-              coordinates: [
-                [requester.longitude as number, requester.latitude as number],
-                [receiver.longitude as number, receiver.latitude as number]
-              ]
-            },
-            properties: {}
-          };
-        }
-        return null;
-      }).filter(Boolean);
-
-      if (map.current.getSource('connections')) {
-        (map.current.getSource('connections') as mapboxgl.GeoJSONSource).setData({
-          type: 'FeatureCollection',
-          features: lineFeatures as any[]
-        });
-      } else {
-        map.current.addSource('connections', {
-          type: 'geojson',
-          data: {
-            type: 'FeatureCollection',
-            features: lineFeatures as any[]
-          }
-        });
-
-        map.current.addLayer({
-          id: 'connections-layer',
-          type: 'line',
-          source: 'connections',
-          paint: {
-            'line-color': 'hsl(var(--primary))',
-            'line-width': 3,
-            'line-opacity': 0.5,
-            'line-blur': 1
-          }
-        });
-      }
+      // Removido: linhas de conexão não são mais necessárias
 
       // Ajustar visualização inicial
       if (profiles && profiles.length > 0 && currentZoom === 'world') {
@@ -304,7 +290,7 @@ const MapVisualization = () => {
           <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
           <p>
             Use os botões de zoom para alternar entre visão mundial, continental, país e estado. 
-            As linhas conectam membros da família. Clique nos marcadores para ver detalhes.
+            Clique nas fotos dos membros da família para ver mais detalhes.
           </p>
         </div>
       </div>
