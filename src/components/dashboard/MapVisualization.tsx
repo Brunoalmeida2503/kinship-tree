@@ -67,6 +67,12 @@ const MapVisualization = () => {
 
       if (profilesError) throw profilesError;
 
+      // Verificar se há perfis com localização
+      if (!profiles || profiles.length === 0) {
+        toast.info('Nenhum membro da família com localização cadastrada. Configure latitude e longitude no perfil para aparecer no mapa.');
+        return;
+      }
+
       // Limpar marcadores existentes
       const markers = document.getElementsByClassName('mapboxgl-marker');
       while (markers[0]) {
@@ -154,7 +160,7 @@ const MapVisualization = () => {
 
     } catch (error) {
       console.error('Erro ao carregar conexões:', error);
-      toast.error('Erro ao carregar conexões no mapa');
+      toast.error('Erro ao carregar conexões no mapa. Verifique se há membros com localização cadastrada.');
     }
   };
 
