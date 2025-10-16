@@ -17,6 +17,7 @@ import Profile from "./pages/Profile";
 import Group from "./pages/Group";
 import GroupTimeline from "./pages/GroupTimeline";
 import GroupMemories from "./pages/GroupMemories";
+import Groups from "./pages/Groups";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,9 +53,10 @@ const App = () => (
                           <Route path="/missions" element={<Missions />} />
                           <Route path="/memories" element={<Memories />} />
                           <Route path="/dashboard" element={<Dashboard />} />
-                          <Route path="/group/:groupId" element={<Group />} />
-                          <Route path="/group/:groupId/timeline" element={<GroupTimeline />} />
-                          <Route path="/group/:groupId/memories" element={<GroupMemories />} />
+              <Route path="/groups" element={<Groups />} />
+              <Route path="/group/:groupId" element={<Group />} />
+              <Route path="/group/:groupId/timeline" element={<GroupTimeline />} />
+              <Route path="/group/:groupId/memories" element={<GroupMemories />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>
                       </div>

@@ -1,4 +1,4 @@
-import { Home, User, Target, Images, LogOut, GitBranch } from "lucide-react";
+import { Home, User, Target, Images, LogOut, GitBranch, Users } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 const menuItems = [
   { title: "Timeline", url: "/", icon: Home },
   { title: "Árvore", url: "/tree", icon: GitBranch },
+  { title: "Grupos", url: "/groups", icon: Users },
   { title: "Missões", url: "/missions", icon: Target },
   { title: "Memórias", url: "/memories", icon: Images },
   { title: "Perfil", url: "/profile", icon: User },

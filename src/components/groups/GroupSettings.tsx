@@ -16,6 +16,7 @@ interface Group {
   description: string | null;
   avatar_url: string | null;
   is_private: boolean;
+  allow_member_posts?: boolean;
 }
 
 interface GroupSettingsProps {
@@ -27,6 +28,7 @@ export function GroupSettings({ group, onUpdate }: GroupSettingsProps) {
   const [name, setName] = useState(group.name);
   const [description, setDescription] = useState(group.description || '');
   const [isPrivate, setIsPrivate] = useState(group.is_private);
+  const [allowMemberPosts, setAllowMemberPosts] = useState(group.allow_member_posts ?? true);
   const [avatarUrl, setAvatarUrl] = useState(group.avatar_url);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -74,6 +76,7 @@ export function GroupSettings({ group, onUpdate }: GroupSettingsProps) {
           name: name.trim(),
           description: description.trim() || null,
           is_private: isPrivate,
+          allow_member_posts: allowMemberPosts,
           avatar_url: avatarUrl,
         })
         .eq('id', group.id);
@@ -154,6 +157,22 @@ export function GroupSettings({ group, onUpdate }: GroupSettingsProps) {
             id="private"
             checked={isPrivate}
             onCheckedChange={setIsPrivate}
+          />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label htmlFor="allow_posts">Permitir Postagens de Membros</Label>
+            <p className="text-sm text-muted-foreground">
+              {allowMemberPosts 
+                ? 'Todos os membros podem criar postagens' 
+                : 'Apenas o administrador pode criar postagens'}
+            </p>
+          </div>
+          <Switch
+            id="allow_posts"
+            checked={allowMemberPosts}
+            onCheckedChange={setAllowMemberPosts}
           />
         </div>
 
