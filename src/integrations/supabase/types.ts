@@ -120,7 +120,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "group_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       group_join_requests: {
         Row: {
@@ -147,7 +155,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "group_join_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       group_members: {
         Row: {
@@ -210,7 +226,15 @@ export type Database = {
           media_type?: string
           media_url?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "group_post_media_group_post_id_fkey"
+            columns: ["group_post_id"]
+            isOneToOne: false
+            referencedRelation: "group_posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       group_posts: {
         Row: {
@@ -237,7 +261,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "group_posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       groups: {
         Row: {
@@ -335,7 +367,15 @@ export type Database = {
           media_url?: string
           memory_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "memory_media_memory_id_fkey"
+            columns: ["memory_id"]
+            isOneToOne: false
+            referencedRelation: "memories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mission_actions: {
         Row: {
@@ -471,7 +511,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "post_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       post_groups: {
         Row: {
@@ -534,7 +582,15 @@ export type Database = {
           media_url?: string
           post_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "post_media_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       posts: {
         Row: {
