@@ -12,9 +12,9 @@ All colors MUST be HSL.
     /*background: 21 0% 100%;*/
     --foreground: 142 45% 15%;
 
-    --card: 160 84% 39%;
-    /*--card: 0 0% 100%;*/
-    --card-foreground: 142 45% 15%;
+    --card: 0 0% 100%;
+    /*--card-foreground: 142 45% 15%;*/
+    --card-foreground: 160 84% 39%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 142 45% 15%;
