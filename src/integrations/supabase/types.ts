@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      calendar_shares: {
+        Row: {
+          created_at: string
+          id: string
+          memory_id: string
+          shared_by: string
+          shared_with_group_id: string | null
+          shared_with_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          memory_id: string
+          shared_by: string
+          shared_with_group_id?: string | null
+          shared_with_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          memory_id?: string
+          shared_by?: string
+          shared_with_group_id?: string | null
+          shared_with_user_id?: string | null
+        }
+        Relationships: []
+      }
       connections: {
         Row: {
           ancestor_confirmed_by: string[] | null
@@ -68,6 +95,60 @@ export type Database = {
           },
         ]
       }
+      group_comments: {
+        Row: {
+          content: string
+          created_at: string
+          group_post_id: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          group_post_id: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          group_post_id?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      group_join_requests: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       group_members: {
         Row: {
           group_id: string
@@ -103,6 +184,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      group_post_media: {
+        Row: {
+          created_at: string
+          display_order: number
+          group_post_id: string
+          id: string
+          media_type: string
+          media_url: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          group_post_id: string
+          id?: string
+          media_type: string
+          media_url: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          group_post_id?: string
+          id?: string
+          media_type?: string
+          media_url?: string
+        }
+        Relationships: []
+      }
+      group_posts: {
+        Row: {
+          content: string
+          created_at: string
+          group_id: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          group_id: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       groups: {
         Row: {
@@ -172,6 +307,33 @@ export type Database = {
           title?: string
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      memory_media: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          media_type: string
+          media_url: string
+          memory_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          media_type: string
+          media_url: string
+          memory_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          media_type?: string
+          media_url?: string
+          memory_id?: string
         }
         Relationships: []
       }
@@ -284,6 +446,33 @@ export type Database = {
         }
         Relationships: []
       }
+      post_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       post_groups: {
         Row: {
           created_at: string | null
@@ -319,6 +508,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      post_media: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          media_type: string
+          media_url: string
+          post_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          media_type: string
+          media_url: string
+          post_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          media_type?: string
+          media_url?: string
+          post_id?: string
+        }
+        Relationships: []
       }
       posts: {
         Row: {
