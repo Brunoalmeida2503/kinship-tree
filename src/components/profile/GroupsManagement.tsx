@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Settings, Users, Eye, Check, X, Clock } from 'lucide-react';
+import { Settings, Users, Eye, Check, X, Clock, Calendar, Image } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -241,26 +241,44 @@ export function GroupsManagement() {
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => navigate(`/group/${group.id}`)}
-                        title="Ver grupo"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setSelectedGroup(group);
-                          setSettingsOpen(true);
-                        }}
-                        title="Configurações"
-                      >
-                        <Settings className="h-4 w-4" />
-                      </Button>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => navigate(`/group/${group.id}`)}
+                          title="Ver grupo"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => navigate(`/group/${group.id}/timeline`)}
+                          title="Timeline"
+                        >
+                          <Calendar className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => navigate(`/group/${group.id}/memories`)}
+                          title="Memórias"
+                        >
+                          <Image className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedGroup(group);
+                            setSettingsOpen(true);
+                          }}
+                          title="Configurações"
+                        >
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                      </div>
                       {group.is_private && group.pending_requests! > 0 && (
                         <Button
                           variant="outline"
