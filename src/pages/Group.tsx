@@ -5,13 +5,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { ArrowLeft, Users, Settings, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
-import { GroupFeed } from '@/components/groups/GroupFeed';
 import { GroupMembers } from '@/components/groups/GroupMembers';
 import { GroupSettings } from '@/components/groups/GroupSettings';
-import { GroupMemories } from '@/components/groups/GroupMemories';
 
 interface Group {
   id: string;
@@ -31,6 +29,7 @@ export default function Group() {
   const [isMember, setIsMember] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('members');
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -168,30 +167,55 @@ export default function Group() {
           </div>
         </div>
 
-        <Tabs defaultValue="feed" className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-4">
-            <TabsTrigger value="feed">Feed</TabsTrigger>
-            <TabsTrigger value="memories">Memórias</TabsTrigger>
-            <TabsTrigger value="members">
-              <Users className="h-4 w-4 mr-2" />
-              Membros
-            </TabsTrigger>
-            {isAdmin && (
-              <TabsTrigger value="settings">
-                <Settings className="h-4 w-4 mr-2" />
-                Config
-              </TabsTrigger>
-            )}
-          </TabsList>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+          <Button
+            variant="outline"
+            className="h-24"
+            onClick={() => navigate(`/group/${groupId}/timeline`)}
+          >
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-2xl">📰</span>
+              <span className="font-semibold">Timeline</span>
+            </div>
+          </Button>
 
-          <TabsContent value="feed">
-            <GroupFeed groupId={groupId!} />
-          </TabsContent>
+          <Button
+            variant="outline"
+            className="h-24"
+            onClick={() => navigate(`/group/${groupId}/memories`)}
+          >
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-2xl">📸</span>
+              <span className="font-semibold">Memórias</span>
+            </div>
+          </Button>
 
-          <TabsContent value="memories">
-            <GroupMemories groupId={groupId!} />
-          </TabsContent>
+          <Button
+            variant="outline"
+            className="h-24"
+            onClick={() => setActiveTab('members')}
+          >
+            <div className="flex flex-col items-center gap-2">
+              <Users className="h-8 w-8" />
+              <span className="font-semibold">Membros</span>
+            </div>
+          </Button>
 
+          {isAdmin && (
+            <Button
+              variant="outline"
+              className="h-24"
+              onClick={() => setActiveTab('settings')}
+            >
+              <div className="flex flex-col items-center gap-2">
+                <Settings className="h-8 w-8" />
+                <span className="font-semibold">Configurações</span>
+              </div>
+            </Button>
+          )}
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsContent value="members">
             <GroupMembers groupId={groupId!} isAdmin={isAdmin} />
           </TabsContent>
