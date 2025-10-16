@@ -8,7 +8,7 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 31 41% 55%;
+    --background: 16 185% 129%;
     /*background: 21 0% 100%;*/
     --foreground: 142 45% 15%;
 
