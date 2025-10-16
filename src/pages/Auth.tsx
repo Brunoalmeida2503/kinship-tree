@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
+import logo from '@/assets/logo.png';
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -43,8 +44,10 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background-start to-background-end p-4">
       <Card className="w-full max-w-md border-border-subtle shadow-elegant">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold text-primary">Tree</CardTitle>
+        <CardHeader className="text-center space-y-4">
+          <div className="flex justify-center">
+            <img src={logo} alt="Tree" className="h-16 w-auto" />
+          </div>
           <CardDescription>
             {isLogin ? 'Entre na sua conta' : 'Crie sua conta e comece a construir sua árvore'}
           </CardDescription>
