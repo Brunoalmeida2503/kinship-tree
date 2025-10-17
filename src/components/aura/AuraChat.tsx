@@ -139,8 +139,12 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
               <AvatarFallback>AU</AvatarFallback>
             </Avatar>
             <div>
-              <DialogTitle className="text-xl">AURA</DialogTitle>
-              <p className="text-sm text-muted-foreground">Sua assistente virtual inteligente</p>
+              <DialogTitle className="text-xl flex items-center gap-2">
+                AURA <span className="text-base">💫</span>
+              </DialogTitle>
+              <p className="text-sm text-muted-foreground">
+                {isLoading ? 'Pensando...' : 'Pronta para conversar com você'}
+              </p>
             </div>
           </div>
         </DialogHeader>
@@ -165,7 +169,7 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
               {messages.map((msg) => (
                 <div
                   key={msg.id}
-                  className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                  className={`flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                 >
                   <Avatar className="h-8 w-8 mt-1">
                     {msg.role === 'assistant' ? (
@@ -178,24 +182,26 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
                     )}
                   </Avatar>
                   <div
-                    className={`max-w-[70%] rounded-lg p-3 ${
+                    className={`max-w-[70%] rounded-lg p-3 shadow-sm transition-all hover:shadow-md ${
                       msg.role === 'user'
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted'
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                   </div>
                 </div>
               ))}
               {isLoading && (
-                <div className="flex gap-3">
+                <div className="flex gap-3 animate-in fade-in slide-in-from-left-2 duration-300">
                   <Avatar className="h-8 w-8 mt-1">
                     <AvatarImage src={auraAvatar} alt="AURA" />
                     <AvatarFallback>AU</AvatarFallback>
                   </Avatar>
-                  <div className="bg-muted rounded-lg p-3">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                  <div className="bg-muted rounded-lg p-3 flex items-center gap-1">
+                    <span className="inline-block w-2 h-2 bg-foreground/40 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                    <span className="inline-block w-2 h-2 bg-foreground/40 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                    <span className="inline-block w-2 h-2 bg-foreground/40 rounded-full animate-bounce"></span>
                   </div>
                 </div>
               )}
