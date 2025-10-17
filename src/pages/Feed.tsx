@@ -147,12 +147,12 @@ const Feed = () => {
             created_at,
             user_id,
             group_id,
-            groups (
+            groups!group_posts_group_id_fkey (
               name,
               avatar_url,
               created_by
             ),
-            profiles (
+            profiles!group_posts_user_id_fkey (
               full_name,
               avatar_url
             ),
@@ -165,8 +165,12 @@ const Feed = () => {
           .in("group_id", groupIds)
           .order("created_at", { ascending: false });
 
-        if (groupPostsError) throw groupPostsError;
-        groupPostsData = data || [];
+        if (groupPostsError) {
+          console.error("Error fetching group posts:", groupPostsError);
+          // Continue without group posts instead of failing completely
+        } else {
+          groupPostsData = data || [];
+        }
       }
 
       // Fetch profiles for all posts
