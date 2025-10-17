@@ -34,6 +34,12 @@ interface GroupPost {
   }>;
 }
 
+interface GroupInfo {
+  name: string;
+  avatar_url: string | null;
+  created_by: string;
+}
+
 interface GroupFeedProps {
   groupId: string;
 }
@@ -45,10 +51,27 @@ export function GroupFeed({ groupId }: GroupFeedProps) {
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [groupInfo, setGroupInfo] = useState<GroupInfo | null>(null);
 
   useEffect(() => {
+    fetchGroupInfo();
     fetchPosts();
   }, [groupId]);
+
+  const fetchGroupInfo = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('groups')
+        .select('name, avatar_url, created_by')
+        .eq('id', groupId)
+        .single();
+
+      if (error) throw error;
+      setGroupInfo(data);
+    } catch (error) {
+      console.error('Error fetching group info:', error);
+    }
+  };
 
   const fetchPosts = async () => {
     try {
@@ -175,29 +198,34 @@ export function GroupFeed({ groupId }: GroupFeedProps) {
             </p>
           </Card>
         ) : (
-          posts.map((post) => (
-            <Card key={post.id}>
-              <CardHeader>
-                <div className="flex gap-3">
-                  <Avatar>
-                    <AvatarImage src={post.profiles?.avatar_url || undefined} />
-                    <AvatarFallback>
-                      {post.profiles?.full_name?.charAt(0) || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-semibold text-foreground">
-                      {post.profiles?.full_name || 'Usuário'}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatDistanceToNow(new Date(post.created_at), {
-                        addSuffix: true,
-                        locale: ptBR
-                      })}
-                    </p>
+          posts.map((post) => {
+            const isGroupAdmin = groupInfo && post.user_id === groupInfo.created_by;
+            const displayName = isGroupAdmin ? groupInfo.name : (post.profiles?.full_name || 'Usuário');
+            const displayAvatar = isGroupAdmin ? groupInfo.avatar_url : post.profiles?.avatar_url;
+            
+            return (
+              <Card key={post.id}>
+                <CardHeader>
+                  <div className="flex gap-3">
+                    <Avatar>
+                      <AvatarImage src={displayAvatar || undefined} />
+                      <AvatarFallback>
+                        {displayName.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold text-foreground">
+                        {displayName}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatDistanceToNow(new Date(post.created_at), {
+                          addSuffix: true,
+                          locale: ptBR
+                        })}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
+                </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-foreground whitespace-pre-wrap">{post.content}</p>
                 
@@ -212,7 +240,8 @@ export function GroupFeed({ groupId }: GroupFeedProps) {
                 <GroupPostComments postId={post.id} />
               </CardContent>
             </Card>
-          ))
+            );
+          })
         )}
       </div>
     </div>
