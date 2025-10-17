@@ -27,6 +27,8 @@ interface Post {
   share_with_tree: boolean;
   author_name?: string;
   author_avatar?: string | null;
+  is_group_post?: boolean;
+  group_id?: string;
 }
 
 interface Group {
@@ -125,6 +127,48 @@ const Feed = () => {
 
       if (postsError) throw postsError;
 
+      // Fetch group posts from groups where user is a member
+      const { data: groupMemberships, error: groupMembersError } = await supabase
+        .from("group_members")
+        .select("group_id")
+        .eq("user_id", user.id);
+
+      if (groupMembersError) throw groupMembersError;
+
+      const groupIds = groupMemberships?.map(gm => gm.group_id) || [];
+      
+      let groupPostsData: any[] = [];
+      if (groupIds.length > 0) {
+        const { data, error: groupPostsError } = await supabase
+          .from("group_posts")
+          .select(`
+            id,
+            content,
+            created_at,
+            user_id,
+            group_id,
+            groups (
+              name,
+              avatar_url,
+              created_by
+            ),
+            profiles (
+              full_name,
+              avatar_url
+            ),
+            group_post_media (
+              media_url,
+              media_type,
+              display_order
+            )
+          `)
+          .in("group_id", groupIds)
+          .order("created_at", { ascending: false });
+
+        if (groupPostsError) throw groupPostsError;
+        groupPostsData = data || [];
+      }
+
       // Fetch profiles for all posts
       const userIds = [...new Set(postsData?.map(p => p.user_id) || [])];
       const { data: profilesData, error: profilesError } = await supabase
@@ -134,17 +178,47 @@ const Feed = () => {
 
       if (profilesError) throw profilesError;
 
-      // Combine posts with profile data
-      const postsWithProfiles = postsData?.map(post => {
+      // Combine regular posts with profile data
+      const regularPosts = postsData?.map(post => {
         const profile = profilesData?.find(p => p.id === post.user_id);
         return {
           ...post,
           author_name: profile?.full_name || "Usuário",
-          author_avatar: profile?.avatar_url
+          author_avatar: profile?.avatar_url,
+          is_group_post: false
         };
       }) || [];
 
-      setPosts(postsWithProfiles);
+      // Transform group posts
+      const transformedGroupPosts = groupPostsData.map(post => {
+        const isAdmin = post.user_id === post.groups?.created_by;
+        const displayName = isAdmin ? post.groups?.name : post.profiles?.full_name;
+        const displayAvatar = isAdmin ? post.groups?.avatar_url : post.profiles?.avatar_url;
+        
+        // Get first media if exists
+        const firstMedia = post.group_post_media?.[0];
+        
+        return {
+          id: `group-${post.id}`,
+          content: post.content,
+          image_url: firstMedia?.media_type === 'image' ? firstMedia.media_url : null,
+          video_url: firstMedia?.media_type === 'video' ? firstMedia.media_url : null,
+          created_at: post.created_at,
+          user_id: post.user_id,
+          share_with_tree: false,
+          author_name: displayName || "Usuário",
+          author_avatar: displayAvatar,
+          is_group_post: true,
+          group_id: post.group_id
+        };
+      });
+
+      // Combine all posts and sort by date
+      const allPosts = [...regularPosts, ...transformedGroupPosts].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      setPosts(allPosts);
     } catch (error) {
       console.error("Error fetching posts:", error);
       toast({
