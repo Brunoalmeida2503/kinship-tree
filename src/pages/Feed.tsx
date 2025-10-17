@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Image, Video, X, Users, UserPlus } from "lucide-react";
+import { Loader2, Send, Image, Video, X, Users, UserPlus, Trash2, Pencil, MoreVertical } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,29 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Post {
   id: string;
@@ -51,6 +74,11 @@ const Feed = () => {
   const [shareWithTree, setShareWithTree] = useState(false);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [userGroups, setUserGroups] = useState<Group[]>([]);
+  const [postToDelete, setPostToDelete] = useState<string | null>(null);
+  const [postToEdit, setPostToEdit] = useState<Post | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [editing, setEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
@@ -356,6 +384,71 @@ const Feed = () => {
     }
   };
 
+  const handleDeletePost = async () => {
+    if (!postToDelete) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .delete()
+        .eq("id", postToDelete);
+
+      if (error) throw error;
+
+      toast({
+        title: "Post excluído",
+        description: "O post foi removido com sucesso",
+      });
+      
+      setPosts(posts.filter(p => p.id !== postToDelete));
+      setPostToDelete(null);
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      toast({
+        title: "Erro ao excluir post",
+        description: "Não foi possível remover o post",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleEditPost = async () => {
+    if (!postToEdit || !editContent.trim()) return;
+
+    setEditing(true);
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .update({ content: editContent })
+        .eq("id", postToEdit.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Post atualizado",
+        description: "O post foi editado com sucesso",
+      });
+      
+      setPosts(posts.map(p => 
+        p.id === postToEdit.id ? { ...p, content: editContent } : p
+      ));
+      setPostToEdit(null);
+      setEditContent("");
+    } catch (error) {
+      console.error("Error editing post:", error);
+      toast({
+        title: "Erro ao editar post",
+        description: "Não foi possível atualizar o post",
+        variant: "destructive",
+      });
+    } finally {
+      setEditing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -522,25 +615,55 @@ const Feed = () => {
             posts.map((post) => (
               <Card key={post.id}>
                 <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarImage src={post.author_avatar || ""} />
-                      <AvatarFallback>
-                        {post.author_name?.charAt(0) || "U"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold">{post.author_name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(post.created_at).toLocaleDateString("pt-BR", {
-                          day: "2-digit",
-                          month: "long",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Avatar>
+                        <AvatarImage src={post.author_avatar || ""} />
+                        <AvatarFallback>
+                          {post.author_name?.charAt(0) || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-semibold">{post.author_name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(post.created_at).toLocaleDateString("pt-BR", {
+                            day: "2-digit",
+                            month: "long",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
                     </div>
+                    
+                    {!post.is_group_post && post.user_id === user?.id && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setPostToEdit(post);
+                              setEditContent(post.content);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => setPostToDelete(post.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -567,6 +690,72 @@ const Feed = () => {
           )}
         </div>
       </main>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!postToDelete} onOpenChange={() => setPostToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir post</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este post? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePost}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Excluindo...
+                </>
+              ) : (
+                "Excluir"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit Post Dialog */}
+      <Dialog open={!!postToEdit} onOpenChange={() => setPostToEdit(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar post</DialogTitle>
+          </DialogHeader>
+          <Textarea
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            className="min-h-[150px]"
+            placeholder="Edite seu post..."
+          />
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setPostToEdit(null)}
+              disabled={editing}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleEditPost}
+              disabled={editing || !editContent.trim()}
+            >
+              {editing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Salvando...
+                </>
+              ) : (
+                "Salvar"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
