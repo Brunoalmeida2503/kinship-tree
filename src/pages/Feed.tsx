@@ -138,6 +138,7 @@ const Feed = () => {
       const groupIds = groupMemberships?.map(gm => gm.group_id) || [];
       
       let groupPostsData: any[] = [];
+      let groupsMap: Record<string, { id: string; name: string; avatar_url: string | null; created_by: string }> = {};
       if (groupIds.length > 0) {
         const { data, error: groupPostsError } = await supabase
           .from("group_posts")
@@ -147,12 +148,7 @@ const Feed = () => {
             created_at,
             user_id,
             group_id,
-            groups!group_posts_group_id_fkey (
-              name,
-              avatar_url,
-              created_by
-            ),
-            profiles!group_posts_user_id_fkey (
+            profiles (
               full_name,
               avatar_url
             ),
@@ -167,9 +163,22 @@ const Feed = () => {
 
         if (groupPostsError) {
           console.error("Error fetching group posts:", groupPostsError);
-          // Continue without group posts instead of failing completely
         } else {
           groupPostsData = data || [];
+        }
+
+        // Fetch group details to identify admin posts
+        const { data: groupsDetails, error: groupsDetailsError } = await supabase
+          .from("groups")
+          .select("id, name, avatar_url, created_by")
+          .in("id", groupIds);
+
+        if (groupsDetailsError) {
+          console.error("Error fetching group details:", groupsDetailsError);
+        } else {
+          groupsDetails?.forEach((g) => {
+            groupsMap[g.id] = g;
+          });
         }
       }
 
@@ -193,29 +202,31 @@ const Feed = () => {
         };
       }) || [];
 
-      // Transform group posts
-      const transformedGroupPosts = groupPostsData.map(post => {
-        const isAdmin = post.user_id === post.groups?.created_by;
-        const displayName = isAdmin ? post.groups?.name : post.profiles?.full_name;
-        const displayAvatar = isAdmin ? post.groups?.avatar_url : post.profiles?.avatar_url;
-        
-        // Get first media if exists
-        const firstMedia = post.group_post_media?.[0];
-        
-        return {
-          id: `group-${post.id}`,
-          content: post.content,
-          image_url: firstMedia?.media_type === 'image' ? firstMedia.media_url : null,
-          video_url: firstMedia?.media_type === 'video' ? firstMedia.media_url : null,
-          created_at: post.created_at,
-          user_id: post.user_id,
-          share_with_tree: false,
-          author_name: displayName || "Usuário",
-          author_avatar: displayAvatar,
-          is_group_post: true,
-          group_id: post.group_id
-        };
-      });
+      // Transform group posts: only include admin-authored posts for member replication
+      const transformedGroupPosts = groupPostsData
+        .map((post) => {
+          const groupInfo = groupsMap[post.group_id];
+          const isAdmin = groupInfo && post.user_id === groupInfo.created_by;
+          if (!isAdmin) return null;
+
+          // Get first media if exists
+          const firstMedia = post.group_post_media?.[0];
+
+          return {
+            id: `group-${post.id}`,
+            content: post.content,
+            image_url: firstMedia?.media_type === "image" ? firstMedia.media_url : null,
+            video_url: firstMedia?.media_type === "video" ? firstMedia.media_url : null,
+            created_at: post.created_at,
+            user_id: post.user_id,
+            share_with_tree: false,
+            author_name: groupInfo?.name || "Grupo",
+            author_avatar: groupInfo?.avatar_url,
+            is_group_post: true,
+            group_id: post.group_id,
+          } as Post;
+        })
+        .filter(Boolean) as Post[];
 
       // Combine all posts and sort by date
       const allPosts = [...regularPosts, ...transformedGroupPosts].sort(
