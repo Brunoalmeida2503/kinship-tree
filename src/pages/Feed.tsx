@@ -7,8 +7,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Image, Video, X, Users, UserPlus, Trash2, Pencil, MoreVertical } from "lucide-react";
+import { Loader2, Send, Users, UserPlus, Trash2, Pencil, MoreVertical } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { MediaUploader, uploadMediaFiles } from "@/components/feed/MediaUploader";
+import { MediaGallery } from "@/components/feed/MediaGallery";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
@@ -52,6 +54,7 @@ interface Post {
   author_avatar?: string | null;
   is_group_post?: boolean;
   group_id?: string;
+  media?: Array<{ url: string; type: 'image' | 'video' }>;
 }
 
 interface Group {
@@ -68,9 +71,7 @@ const Feed = () => {
   const [loading, setLoading] = useState(true);
   const [newPost, setNewPost] = useState("");
   const [posting, setPosting] = useState(false);
-  const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
-  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [mediaFiles, setMediaFiles] = useState<Array<{ file: File; preview: string; type: 'image' | 'video' }>>([]);
   const [shareWithTree, setShareWithTree] = useState(false);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [userGroups, setUserGroups] = useState<Group[]>([]);
@@ -79,8 +80,6 @@ const Feed = () => {
   const [editContent, setEditContent] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [editing, setEditing] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user) {
@@ -155,6 +154,23 @@ const Feed = () => {
 
       if (postsError) throw postsError;
 
+      // Fetch media for all posts
+      const postIds = postsData?.map(p => p.id) || [];
+      let postMediaData: any[] = [];
+      if (postIds.length > 0) {
+        const { data: mediaData, error: mediaError } = await supabase
+          .from("post_media")
+          .select("*")
+          .in("post_id", postIds)
+          .order("display_order", { ascending: true });
+
+        if (mediaError) {
+          console.error("Error fetching post media:", mediaError);
+        } else {
+          postMediaData = mediaData || [];
+        }
+      }
+
       // Fetch group posts from groups where user is a member
       const { data: groupMemberships, error: groupMembersError } = await supabase
         .from("group_members")
@@ -222,11 +238,16 @@ const Feed = () => {
       // Combine regular posts with profile data
       const regularPosts = postsData?.map(post => {
         const profile = profilesData?.find(p => p.id === post.user_id);
+        const media = postMediaData.filter(m => m.post_id === post.id).map(m => ({
+          url: m.media_url,
+          type: m.media_type as 'image' | 'video'
+        }));
         return {
           ...post,
           author_name: profile?.full_name || "Usuário",
           author_avatar: profile?.avatar_url,
-          is_group_post: false
+          is_group_post: false,
+          media
         };
       }) || [];
 
@@ -274,79 +295,82 @@ const Feed = () => {
     }
   };
 
-  const handleMediaSelect = (file: File, type: 'image' | 'video') => {
-    setMediaFile(file);
-    const preview = URL.createObjectURL(file);
-    setMediaPreview(preview);
+  const extractYouTubeId = (url: string): string | null => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
   };
 
-  const handleRemoveMedia = () => {
-    if (mediaPreview) {
-      URL.revokeObjectURL(mediaPreview);
+  const renderYouTubeEmbeds = (content: string) => {
+    const urlRegex = /(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
+    const youtubeUrls: string[] = [];
+    let match;
+
+    while ((match = urlRegex.exec(content)) !== null) {
+      youtubeUrls.push(match[0]);
     }
-    setMediaFile(null);
-    setMediaPreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    if (videoInputRef.current) videoInputRef.current.value = "";
-  };
 
-  const uploadMedia = async (file: File): Promise<string | null> => {
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user!.id}/${Date.now()}.${fileExt}`;
+    if (youtubeUrls.length === 0) return null;
 
-      const { error: uploadError } = await supabase.storage
-        .from('posts')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from('posts')
-        .getPublicUrl(fileName);
-
-      return data.publicUrl;
-    } catch (error) {
-      console.error("Error uploading media:", error);
-      return null;
-    }
+    return (
+      <div className="space-y-2 mt-3">
+        {youtubeUrls.map((url, index) => {
+          const videoId = extractYouTubeId(url);
+          if (!videoId) return null;
+          
+          return (
+            <div key={index} className="aspect-video rounded-lg overflow-hidden">
+              <iframe
+                width="100%"
+                height="100%"
+                src={`https://www.youtube.com/embed/${videoId}`}
+                title={`YouTube video ${index + 1}`}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   const handleCreatePost = async () => {
-    if ((!newPost.trim() && !mediaFile) || !user) return;
+    if ((!newPost.trim() && mediaFiles.length === 0) || !user) return;
 
     setPosting(true);
-    setUploadingMedia(true);
 
     try {
-      let imageUrl = null;
-      let videoUrl = null;
-
-      // Upload media if present
-      if (mediaFile) {
-        const uploadedUrl = await uploadMedia(mediaFile);
-        if (uploadedUrl) {
-          if (mediaFile.type.startsWith('image/')) {
-            imageUrl = uploadedUrl;
-          } else if (mediaFile.type.startsWith('video/')) {
-            videoUrl = uploadedUrl;
-          }
-        }
-      }
-
       const { data: postData, error } = await supabase
         .from("posts")
         .insert({
           content: newPost,
           user_id: user.id,
-          image_url: imageUrl,
-          video_url: videoUrl,
           share_with_tree: shareWithTree,
         })
         .select()
         .single();
 
       if (error) throw error;
+
+      // Upload media if present
+      if (mediaFiles.length > 0) {
+        const uploadedMedia = await uploadMediaFiles(mediaFiles, user.id, 'posts');
+        
+        const mediaData = uploadedMedia.map((media, index) => ({
+          post_id: postData.id,
+          media_url: media.url,
+          media_type: media.type,
+          display_order: index
+        }));
+
+        const { error: mediaError } = await supabase
+          .from('post_media')
+          .insert(mediaData);
+
+        if (mediaError) throw mediaError;
+      }
 
       // Insert post_groups relationships
       if (selectedGroups.length > 0 && postData) {
@@ -363,7 +387,7 @@ const Feed = () => {
       }
 
       setNewPost("");
-      handleRemoveMedia();
+      setMediaFiles([]);
       setShareWithTree(false);
       setSelectedGroups([]);
       toast({
@@ -380,7 +404,6 @@ const Feed = () => {
       });
     } finally {
       setPosting(false);
-      setUploadingMedia(false);
     }
   };
 
@@ -469,30 +492,17 @@ const Feed = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <Textarea
-              placeholder="No que você está pensando?"
+              placeholder="No que você está pensando? Cole links do YouTube para incorporá-los!"
               value={newPost}
               onChange={(e) => setNewPost(e.target.value)}
               className="min-h-[100px]"
             />
             
-            {/* Media Preview */}
-            {mediaPreview && (
-              <div className="relative rounded-lg overflow-hidden border">
-                {mediaFile?.type.startsWith('image/') ? (
-                  <img src={mediaPreview} alt="Preview" className="w-full max-h-96 object-cover" />
-                ) : (
-                  <video src={mediaPreview} controls className="w-full max-h-96" />
-                )}
-                <Button
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-2 right-2"
-                  onClick={handleRemoveMedia}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
+            <MediaUploader 
+              onMediaChange={setMediaFiles}
+              maxFiles={6}
+              existingMedia={mediaFiles}
+            />
 
             {/* Sharing Options */}
             <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
@@ -552,52 +562,16 @@ const Feed = () => {
             </div>
 
             <div className="flex items-center justify-between">
-              <div className="flex gap-2">
-                <Input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => e.target.files?.[0] && handleMediaSelect(e.target.files[0], 'image')}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={!!mediaFile}
-                >
-                  <Image className="h-4 w-4" />
-                </Button>
-
-                <Input
-                  ref={videoInputRef}
-                  type="file"
-                  accept="video/*"
-                  className="hidden"
-                  onChange={(e) => e.target.files?.[0] && handleMediaSelect(e.target.files[0], 'video')}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => videoInputRef.current?.click()}
-                  disabled={!!mediaFile}
-                >
-                  <Video className="h-4 w-4" />
-                </Button>
-              </div>
-
               <Button
                 onClick={handleCreatePost}
-                disabled={(!newPost.trim() && !mediaFile) || posting}
+                disabled={(!newPost.trim() && mediaFiles.length === 0) || posting}
               >
                 {posting ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 ) : (
                   <Send className="h-4 w-4 mr-2" />
                 )}
-                {uploadingMedia ? "Enviando..." : "Publicar"}
+                Publicar
               </Button>
             </div>
           </CardContent>
@@ -670,20 +644,29 @@ const Feed = () => {
                   {post.content && (
                     <p className="whitespace-pre-wrap mb-4">{post.content}</p>
                   )}
-                  {post.image_url && (
+                  
+                  {post.media && post.media.length > 0 && (
+                    <div className="mb-4">
+                      <MediaGallery media={post.media} />
+                    </div>
+                  )}
+
+                  {post.image_url && !post.media?.length && (
                     <img
                       src={post.image_url}
                       alt="Post"
-                      className="rounded-lg w-full object-cover max-h-96"
+                      className="rounded-lg w-full object-cover max-h-96 mb-4"
                     />
                   )}
-                  {post.video_url && (
+                  {post.video_url && !post.media?.length && (
                     <video
                       src={post.video_url}
                       controls
-                      className="rounded-lg w-full max-h-96"
+                      className="rounded-lg w-full max-h-96 mb-4"
                     />
                   )}
+
+                  {renderYouTubeEmbeds(post.content)}
                 </CardContent>
               </Card>
             ))
