@@ -3,10 +3,12 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Globe, Map, MapPin } from 'lucide-react';
+import { Globe, Map, MapPin, User, X } from 'lucide-react';
 
 type ZoomLevel = 'world' | 'continent' | 'country' | 'state';
 
@@ -16,12 +18,22 @@ interface ZoomConfig {
   icon: React.ReactNode;
 }
 
+interface UserLocation {
+  id: string;
+  full_name: string;
+  avatar_url: string | null;
+  latitude: number;
+  longitude: number;
+  location: string | null;
+}
+
 const MAPBOX_TOKEN = 'pk.eyJ1IjoidHJlZS1zb2NpYWwiLCJhIjoiY21nbTlid2J6MWU4NzJrcHFxbDc0NDhpZyJ9.BTX2-dUn_I-MyG-NBnL1Ew';
 
 const MapVisualization = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [currentZoom, setCurrentZoom] = useState<ZoomLevel>('world');
+  const [selectedLocation, setSelectedLocation] = useState<{ users: UserLocation[], location: string } | null>(null);
   const { user } = useAuth();
 
   const zoomLevels: Record<ZoomLevel, ZoomConfig> = {
@@ -66,11 +78,21 @@ const MapVisualization = () => {
 
       if (profilesError) throw profilesError;
 
-      // Verificar se há perfis com localização
       if (!profiles || profiles.length === 0) {
         toast.info('Nenhum membro da família com localização cadastrada. Configure latitude e longitude no perfil para aparecer no mapa.');
         return;
       }
+
+      // Agrupar usuários por localização
+      const locationGroups = new globalThis.Map<string, UserLocation[]>();
+      
+      profiles?.forEach(profile => {
+        const key = `${profile.latitude},${profile.longitude}`;
+        if (!locationGroups.has(key)) {
+          locationGroups.set(key, []);
+        }
+        locationGroups.get(key)!.push(profile as UserLocation);
+      });
 
       // Limpar marcadores existentes
       const markers = document.getElementsByClassName('mapboxgl-marker');
@@ -78,27 +100,53 @@ const MapVisualization = () => {
         markers[0].remove();
       }
 
-      // Adicionar marcadores com foto do perfil
-      profiles?.forEach(profile => {
+      // Adicionar marcadores para cada localização
+      locationGroups.forEach((usersAtLocation, locationKey) => {
+        const [lat, lng] = locationKey.split(',').map(Number);
+        const firstUser = usersAtLocation[0];
+        
         const el = document.createElement('div');
         el.className = 'family-marker';
-        el.style.width = '56px';
-        el.style.height = '56px';
+        el.style.position = 'relative';
+        el.style.width = '60px';
+        el.style.height = '60px';
         el.style.borderRadius = '50%';
-        el.style.border = '3px solid hsl(var(--primary))';
-        el.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
+        el.style.border = '4px solid hsl(var(--primary))';
+        el.style.boxShadow = '0 6px 20px rgba(0,0,0,0.5)';
         el.style.cursor = 'pointer';
         el.style.transition = 'all 0.3s ease';
         el.style.overflow = 'hidden';
         el.style.backgroundColor = 'hsl(var(--background))';
         
-        // Adicionar imagem de perfil
-        if (profile.avatar_url) {
-          el.style.backgroundImage = `url(${profile.avatar_url})`;
+        // Se houver múltiplos usuários, criar um indicador
+        if (usersAtLocation.length > 1) {
+          // Badge com contador
+          const badge = document.createElement('div');
+          badge.style.position = 'absolute';
+          badge.style.top = '-6px';
+          badge.style.right = '-6px';
+          badge.style.width = '24px';
+          badge.style.height = '24px';
+          badge.style.borderRadius = '50%';
+          badge.style.backgroundColor = 'hsl(var(--destructive))';
+          badge.style.color = 'white';
+          badge.style.display = 'flex';
+          badge.style.alignItems = 'center';
+          badge.style.justifyContent = 'center';
+          badge.style.fontSize = '12px';
+          badge.style.fontWeight = 'bold';
+          badge.style.border = '2px solid white';
+          badge.style.zIndex = '10';
+          badge.textContent = usersAtLocation.length.toString();
+          el.appendChild(badge);
+        }
+        
+        // Imagem de perfil do primeiro usuário
+        if (firstUser.avatar_url) {
+          el.style.backgroundImage = `url(${firstUser.avatar_url})`;
           el.style.backgroundSize = 'cover';
           el.style.backgroundPosition = 'center';
         } else {
-          // Avatar padrão com iniciais
           el.style.display = 'flex';
           el.style.alignItems = 'center';
           el.style.justifyContent = 'center';
@@ -106,7 +154,7 @@ const MapVisualization = () => {
           el.style.color = 'hsl(var(--primary-foreground))';
           el.style.fontSize = '20px';
           el.style.fontWeight = 'bold';
-          const initials = profile.full_name
+          const initials = firstUser.full_name
             .split(' ')
             .map(n => n[0])
             .join('')
@@ -116,7 +164,7 @@ const MapVisualization = () => {
         }
         
         el.addEventListener('mouseenter', () => {
-          el.style.transform = 'scale(1.15)';
+          el.style.transform = 'scale(1.2)';
           el.style.zIndex = '1000';
         });
         
@@ -125,24 +173,16 @@ const MapVisualization = () => {
           el.style.zIndex = '1';
         });
 
-        const popup = new mapboxgl.Popup({ 
-          offset: 35, 
-          className: 'family-popup',
-          closeButton: false
-        }).setHTML(
-          `<div style="padding: 16px; min-width: 200px; text-align: center;">
-            ${profile.avatar_url ? 
-              `<img src="${profile.avatar_url}" 
-                    style="width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 12px; display: block; object-fit: cover; border: 2px solid hsl(var(--primary));" />` 
-              : ''}
-            <h3 style="margin: 0 0 8px 0; font-weight: bold; font-size: 16px; color: hsl(var(--foreground));">${profile.full_name}</h3>
-            <p style="margin: 0; font-size: 13px; color: hsl(var(--muted-foreground));">${profile.location || 'Localização não especificada'}</p>
-          </div>`
-        );
+        // Ao clicar, abrir diálogo com todos os usuários
+        el.addEventListener('click', () => {
+          setSelectedLocation({
+            users: usersAtLocation,
+            location: firstUser.location || 'Localização'
+          });
+        });
 
         new mapboxgl.Marker(el)
-          .setLngLat([profile.longitude as number, profile.latitude as number])
-          .setPopup(popup)
+          .setLngLat([lng, lat])
           .addTo(map.current!);
       });
 
@@ -218,47 +258,90 @@ const MapVisualization = () => {
   }, []);
 
   return (
-    <Card className="p-6">
-      <div className="space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <h3 className="text-lg font-semibold">Mapa de Conexões da Família</h3>
-          <div className="flex items-center gap-2">
-            <Button onClick={loadConnections} variant="outline" size="sm">
-              Atualizar
-            </Button>
+    <>
+      <Card className="p-6">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <h3 className="text-lg font-semibold">Mapa de Conexões da Família</h3>
+            <div className="flex items-center gap-2">
+              <Button onClick={loadConnections} variant="outline" size="sm">
+                Atualizar
+              </Button>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-muted-foreground">Nível de Zoom:</span>
+            {(Object.keys(zoomLevels) as ZoomLevel[]).map((level) => (
+              <Button
+                key={level}
+                onClick={() => handleZoomLevel(level)}
+                variant={currentZoom === level ? "default" : "outline"}
+                size="sm"
+                className="gap-2"
+              >
+                {zoomLevels[level].icon}
+                {zoomLevels[level].label}
+              </Button>
+            ))}
+          </div>
+          
+          <div 
+            ref={mapContainer} 
+            className="w-full h-[600px] rounded-lg shadow-lg overflow-hidden border border-border"
+          />
+          
+          <div className="flex items-start gap-2 text-sm text-muted-foreground">
+            <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <p>
+              Clique nos marcadores para ver as fotos dos membros da família naquela localização.
+              Use os botões de zoom para alternar entre visão mundial, continental, país e estado.
+            </p>
           </div>
         </div>
-        
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm text-muted-foreground">Nível de Zoom:</span>
-          {(Object.keys(zoomLevels) as ZoomLevel[]).map((level) => (
-            <Button
-              key={level}
-              onClick={() => handleZoomLevel(level)}
-              variant={currentZoom === level ? "default" : "outline"}
-              size="sm"
-              className="gap-2"
-            >
-              {zoomLevels[level].icon}
-              {zoomLevels[level].label}
-            </Button>
-          ))}
-        </div>
-        
-        <div 
-          ref={mapContainer} 
-          className="w-full h-[600px] rounded-lg shadow-lg overflow-hidden border border-border"
-        />
-        
-        <div className="flex items-start gap-2 text-sm text-muted-foreground">
-          <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-          <p>
-            Use os botões de zoom para alternar entre visão mundial, continental, país e estado. 
-            Clique nas fotos dos membros da família para ver mais detalhes.
-          </p>
-        </div>
-      </div>
-    </Card>
+      </Card>
+
+      {/* Dialog de fotos dos usuários */}
+      <Dialog open={!!selectedLocation} onOpenChange={() => setSelectedLocation(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <MapPin className="w-5 h-5" />
+                {selectedLocation?.location}
+              </DialogTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSelectedLocation(null)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4">
+            {selectedLocation?.users.map((user) => (
+              <div
+                key={user.id}
+                className="flex flex-col items-center gap-3 p-4 rounded-lg border border-border hover:border-primary transition-colors bg-card"
+              >
+                <Avatar className="w-24 h-24 border-4 border-primary">
+                  <AvatarImage src={user.avatar_url || undefined} alt={user.full_name} />
+                  <AvatarFallback className="bg-primary/20 text-lg">
+                    <User className="w-10 h-10 text-primary" />
+                  </AvatarFallback>
+                </Avatar>
+                <div className="text-center">
+                  <p className="font-semibold text-sm">{user.full_name}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{user.location || 'Localização'}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
