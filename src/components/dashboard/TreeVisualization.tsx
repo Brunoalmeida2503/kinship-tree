@@ -215,25 +215,37 @@ export function TreeVisualization() {
     });
 
     // Atribuir cônjuges
+    // Atribuir cônjuges (bidirecional)
     spouseMap.forEach((partnerId, spouseId) => {
       const spouse = nodesMap.get(spouseId);
       const partner = nodesMap.get(partnerId);
-      
       if (spouse && partner) {
-        // Se o parceiro é o root, atribuir cônjuge ao root
         if (partnerId === user.id) {
           root.spouse = spouse;
+          spouse.spouse = root;
           spouse.generation = 0;
         } else if (spouseId === user.id) {
           root.spouse = partner;
+          partner.spouse = root;
           partner.generation = 0;
         } else {
-          // Atribuir cônjuge ao parceiro
           partner.spouse = spouse;
+          spouse.spouse = partner;
           spouse.generation = partner.generation;
         }
       }
     });
+
+    // Parear automaticamente pai e mãe como cônjuges se ambos existirem
+    const parentCandidates = (generations.get(-1) || []).filter(
+      (n) => n.relationship === 'pai' || n.relationship === 'mae'
+    );
+    const father = parentCandidates.find((n) => n.relationship === 'pai');
+    const mother = parentCandidates.find((n) => n.relationship === 'mae');
+    if (father && mother && !father.spouse && !mother.spouse) {
+      father.spouse = mother;
+      mother.spouse = father;
+    }
 
     // Calcular posições
     calculateNodePositions(generations, root);
@@ -303,22 +315,25 @@ export function TreeVisualization() {
 
     const { generations, root } = treeData;
     const allNodes: TreeNode[] = [];
-    const processedSpouses = new Set<string>();
+    const seen = new Set<string>();
     
-    // Coletar todos os nós
+    // Coletar todos os nós (sem duplicar pares)
     generations.forEach(nodes => {
       nodes.forEach(node => {
+        if (seen.has(node.id)) return;
         allNodes.push(node);
-        if (node.spouse && !processedSpouses.has(node.spouse.id)) {
+        seen.add(node.id);
+        if (node.spouse && !seen.has(node.spouse.id)) {
           allNodes.push(node.spouse);
-          processedSpouses.add(node.spouse.id);
+          seen.add(node.spouse.id);
         }
       });
     });
     
-    // Adicionar cônjuge do root se existir
-    if (root.spouse && !processedSpouses.has(root.spouse.id)) {
+    // Garantir cônjuge do root
+    if (root.spouse && !seen.has(root.spouse.id)) {
       allNodes.push(root.spouse);
+      seen.add(root.spouse.id);
     }
 
     const svgWidth = 1800;
@@ -368,10 +383,10 @@ export function TreeVisualization() {
                 />
                 {/* Linha vertical central dos pais para geração 0 */}
                 <line
-                  x1={root.x}
+                  x1={(Math.min(...parentNodes.map(n => n.x!)) + Math.max(...parentNodes.map(n => n.x!))) / 2}
                   y1={parentNodes[0].y! + 30}
-                  x2={root.x}
-                  y2={root.y! - 30}
+                  x2={(Math.min(...parentNodes.map(n => n.x!)) + Math.max(...parentNodes.map(n => n.x!))) / 2}
+                  y2={(root.spouse ? Math.min(root.y!, root.spouse.y!) : root.y!) - 30}
                   stroke="hsl(var(--primary))"
                   strokeWidth="2"
                   opacity="0.3"
@@ -444,7 +459,7 @@ export function TreeVisualization() {
             )}
 
             {/* Conexões de cônjuges */}
-            {allNodes.filter(n => n.spouse && n.x && n.spouse.x).map(node => (
+            {allNodes.filter(n => n.spouse && n.x && n.spouse.x && n.id < n.spouse!.id).map(node => (
               <line
                 key={`spouse-${node.id}`}
                 x1={node.x}
