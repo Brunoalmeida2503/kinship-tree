@@ -208,9 +208,9 @@ export function TreeVisualization() {
         node.generation = 2;
         generations.get(2)!.push(node);
       } else if (rel === 'conjuge') {
-        // Mapear cônjuge
-        const partnerId = conn.requester_id === user.id ? conn.receiver_id : conn.requester_id;
-        spouseMap.set(otherPerson.id, partnerId);
+        // Mapear cônjuges em ambos os sentidos
+        spouseMap.set(conn.requester_id, conn.receiver_id);
+        spouseMap.set(conn.receiver_id, conn.requester_id);
       }
     });
 
