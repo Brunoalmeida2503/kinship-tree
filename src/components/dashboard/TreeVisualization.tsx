@@ -16,7 +16,7 @@ interface TreeNode {
   spouse?: TreeNode;
   x?: number;
   y?: number;
-  generation?: number; // -2=avós, -1.5=tios, -1=pais, -0.5=usuário, 0=irmãos, 1=filhos, 2=netos
+  generation?: number; // -2=avós, -1=pais/mesma geração, 0=usuário/irmãos, 1=filhos, 2=netos
   isRoot?: boolean;
 }
 
@@ -137,10 +137,8 @@ export function TreeVisualization() {
     // Organizar por gerações
     const generations = new Map<number, TreeNode[]>();
     generations.set(-2, []); // Avós
-    generations.set(-1.5, []); // Tios
-    generations.set(-1, []); // Pais
-    generations.set(-0.5, [root]); // Usuário
-    generations.set(0, []); // Irmãos
+    generations.set(-1, []); // Pais / Tios
+    generations.set(0, [root]); // Usuário e irmãos
     generations.set(1, []); // Filhos
     generations.set(2, []); // Netos
 
@@ -160,8 +158,8 @@ export function TreeVisualization() {
         node.generation = -2;
         generations.get(-2)!.push(node);
       } else if (relationship === 'tio' || relationship === 'tia') {
-        node.generation = -1.5;
-        generations.get(-1.5)!.push(node);
+        node.generation = -1;
+        generations.get(-1)!.push(node);
       } else if (relationship === 'pai' || relationship === 'mãe' || relationship === 'mae') {
         node.generation = -1;
         generations.get(-1)!.push(node);
@@ -433,57 +431,130 @@ export function TreeVisualization() {
 
     const { generations, root } = treeData;
 
+    const siblings = (generations.get(0) || []).filter((n) => !n.isRoot);
+    const parents = (generations.get(-1) || []).filter(
+      (n) => n.relationship === 'pai' || n.relationship === 'mãe' || n.relationship === 'mae'
+    );
+    const unclesAunts = (generations.get(-1) || []).filter(
+      (n) => n.relationship === 'tio' || n.relationship === 'tia'
+    );
+    const children = generations.get(1) || [];
+    const grandchildren = generations.get(2) || [];
+    const grandparents = generations.get(-2) || [];
+
+    const PersonRow = ({ node }: { node: TreeNode }) => (
+      <div className="flex items-center gap-2 p-3 bg-card border border-border rounded-lg">
+        <Avatar className="w-10 h-10 border border-primary/50">
+          <AvatarImage src={node.avatar_url} alt={node.name} />
+          <AvatarFallback className="bg-primary/20">
+            <User className="w-5 h-5 text-primary" />
+          </AvatarFallback>
+        </Avatar>
+        <div>
+          <p className="font-medium">{node.name}</p>
+          {node.relationship !== 'root' && (
+            <p className="text-xs text-muted-foreground capitalize">{node.relationship}</p>
+          )}
+        </div>
+        {node.spouse && (
+          <>
+            <span className="text-muted-foreground mx-2">+</span>
+            <Avatar className="w-10 h-10 border border-primary/50">
+              <AvatarImage src={node.spouse.avatar_url} alt={node.spouse.name} />
+              <AvatarFallback className="bg-primary/20">
+                <User className="w-5 h-5 text-primary" />
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-medium">{node.spouse.name}</p>
+              <p className="text-xs text-muted-foreground capitalize">{node.spouse.relationship}</p>
+            </div>
+          </>
+        )}
+      </div>
+    );
+
     return (
       <div className="space-y-6">
-        {Array.from(generations.entries())
-          .sort(([a], [b]) => a - b)
-          .filter(([_, nodes]) => nodes.length > 0)
-          .map(([generation, nodes]) => (
-            <div key={generation} className="space-y-2">
-              <h3 className="font-semibold text-sm text-muted-foreground">
-                {generation === -2 && 'Avós'}
-                {generation === -1.5 && 'Tios'}
-                {generation === -1 && 'Pais'}
-                {generation === -0.5 && 'Você'}
-                {generation === 0 && 'Irmãos'}
-                {generation === 1 && 'Filhos'}
-                {generation === 2 && 'Netos'}
-              </h3>
-              <div className="grid gap-2">
-                {nodes.map((node) => (
-                  <div key={node.id} className="flex items-center gap-2 p-3 bg-card border border-border rounded-lg">
-                    <Avatar className="w-10 h-10 border border-primary/50">
-                      <AvatarImage src={node.avatar_url} alt={node.name} />
-                      <AvatarFallback className="bg-primary/20">
-                        <User className="w-5 h-5 text-primary" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{node.name}</p>
-                      {node.relationship !== 'root' && (
-                        <p className="text-xs text-muted-foreground capitalize">{node.relationship}</p>
-                      )}
-                    </div>
-                    {node.spouse && (
-                      <>
-                        <span className="text-muted-foreground mx-2">+</span>
-                        <Avatar className="w-10 h-10 border border-primary/50">
-                          <AvatarImage src={node.spouse.avatar_url} alt={node.spouse.name} />
-                          <AvatarFallback className="bg-primary/20">
-                            <User className="w-5 h-5 text-primary" />
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{node.spouse.name}</p>
-                          <p className="text-xs text-muted-foreground capitalize">{node.spouse.relationship}</p>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
+        {/* Você (somente o usuário) */}
+        <div className="space-y-2">
+          <h3 className="font-semibold text-sm text-muted-foreground">Você</h3>
+          <div className="grid gap-2">
+            <PersonRow node={root} />
+          </div>
+        </div>
+
+        {/* Irmãos */}
+        {siblings.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="font-semibold text-sm text-muted-foreground">Irmãos</h3>
+            <div className="grid gap-2">
+              {siblings.map((n) => (
+                <PersonRow key={n.id} node={n} />
+              ))}
             </div>
-          ))}
+          </div>
+        )}
+
+        {/* Pais */}
+        {parents.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="font-semibold text-sm text-muted-foreground">Pais</h3>
+            <div className="grid gap-2">
+              {parents.map((n) => (
+                <PersonRow key={n.id} node={n} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tios */}
+        {unclesAunts.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="font-semibold text-sm text-muted-foreground">Tios</h3>
+            <div className="grid gap-2">
+              {unclesAunts.map((n) => (
+                <PersonRow key={n.id} node={n} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Filhos */}
+        {children.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="font-semibold text-sm text-muted-foreground">Filhos</h3>
+            <div className="grid gap-2">
+              {children.map((n) => (
+                <PersonRow key={n.id} node={n} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Netos */}
+        {grandchildren.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="font-semibold text-sm text-muted-foreground">Netos</h3>
+            <div className="grid gap-2">
+              {grandchildren.map((n) => (
+                <PersonRow key={n.id} node={n} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Avós */}
+        {grandparents.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="font-semibold text-sm text-muted-foreground">Avós</h3>
+            <div className="grid gap-2">
+              {grandparents.map((n) => (
+                <PersonRow key={n.id} node={n} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
