@@ -220,8 +220,18 @@ export function TreeVisualization() {
       const partner = nodesMap.get(partnerId);
       
       if (spouse && partner) {
-        partner.spouse = spouse;
-        spouse.generation = partner.generation;
+        // Se o parceiro é o root, atribuir cônjuge ao root
+        if (partnerId === user.id) {
+          root.spouse = spouse;
+          spouse.generation = 0;
+        } else if (spouseId === user.id) {
+          root.spouse = partner;
+          partner.generation = 0;
+        } else {
+          // Atribuir cônjuge ao parceiro
+          partner.spouse = spouse;
+          spouse.generation = partner.generation;
+        }
       }
     });
 
@@ -248,10 +258,17 @@ export function TreeVisualization() {
       
       // Calcular largura total necessária
       let totalWidth = 0;
+      const processedNodes = new Set<string>();
+      
       nodes.forEach(node => {
+        if (processedNodes.has(node.id)) return;
+        
         totalWidth += nodeWidth;
-        if (node.spouse) {
+        processedNodes.add(node.id);
+        
+        if (node.spouse && !processedNodes.has(node.spouse.id)) {
           totalWidth += spouseSpacing + nodeWidth;
+          processedNodes.add(node.spouse.id);
         }
         totalWidth += nodeSpacing;
       });
@@ -259,16 +276,21 @@ export function TreeVisualization() {
 
       // Posicionar nós da esquerda para direita
       let currentX = centerX - (totalWidth / 2);
+      processedNodes.clear();
       
       nodes.forEach(node => {
+        if (processedNodes.has(node.id)) return;
+        
         node.x = currentX + (nodeWidth / 2);
         node.y = y;
         currentX += nodeWidth;
+        processedNodes.add(node.id);
 
-        if (node.spouse) {
+        if (node.spouse && !processedNodes.has(node.spouse.id)) {
           node.spouse.x = currentX + spouseSpacing + (nodeWidth / 2);
           node.spouse.y = y;
           currentX += spouseSpacing + nodeWidth;
+          processedNodes.add(node.spouse.id);
         }
         
         currentX += nodeSpacing;
@@ -281,14 +303,23 @@ export function TreeVisualization() {
 
     const { generations, root } = treeData;
     const allNodes: TreeNode[] = [];
+    const processedSpouses = new Set<string>();
     
     // Coletar todos os nós
     generations.forEach(nodes => {
       nodes.forEach(node => {
         allNodes.push(node);
-        if (node.spouse) allNodes.push(node.spouse);
+        if (node.spouse && !processedSpouses.has(node.spouse.id)) {
+          allNodes.push(node.spouse);
+          processedSpouses.add(node.spouse.id);
+        }
       });
     });
+    
+    // Adicionar cônjuge do root se existir
+    if (root.spouse && !processedSpouses.has(root.spouse.id)) {
+      allNodes.push(root.spouse);
+    }
 
     const svgWidth = 1800;
     const svgHeight = 700;
@@ -374,6 +405,7 @@ export function TreeVisualization() {
             {/* Linha horizontal para filhos */}
             {root.children.length > 0 && (
               <>
+                {/* Linha vertical do casal (ou só do root) até a linha dos filhos */}
                 <line
                   x1={root.spouse ? (root.x! + root.spouse.x!) / 2 : root.x!}
                   y1={root.y! + 30}
@@ -384,6 +416,7 @@ export function TreeVisualization() {
                   opacity="0.3"
                 />
                 
+                {/* Linha horizontal dos filhos */}
                 <line
                   x1={Math.min(...root.children.map(c => c.x!))}
                   y1={root.y! + 60}
@@ -394,6 +427,7 @@ export function TreeVisualization() {
                   opacity="0.3"
                 />
                 
+                {/* Linhas verticais conectando cada filho */}
                 {root.children.map(child => (
                   <line
                     key={`child-${child.id}`}
@@ -410,7 +444,7 @@ export function TreeVisualization() {
             )}
 
             {/* Conexões de cônjuges */}
-            {allNodes.filter(n => n.spouse).map(node => (
+            {allNodes.filter(n => n.spouse && n.x && n.spouse.x).map(node => (
               <line
                 key={`spouse-${node.id}`}
                 x1={node.x}
@@ -418,8 +452,9 @@ export function TreeVisualization() {
                 x2={node.spouse!.x}
                 y2={node.spouse!.y}
                 stroke="hsl(var(--primary))"
-                strokeWidth="2.5"
-                opacity="0.6"
+                strokeWidth="3"
+                opacity="0.8"
+                strokeDasharray="5,5"
               />
             ))}
 
