@@ -12,8 +12,10 @@ interface TreeNode {
   relationship: string;
   avatar_url?: string;
   children: TreeNode[];
+  spouse?: TreeNode;
   x?: number;
   y?: number;
+  level?: number;
 }
 
 export function TreeVisualization() {
@@ -61,84 +63,250 @@ export function TreeVisualization() {
       .eq('id', user.id)
       .single();
 
-    const root: TreeNode = {
+    // Create nodes map
+    const nodesMap = new Map<string, TreeNode>();
+    
+    // Add current user
+    nodesMap.set(user.id, {
       id: user.id,
       name: 'Você',
       relationship: 'root',
       avatar_url: currentUserProfile?.avatar_url,
-      children: []
-    };
+      children: [],
+      level: 0
+    });
 
+    // Add all connected people
     connections.forEach((conn) => {
       const otherPerson = conn.requester_id === user.id ? conn.receiver : conn.requester;
       const relationship = conn.requester_id === user.id
         ? conn.relationship_from_requester
         : conn.relationship_from_receiver;
 
-      root.children.push({
-        id: otherPerson.id,
-        name: getFirstAndLastName(otherPerson.full_name),
-        relationship: relationship,
-        avatar_url: otherPerson.avatar_url,
-        children: []
-      });
+      if (!nodesMap.has(otherPerson.id)) {
+        nodesMap.set(otherPerson.id, {
+          id: otherPerson.id,
+          name: getFirstAndLastName(otherPerson.full_name),
+          relationship: relationship,
+          avatar_url: otherPerson.avatar_url,
+          children: []
+        });
+      }
     });
 
-    // Calculate positions for graph view
-    calculateNodePositions(root);
-    setTreeData(root);
+    // Organize by hierarchy
+    const root = nodesMap.get(user.id)!;
+    const parents: TreeNode[] = [];
+    const siblings: TreeNode[] = [];
+    const children: TreeNode[] = [];
+    const spouse: TreeNode[] = [];
+
+    connections.forEach((conn) => {
+      const otherPerson = conn.requester_id === user.id ? conn.receiver : conn.requester;
+      const relationship = conn.requester_id === user.id
+        ? conn.relationship_from_requester
+        : conn.relationship_from_receiver;
+      
+      const node = nodesMap.get(otherPerson.id)!;
+
+      if (relationship === 'pai' || relationship === 'mãe' || relationship === 'mae') {
+        node.level = -1;
+        parents.push(node);
+      } else if (relationship === 'irmão' || relationship === 'irmao' || relationship === 'irmã') {
+        node.level = 0;
+        siblings.push(node);
+      } else if (relationship === 'filho' || relationship === 'filha') {
+        node.level = 1;
+        children.push(node);
+        root.children.push(node);
+      } else if (relationship === 'cônjuge' || relationship === 'conjuge' || relationship === 'esposo' || relationship === 'esposa') {
+        node.level = 0;
+        spouse.push(node);
+        root.spouse = node;
+      } else if (relationship === 'avô' || relationship === 'avo' || relationship === 'avó' || relationship === 'avó') {
+        node.level = -2;
+        // Find parent to connect grandparent
+        const parentOfUser = parents.find(p => true); // Simplified - connect to first parent
+        if (parentOfUser) {
+          parentOfUser.children.push(node);
+        }
+      } else if (relationship === 'tio' || relationship === 'tia') {
+        node.level = -1;
+        // Tios are siblings of parents
+        siblings.push(node);
+      } else if (relationship === 'sobrinho' || relationship === 'sobrinha') {
+        node.level = 1;
+        // Sobrinhos are children of siblings
+        const sibling = siblings.find(s => true); // Simplified
+        if (sibling) {
+          sibling.children.push(node);
+        }
+      }
+    });
+
+    // Build parent generation
+    if (parents.length > 0) {
+      const parentGeneration: TreeNode = {
+        id: 'parent-gen',
+        name: 'Pais',
+        relationship: 'generation',
+        children: [root, ...siblings],
+        level: -1
+      };
+      
+      parents.forEach(p => {
+        if (!parentGeneration.children.includes(p)) {
+          p.children.push(root);
+        }
+      });
+
+      calculateNodePositions(root, parents, siblings, children, spouse);
+      setTreeData(root);
+    } else {
+      calculateNodePositions(root, [], siblings, children, spouse);
+      setTreeData(root);
+    }
   };
 
-  const calculateNodePositions = (node: TreeNode, level: number = 0, index: number = 0) => {
+  const calculateNodePositions = (
+    root: TreeNode, 
+    parents: TreeNode[], 
+    siblings: TreeNode[], 
+    children: TreeNode[],
+    spouse: TreeNode[]
+  ) => {
     const nodeWidth = 180;
-    const nodeHeight = 100;
-    const horizontalSpacing = 40;
-    const verticalSpacing = 120;
+    const horizontalSpacing = 60;
+    const verticalSpacing = 150;
+    const centerX = 400;
 
-    if (level === 0) {
-      node.x = 400;
-      node.y = 50;
-    } else {
-      const totalWidth = node.children.length * nodeWidth + (node.children.length - 1) * horizontalSpacing;
-      node.x = index * (nodeWidth + horizontalSpacing) - totalWidth / 2 + 400;
-      node.y = level * verticalSpacing + 50;
+    // Position root (current user) in the center
+    root.x = centerX;
+    root.y = 300;
+
+    // Position spouse next to root
+    if (root.spouse) {
+      root.spouse.x = centerX + nodeWidth + horizontalSpacing;
+      root.spouse.y = 300;
     }
 
-    node.children.forEach((child, idx) => {
-      calculateNodePositions(child, level + 1, idx);
-    });
+    // Position parents above
+    if (parents.length > 0) {
+      const parentStartX = centerX - ((parents.length - 1) * (nodeWidth + horizontalSpacing)) / 2;
+      parents.forEach((parent, idx) => {
+        parent.x = parentStartX + idx * (nodeWidth + horizontalSpacing);
+        parent.y = 300 - verticalSpacing;
+      });
+    }
+
+    // Position siblings to the left of root
+    if (siblings.length > 0) {
+      siblings.forEach((sibling, idx) => {
+        sibling.x = centerX - (idx + 1.5) * (nodeWidth + horizontalSpacing);
+        sibling.y = 300;
+      });
+    }
+
+    // Position children below
+    if (children.length > 0) {
+      const childStartX = centerX - ((children.length - 1) * (nodeWidth + horizontalSpacing)) / 2;
+      children.forEach((child, idx) => {
+        child.x = childStartX + idx * (nodeWidth + horizontalSpacing);
+        child.y = 300 + verticalSpacing;
+      });
+    }
   };
 
   const renderGraphView = () => {
     if (!treeData) return null;
 
     const getAllNodes = (node: TreeNode): TreeNode[] => {
-      return [node, ...node.children.flatMap(child => getAllNodes(child))];
+      const nodes = [node];
+      if (node.spouse) nodes.push(node.spouse);
+      node.children.forEach(child => {
+        nodes.push(...getAllNodes(child));
+      });
+      return nodes;
     };
 
     const allNodes = getAllNodes(treeData);
-    const svgWidth = 800;
-    const svgHeight = Math.max(400, (treeData.children.length + 1) * 150);
+    const svgWidth = 1200;
+    const svgHeight = 600;
+
+    // Collect all connections
+    const connections: Array<{from: TreeNode, to: TreeNode, type: 'parent' | 'spouse' | 'sibling'}> = [];
+    
+    allNodes.forEach(node => {
+      // Parent-child connections
+      node.children.forEach(child => {
+        connections.push({from: node, to: child, type: 'parent'});
+      });
+      
+      // Spouse connection
+      if (node.spouse) {
+        connections.push({from: node, to: node.spouse, type: 'spouse'});
+      }
+    });
 
     return (
       <div className="w-full overflow-x-auto">
         <svg width={svgWidth} height={svgHeight} className="mx-auto">
           {/* Draw connections */}
-          {allNodes.map(node => 
-            node.children.map(child => (
-              <g key={`line-${node.id}-${child.id}`}>
+          {connections.map((conn, idx) => {
+            const fromX = conn.from.x || 0;
+            const fromY = (conn.from.y || 0) + 40;
+            const toX = conn.to.x || 0;
+            const toY = (conn.to.y || 0) - 10;
+
+            if (conn.type === 'spouse') {
+              // Horizontal line for spouse
+              return (
                 <line
-                  x1={node.x}
-                  y1={(node.y || 0) + 40}
-                  x2={child.x}
-                  y2={(child.y || 0) - 10}
+                  key={`spouse-${idx}`}
+                  x1={fromX}
+                  y1={fromY - 20}
+                  x2={toX}
+                  y2={fromY - 20}
                   stroke="hsl(var(--primary))"
                   strokeWidth="2"
-                  opacity="0.3"
+                  opacity="0.5"
                 />
-              </g>
-            ))
-          )}
+              );
+            } else {
+              // Vertical line for parent-child
+              return (
+                <g key={`parent-${idx}`}>
+                  <line
+                    x1={fromX}
+                    y1={fromY}
+                    x2={fromX}
+                    y2={fromY + 30}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="2"
+                    opacity="0.3"
+                  />
+                  <line
+                    x1={fromX}
+                    y1={fromY + 30}
+                    x2={toX}
+                    y2={fromY + 30}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="2"
+                    opacity="0.3"
+                  />
+                  <line
+                    x1={toX}
+                    y1={fromY + 30}
+                    x2={toX}
+                    y2={toY}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="2"
+                    opacity="0.3"
+                  />
+                </g>
+              );
+            }
+          })}
 
           {/* Draw nodes */}
           {allNodes.map(node => (
