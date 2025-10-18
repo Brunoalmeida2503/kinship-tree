@@ -38,19 +38,52 @@ export function TreeVisualization() {
   const loadConnections = async () => {
     if (!user) return;
 
-    const { data, error } = await supabase
+    const { data: connections, error } = await supabase
       .from('connections')
-      .select(`
-        *,
-        requester:requester_id(id, full_name, avatar_url),
-        receiver:receiver_id(id, full_name, avatar_url)
-      `)
+      .select('*')
       .eq('status', 'accepted')
       .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);
 
-    if (!error && data) {
-      buildTree(data);
+    if (error) {
+      console.error('Error loading connections:', error);
+      return;
     }
+
+    if (!connections || connections.length === 0) {
+      console.log('No connections found');
+      setTreeData(null);
+      return;
+    }
+
+    // Buscar perfis de todas as pessoas conectadas
+    const profileIds = new Set<string>();
+    connections.forEach(conn => {
+      profileIds.add(conn.requester_id);
+      profileIds.add(conn.receiver_id);
+    });
+
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, full_name, avatar_url')
+      .in('id', Array.from(profileIds));
+
+    if (profilesError) {
+      console.error('Error loading profiles:', profilesError);
+      return;
+    }
+
+    // Criar mapa de perfis
+    const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+    // Adicionar perfis aos connections
+    const connectionsWithProfiles = connections.map(conn => ({
+      ...conn,
+      requester: profilesMap.get(conn.requester_id),
+      receiver: profilesMap.get(conn.receiver_id)
+    }));
+
+    console.log('Loaded connections:', connectionsWithProfiles);
+    buildTree(connectionsWithProfiles);
   };
 
   const getFirstAndLastName = (fullName: string) => {
