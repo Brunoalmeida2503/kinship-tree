@@ -92,6 +92,34 @@ export function TreeVisualization() {
     return `${names[0]} ${names[names.length - 1]}`;
   };
 
+  const normalizeRelationship = (value?: string) => {
+    const v = (value || '').trim().toLowerCase();
+    const map: Record<string, string> = {
+      'avó': 'avo',
+      'avô': 'avo',
+      'avo': 'avo',
+      'vovo': 'avo',
+      'mae': 'mae',
+      'mãe': 'mae',
+      'pai': 'pai',
+      'irmao': 'irmao',
+      'irmão': 'irmao',
+      'irma': 'irma',
+      'irmã': 'irma',
+      'filho': 'filho',
+      'filha': 'filha',
+      'neto': 'neto',
+      'neta': 'neta',
+      'conjuge': 'conjuge',
+      'cônjuge': 'conjuge',
+      'esposo': 'conjuge',
+      'esposa': 'conjuge',
+      'tio': 'tio',
+      'tia': 'tia',
+      'root': 'root',
+    };
+    return map[v] || v;
+  };
   const buildTree = async (connections: any[]) => {
     if (!user) return;
 
@@ -123,11 +151,13 @@ export function TreeVisualization() {
         ? conn.relationship_from_requester
         : conn.relationship_from_receiver;
 
+      const rel = normalizeRelationship(relationship);
+
       if (!nodesMap.has(otherPerson.id)) {
         nodesMap.set(otherPerson.id, {
           id: otherPerson.id,
           name: getFirstAndLastName(otherPerson.full_name),
-          relationship: relationship,
+          relationship: rel,
           avatar_url: otherPerson.avatar_url,
           children: []
         });
@@ -151,32 +181,33 @@ export function TreeVisualization() {
         ? conn.relationship_from_requester
         : conn.relationship_from_receiver;
       
+      const rel = normalizeRelationship(relationship);
       const node = nodesMap.get(otherPerson.id)!;
 
       // Classificar por geração
-      if (relationship === 'avô' || relationship === 'avo' || relationship === 'avó') {
+      if (rel === 'avo') {
         node.generation = -2;
         generations.get(-2)!.push(node);
-      } else if (relationship === 'tio' || relationship === 'tia') {
+      } else if (rel === 'tio' || rel === 'tia') {
         node.generation = -1;
         generations.get(-1)!.push(node);
-      } else if (relationship === 'pai' || relationship === 'mãe' || relationship === 'mae') {
+      } else if (rel === 'pai' || rel === 'mae') {
         node.generation = -1;
         generations.get(-1)!.push(node);
         // Pais são pais do root
         node.children.push(root);
-      } else if (relationship === 'irmão' || relationship === 'irmao' || relationship === 'irmã') {
+      } else if (rel === 'irmao' || rel === 'irma') {
         node.generation = 0;
         generations.get(0)!.push(node);
-      } else if (relationship === 'filho' || relationship === 'filha') {
+      } else if (rel === 'filho' || rel === 'filha') {
         node.generation = 1;
         generations.get(1)!.push(node);
         // Filho pertence ao root
         root.children.push(node);
-      } else if (relationship === 'neto' || relationship === 'neta') {
+      } else if (rel === 'neto' || rel === 'neta') {
         node.generation = 2;
         generations.get(2)!.push(node);
-      } else if (relationship === 'cônjuge' || relationship === 'conjuge' || relationship === 'esposo' || relationship === 'esposa') {
+      } else if (rel === 'conjuge') {
         // Mapear cônjuge
         const partnerId = conn.requester_id === user.id ? conn.receiver_id : conn.requester_id;
         spouseMap.set(otherPerson.id, partnerId);
@@ -261,6 +292,9 @@ export function TreeVisualization() {
 
     const svgWidth = 1800;
     const svgHeight = 700;
+    const parentNodes = (generations.get(-1) || []).filter(
+      (n) => n.relationship === 'pai' || n.relationship === 'mae'
+    );
 
     return (
       <div className="w-full overflow-auto bg-muted/20 rounded-lg">
@@ -289,23 +323,22 @@ export function TreeVisualization() {
             className="mx-auto"
           >
             {/* Conexões entre gerações */}
-            {generations.get(-1) && generations.get(-1)!.length > 0 && (
+            {parentNodes.length > 0 && (
               <>
-                {/* Linha horizontal dos pais */}
+                {/* Linha horizontal dos pais (somente pai/mãe) */}
                 <line
-                  x1={Math.min(...generations.get(-1)!.map(n => n.x!))}
-                  y1={generations.get(-1)![0].y! + 30}
-                  x2={Math.max(...generations.get(-1)!.map(n => n.x!))}
-                  y2={generations.get(-1)![0].y! + 30}
+                  x1={Math.min(...parentNodes.map(n => n.x!))}
+                  y1={parentNodes[0].y! + 30}
+                  x2={Math.max(...parentNodes.map(n => n.x!))}
+                  y2={parentNodes[0].y! + 30}
                   stroke="hsl(var(--primary))"
                   strokeWidth="2"
                   opacity="0.3"
                 />
-                
                 {/* Linha vertical central dos pais para geração 0 */}
                 <line
                   x1={root.x}
-                  y1={generations.get(-1)![0].y! + 30}
+                  y1={parentNodes[0].y! + 30}
                   x2={root.x}
                   y2={root.y! - 30}
                   stroke="hsl(var(--primary))"
@@ -320,8 +353,8 @@ export function TreeVisualization() {
               const siblingCenterX = sibling.spouse 
                 ? (sibling.x! + sibling.spouse.x!) / 2 
                 : sibling.x!;
-              const parentY = generations.get(-1) && generations.get(-1)!.length > 0
-                ? generations.get(-1)![0].y! + 30
+              const parentY = parentNodes.length > 0
+                ? parentNodes[0].y! + 30
                 : sibling.y! - 60;
               
               return (
