@@ -16,7 +16,7 @@ interface TreeNode {
   spouse?: TreeNode;
   x?: number;
   y?: number;
-  generation?: number; // -2=avós, -1=pais, 0=usuário/irmãos, 1=filhos, 2=netos
+  generation?: number; // -2=avós, -1.5=tios, -1=pais, -0.5=usuário, 0=irmãos, 1=filhos, 2=netos
   isRoot?: boolean;
 }
 
@@ -137,8 +137,10 @@ export function TreeVisualization() {
     // Organizar por gerações
     const generations = new Map<number, TreeNode[]>();
     generations.set(-2, []); // Avós
+    generations.set(-1.5, []); // Tios
     generations.set(-1, []); // Pais
-    generations.set(0, [root]); // Usuário e irmãos
+    generations.set(-0.5, [root]); // Usuário
+    generations.set(0, []); // Irmãos
     generations.set(1, []); // Filhos
     generations.set(2, []); // Netos
 
@@ -157,6 +159,9 @@ export function TreeVisualization() {
       if (relationship === 'avô' || relationship === 'avo' || relationship === 'avó') {
         node.generation = -2;
         generations.get(-2)!.push(node);
+      } else if (relationship === 'tio' || relationship === 'tia') {
+        node.generation = -1.5;
+        generations.get(-1.5)!.push(node);
       } else if (relationship === 'pai' || relationship === 'mãe' || relationship === 'mae') {
         node.generation = -1;
         generations.get(-1)!.push(node);
@@ -432,12 +437,15 @@ export function TreeVisualization() {
       <div className="space-y-6">
         {Array.from(generations.entries())
           .sort(([a], [b]) => a - b)
+          .filter(([_, nodes]) => nodes.length > 0)
           .map(([generation, nodes]) => (
             <div key={generation} className="space-y-2">
               <h3 className="font-semibold text-sm text-muted-foreground">
                 {generation === -2 && 'Avós'}
+                {generation === -1.5 && 'Tios'}
                 {generation === -1 && 'Pais'}
-                {generation === 0 && 'Você e Irmãos'}
+                {generation === -0.5 && 'Você'}
+                {generation === 0 && 'Irmãos'}
                 {generation === 1 && 'Filhos'}
                 {generation === 2 && 'Netos'}
               </h3>
