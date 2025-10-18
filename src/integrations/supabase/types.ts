@@ -864,6 +864,7 @@ export type Database = {
           latitude: number | null
           location: string | null
           longitude: number | null
+          theme_color: string | null
           updated_at: string | null
         }
         Insert: {
@@ -877,6 +878,7 @@ export type Database = {
           latitude?: number | null
           location?: string | null
           longitude?: number | null
+          theme_color?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -890,6 +892,7 @@ export type Database = {
           latitude?: number | null
           location?: string | null
           longitude?: number | null
+          theme_color?: string | null
           updated_at?: string | null
         }
         Relationships: []

@@ -11,11 +11,13 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Camera } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export function ProfileSection() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { t, i18n } = useTranslation();
+  const { themeColor, setThemeColor } = useTheme();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -224,6 +226,22 @@ export function ProfileSection() {
                 <SelectItem value="en">{t('languages.en')}</SelectItem>
                 <SelectItem value="es">{t('languages.es')}</SelectItem>
                 <SelectItem value="fr">{t('languages.fr')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="theme_color">Cor do Tema</Label>
+            <Select
+              value={themeColor}
+              onValueChange={(value) => setThemeColor(value as 'white' | 'green')}
+            >
+              <SelectTrigger id="theme_color">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="white">Branco (Padrão)</SelectItem>
+                <SelectItem value="green">Verde</SelectItem>
               </SelectContent>
             </Select>
           </div>
