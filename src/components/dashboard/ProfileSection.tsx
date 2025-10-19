@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Camera } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/contexts/ThemeContext';
+import { fetchCountries, fetchStates, fetchCities, fetchCoordinates, Country, State, City } from '@/services/geoService';
 
 export function ProfileSection() {
   const { user } = useAuth();
@@ -29,14 +30,28 @@ export function ProfileSection() {
     avatar_url: '',
     latitude: null as number | null,
     longitude: null as number | null,
-    language: 'pt-BR'
+    language: 'pt-BR',
+    country: '',
+    state: '',
+    city: ''
   });
+
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [states, setStates] = useState<State[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
+  const [loadingGeo, setLoadingGeo] = useState(false);
 
   useEffect(() => {
     if (user) {
       loadProfile();
     }
+    loadCountries();
   }, [user]);
+
+  const loadCountries = async () => {
+    const countriesData = await fetchCountries();
+    setCountries(countriesData);
+  };
 
   const loadProfile = async () => {
     if (!user) return;
@@ -62,10 +77,22 @@ export function ProfileSection() {
         avatar_url: data.avatar_url || '',
         latitude: data.latitude || null,
         longitude: data.longitude || null,
-        language: userLanguage
+        language: userLanguage,
+        country: data.country || '',
+        state: data.state || '',
+        city: data.city || ''
       });
       // Update i18n language
       i18n.changeLanguage(userLanguage);
+      
+      // Load states if country exists
+      if (data.country) {
+        handleCountryChange(data.country);
+      }
+      // Load cities if state exists
+      if (data.country && data.state) {
+        handleStateChange(data.state, data.country);
+      }
     }
   };
 
@@ -148,6 +175,54 @@ export function ProfileSection() {
     setLoading(false);
   };
 
+  const handleCountryChange = async (countryName: string) => {
+    setProfile({ ...profile, country: countryName, state: '', city: '', latitude: null, longitude: null });
+    setStates([]);
+    setCities([]);
+    
+    if (countryName) {
+      setLoadingGeo(true);
+      const statesData = await fetchStates(countryName);
+      setStates(statesData);
+      setLoadingGeo(false);
+    }
+  };
+
+  const handleStateChange = async (stateName: string, countryName?: string) => {
+    const country = countryName || profile.country;
+    setProfile({ ...profile, state: stateName, city: '', latitude: null, longitude: null });
+    setCities([]);
+    
+    if (stateName && country) {
+      setLoadingGeo(true);
+      const citiesData = await fetchCities(country, stateName);
+      setCities(citiesData);
+      setLoadingGeo(false);
+    }
+  };
+
+  const handleCityChange = async (cityName: string) => {
+    setProfile({ ...profile, city: cityName });
+    
+    if (cityName && profile.state && profile.country) {
+      setLoadingGeo(true);
+      const coords = await fetchCoordinates(cityName, profile.state, profile.country);
+      setLoadingGeo(false);
+      
+      if (coords) {
+        setProfile(prev => ({
+          ...prev,
+          latitude: coords.latitude,
+          longitude: coords.longitude
+        }));
+        toast({
+          title: t('profile.coordinatesUpdated') || 'Coordenadas atualizadas',
+          description: t('profile.coordinatesUpdatedDescription') || 'Latitude e longitude preenchidas automaticamente'
+        });
+      }
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -200,6 +275,66 @@ export function ProfileSection() {
               value={profile.birth_date}
               onChange={(e) => setProfile({ ...profile, birth_date: e.target.value })}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="country">{t('profile.country') || 'País'}</Label>
+            <Select
+              value={profile.country}
+              onValueChange={handleCountryChange}
+              disabled={loadingGeo}
+            >
+              <SelectTrigger id="country">
+                <SelectValue placeholder={t('profile.selectCountry') || 'Selecione um país'} />
+              </SelectTrigger>
+              <SelectContent>
+                {countries.map((country) => (
+                  <SelectItem key={country.iso2} value={country.name}>
+                    {country.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="state">{t('profile.state') || 'Estado'}</Label>
+            <Select
+              value={profile.state}
+              onValueChange={(value) => handleStateChange(value)}
+              disabled={!profile.country || loadingGeo}
+            >
+              <SelectTrigger id="state">
+                <SelectValue placeholder={t('profile.selectState') || 'Selecione um estado'} />
+              </SelectTrigger>
+              <SelectContent>
+                {states.map((state) => (
+                  <SelectItem key={state.state_code} value={state.name}>
+                    {state.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="city">{t('profile.city') || 'Cidade'}</Label>
+            <Select
+              value={profile.city}
+              onValueChange={handleCityChange}
+              disabled={!profile.state || loadingGeo}
+            >
+              <SelectTrigger id="city">
+                <SelectValue placeholder={t('profile.selectCity') || 'Selecione uma cidade'} />
+              </SelectTrigger>
+              <SelectContent>
+                {cities.map((city) => (
+                  <SelectItem key={city.name} value={city.name}>
+                    {city.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
