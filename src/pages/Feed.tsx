@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -66,6 +66,7 @@ interface Group {
 const Feed = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,15 +81,23 @@ const Feed = () => {
   const [editContent, setEditContent] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [filterUserId, setFilterUserId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
       navigate("/auth");
       return;
     }
+    
+    // Check if coming from map with user filter
+    const state = location.state as { filterUserId?: string } | null;
+    if (state?.filterUserId) {
+      setFilterUserId(state.filterUserId);
+    }
+    
     fetchPosts();
     fetchUserGroups();
-  }, [user, navigate]);
+  }, [user, navigate, location]);
 
   const fetchUserGroups = async () => {
     if (!user) return;
@@ -145,11 +154,18 @@ const Feed = () => {
         }
       });
 
-      // Fetch posts from connected users
-      const { data: postsData, error: postsError } = await supabase
+      // Fetch posts from connected users (or filtered user)
+      let postsQuery = supabase
         .from("posts")
-        .select("*")
-        .in("user_id", Array.from(connectedUserIds))
+        .select("*");
+      
+      if (filterUserId) {
+        postsQuery = postsQuery.eq("user_id", filterUserId);
+      } else {
+        postsQuery = postsQuery.in("user_id", Array.from(connectedUserIds));
+      }
+      
+      const { data: postsData, error: postsError } = await postsQuery
         .order("created_at", { ascending: false });
 
       if (postsError) throw postsError;
@@ -483,10 +499,27 @@ const Feed = () => {
   return (
     <div className="min-h-screen bg-background">
       <main className="container max-w-2xl mx-auto py-8 px-4">
-        <h1 className="text-3xl font-bold mb-8">Timeline</h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold">
+            {filterUserId ? 'Timeline do Usuário' : 'Timeline'}
+          </h1>
+          {filterUserId && (
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setFilterUserId(null);
+                navigate('/', { replace: true });
+                fetchPosts();
+              }}
+            >
+              Ver Toda Timeline
+            </Button>
+          )}
+        </div>
 
         {/* Create Post */}
-        <Card className="mb-6">
+        {!filterUserId && (
+          <Card className="mb-6">
           <CardHeader>
             <h2 className="text-lg font-semibold">Criar Post</h2>
           </CardHeader>
@@ -576,6 +609,7 @@ const Feed = () => {
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Posts Feed */}
         <div className="space-y-4">

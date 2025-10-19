@@ -8,7 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Globe, Map, MapPin, User, X } from 'lucide-react';
+import { Globe, Map, MapPin, User, X, Calendar } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 type ZoomLevel = 'world' | 'continent' | 'country' | 'state';
 
@@ -35,6 +36,7 @@ const MapVisualization = () => {
   const [currentZoom, setCurrentZoom] = useState<ZoomLevel>('world');
   const [selectedLocation, setSelectedLocation] = useState<{ users: UserLocation[], location: string } | null>(null);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const zoomLevels: Record<ZoomLevel, ZoomConfig> = {
     world: { zoom: 2, label: 'Mundo', icon: <Globe className="w-4 h-4" /> },
@@ -321,20 +323,28 @@ const MapVisualization = () => {
           </DialogHeader>
           
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4">
-            {selectedLocation?.users.map((user) => (
+            {selectedLocation?.users.map((userProfile) => (
               <div
-                key={user.id}
-                className="flex flex-col items-center gap-3 p-4 rounded-lg border border-border hover:border-primary transition-colors bg-card"
+                key={userProfile.id}
+                className="flex flex-col items-center gap-3 p-4 rounded-lg border border-border hover:border-primary transition-all cursor-pointer bg-card group"
+                onClick={() => {
+                  setSelectedLocation(null);
+                  navigate('/', { state: { filterUserId: userProfile.id } });
+                }}
               >
-                <Avatar className="w-24 h-24 border-4 border-primary">
-                  <AvatarImage src={user.avatar_url || undefined} alt={user.full_name} />
+                <Avatar className="w-24 h-24 border-4 border-primary group-hover:scale-110 transition-transform">
+                  <AvatarImage src={userProfile.avatar_url || undefined} alt={userProfile.full_name} />
                   <AvatarFallback className="bg-primary/20 text-lg">
                     <User className="w-10 h-10 text-primary" />
                   </AvatarFallback>
                 </Avatar>
                 <div className="text-center">
-                  <p className="font-semibold text-sm">{user.full_name}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{user.location || 'Localização'}</p>
+                  <p className="font-semibold text-sm">{userProfile.full_name}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{userProfile.location || 'Localização'}</p>
+                  <div className="flex items-center justify-center gap-1 mt-2 text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Calendar className="w-3 h-3" />
+                    <span>Ver Timeline</span>
+                  </div>
                 </div>
               </div>
             ))}
