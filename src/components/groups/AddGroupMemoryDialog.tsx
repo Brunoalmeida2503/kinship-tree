@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { Upload, X } from 'lucide-react';
+import { groupMemorySchema } from '@/lib/validation';
+import { z } from 'zod';
 
 interface AddGroupMemoryDialogProps {
   groupId: string;
@@ -60,7 +62,24 @@ export function AddGroupMemoryDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !title || !startDate) return;
+    if (!user) return;
+
+    // Validate input
+    try {
+      groupMemorySchema.parse({
+        title,
+        description,
+        start_date: startDate,
+        end_date: endDate || null,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+        return;
+      }
+    }
+
+    if (!title || !startDate) return;
 
     setCreating(true);
     try {

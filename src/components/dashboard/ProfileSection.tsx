@@ -13,6 +13,8 @@ import { Camera } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/contexts/ThemeContext';
 import { fetchCountries, fetchStates, fetchCities, fetchCoordinates, Country, State, City } from '@/services/geoService';
+import { profileSchema } from '@/lib/validation';
+import { z } from 'zod';
 
 export function ProfileSection() {
   const { user } = useAuth();
@@ -149,6 +151,29 @@ export function ProfileSection() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    // Validate input
+    try {
+      profileSchema.parse({
+        full_name: profile.full_name,
+        bio: profile.bio,
+        birth_date: profile.birth_date,
+        city: profile.city,
+        state: profile.state,
+        country: profile.country,
+        latitude: profile.latitude ? Number(profile.latitude) : undefined,
+        longitude: profile.longitude ? Number(profile.longitude) : undefined,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: t('profile.validationError'),
+          description: error.errors[0].message,
+          variant: 'destructive'
+        });
+        return;
+      }
+    }
 
     setLoading(true);
 

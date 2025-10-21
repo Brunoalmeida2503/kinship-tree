@@ -1,7 +1,4 @@
 project_id = "cbienzabsezakvlicaxq"
 
-[functions.calculate-mission-path]
-verify_jwt = false
-
 [functions.aura-chat]
 verify_jwt = true

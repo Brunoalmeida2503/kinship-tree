@@ -13,6 +13,8 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
+import { memorySchema } from '@/lib/validation';
+import { z } from 'zod';
 
 interface AddMemoryDialogProps {
   open: boolean;
@@ -66,6 +68,21 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate input
+    try {
+      memorySchema.parse({
+        title,
+        description,
+        start_date: startDate ? format(startDate, 'yyyy-MM-dd') : '',
+        end_date: isPeriod && endDate ? format(endDate, 'yyyy-MM-dd') : null,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+        return;
+      }
+    }
 
     if (!title.trim() || !startDate) {
       toast.error('Preencha o título e a data inicial');

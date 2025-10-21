@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Send, Users, UserPlus, Trash2, Pencil, MoreVertical } from "lucide-react";
+import { postSchema } from "@/lib/validation";
+import { z } from "zod";
 import { Input } from "@/components/ui/input";
 import { MediaUploader, uploadMediaFiles } from "@/components/feed/MediaUploader";
 import { MediaGallery } from "@/components/feed/MediaGallery";
@@ -353,7 +355,27 @@ const Feed = () => {
   };
 
   const handleCreatePost = async () => {
-    if ((!newPost.trim() && mediaFiles.length === 0) || !user) return;
+    if (!user) return;
+
+    // Validate input
+    try {
+      postSchema.parse({
+        content: newPost,
+        shareWithTree,
+        selectedGroups
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: "Erro de validação",
+          description: error.errors[0].message,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    if (!newPost.trim() && mediaFiles.length === 0) return;
 
     setPosting(true);
 
