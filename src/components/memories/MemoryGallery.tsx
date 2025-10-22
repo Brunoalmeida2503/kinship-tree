@@ -3,11 +3,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Play, Share2 } from 'lucide-react';
+import { Calendar, Play, Share2, Image as ImageIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { ShareMemoryDialog } from './ShareMemoryDialog';
+import { EditMemoryDialog } from './EditMemoryDialog';
+
+interface MediaItem {
+  id: string;
+  media_url: string;
+  media_type: string;
+  display_order: number;
+}
 
 interface Memory {
   id: string;
@@ -17,12 +25,14 @@ interface Memory {
   description: string | null;
   image_url: string | null;
   created_at: string;
+  memory_media: MediaItem[];
 }
 
 export function MemoryGallery() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedMemoryId, setSelectedMemoryId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,7 +43,15 @@ export function MemoryGallery() {
     try {
       const { data, error } = await supabase
         .from('memories')
-        .select('*')
+        .select(`
+          *,
+          memory_media(
+            id,
+            media_url,
+            media_type,
+            display_order
+          )
+        `)
         .order('start_date', { ascending: false });
 
       if (error) throw error;
@@ -46,15 +64,24 @@ export function MemoryGallery() {
     }
   };
 
-  const isVideo = (url: string | null) => {
-    if (!url) return false;
-    return url.includes('.mp4') || url.includes('.webm') || url.includes('.mov');
-  };
-
   const handleShare = (memoryId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedMemoryId(memoryId);
     setShareDialogOpen(true);
+  };
+
+  const handleEdit = (memoryId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedMemoryId(memoryId);
+    setEditDialogOpen(true);
+  };
+
+  const getFirstMedia = (memory: Memory) => {
+    if (memory.memory_media && memory.memory_media.length > 0) {
+      const sortedMedia = [...memory.memory_media].sort((a, b) => a.display_order - b.display_order);
+      return sortedMedia[0];
+    }
+    return null;
   };
 
   if (loading) {
@@ -88,37 +115,48 @@ export function MemoryGallery() {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {memories.map((memory) => (
-        <Card 
-          key={memory.id} 
-          className="overflow-hidden group hover:shadow-lg transition-all duration-300 cursor-pointer"
-        >
-          <div className="aspect-square relative overflow-hidden bg-muted">
-            {memory.image_url ? (
-              isVideo(memory.image_url) ? (
-                <div className="relative w-full h-full">
-                  <video
-                    src={memory.image_url}
-                    className="w-full h-full object-cover"
-                    preload="metadata"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                    <Play className="h-12 w-12 text-white" />
+      {memories.map((memory) => {
+        const firstMedia = getFirstMedia(memory);
+        const mediaCount = memory.memory_media?.length || 0;
+        
+        return (
+          <Card 
+            key={memory.id} 
+            className="overflow-hidden group hover:shadow-lg transition-all duration-300 cursor-pointer"
+            onClick={(e) => handleEdit(memory.id, e)}
+          >
+            <div className="aspect-square relative overflow-hidden bg-muted">
+              {firstMedia ? (
+                firstMedia.media_type === 'video' ? (
+                  <div className="relative w-full h-full">
+                    <video
+                      src={firstMedia.media_url}
+                      className="w-full h-full object-cover"
+                      preload="metadata"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                      <Play className="h-12 w-12 text-white" />
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <img
+                    src={firstMedia.media_url}
+                    alt={memory.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                )
               ) : (
-                <img
-                  src={memory.image_url}
-                  alt={memory.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              )
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20">
-                <Calendar className="h-16 w-16 text-primary" />
-              </div>
-            )}
-          </div>
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20">
+                  <Calendar className="h-16 w-16 text-primary" />
+                </div>
+              )}
+              {mediaCount > 1 && (
+                <div className="absolute top-2 right-2 bg-black/60 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1">
+                  <ImageIcon className="h-3 w-3" />
+                  {mediaCount}
+                </div>
+              )}
+            </div>
           <CardContent className="p-4">
             <div className="flex items-start justify-between gap-2 mb-1">
               <h3 className="font-semibold text-foreground line-clamp-1 flex-1">
@@ -145,14 +183,23 @@ export function MemoryGallery() {
             )}
           </CardContent>
         </Card>
-      ))}
+        );
+      })}
       
       {selectedMemoryId && (
-        <ShareMemoryDialog
-          open={shareDialogOpen}
-          onOpenChange={setShareDialogOpen}
-          memoryId={selectedMemoryId}
-        />
+        <>
+          <ShareMemoryDialog
+            open={shareDialogOpen}
+            onOpenChange={setShareDialogOpen}
+            memoryId={selectedMemoryId}
+          />
+          <EditMemoryDialog
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
+            memoryId={selectedMemoryId}
+            onMemoryUpdated={fetchMemories}
+          />
+        </>
       )}
     </div>
   );

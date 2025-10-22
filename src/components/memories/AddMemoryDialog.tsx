@@ -8,13 +8,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
-import { Calendar as CalendarIcon, Upload, X, Loader2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import { memorySchema } from '@/lib/validation';
 import { z } from 'zod';
+import { MediaUploader, MediaFile, uploadMediaFiles } from '@/components/feed/MediaUploader';
 
 interface AddMemoryDialogProps {
   open: boolean;
@@ -27,44 +28,8 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [isPeriod, setIsPeriod] = useState(false);
-  const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [uploading, setUploading] = useState(false);
-
-  const handleMediaSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setMediaFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setMediaPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleRemoveMedia = () => {
-    setMediaFile(null);
-    setMediaPreview(null);
-  };
-
-  const uploadMedia = async (file: File, userId: string): Promise<string> => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${crypto.randomUUID()}.${fileExt}`;
-    const filePath = `${userId}/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('posts')
-      .upload(filePath, file);
-
-    if (uploadError) throw uploadError;
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('posts')
-      .getPublicUrl(filePath);
-
-    return publicUrl;
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,21 +65,39 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
-      let imageUrl = null;
-      if (mediaFile) {
-        imageUrl = await uploadMedia(mediaFile, user.id);
+      // Criar a memória primeiro
+      const { data: memory, error: memoryError } = await supabase
+        .from('memories')
+        .insert({
+          user_id: user.id,
+          title: title.trim(),
+          description: description.trim() || null,
+          start_date: format(startDate, 'yyyy-MM-dd'),
+          end_date: isPeriod && endDate ? format(endDate, 'yyyy-MM-dd') : null,
+        })
+        .select()
+        .single();
+
+      if (memoryError) throw memoryError;
+
+      // Upload dos arquivos de mídia
+      if (mediaFiles.length > 0) {
+        const uploadedMedia = await uploadMediaFiles(mediaFiles, user.id, 'posts');
+        
+        // Inserir registros de media
+        const mediaInserts = uploadedMedia.map((media, index) => ({
+          memory_id: memory.id,
+          media_url: media.url,
+          media_type: media.type,
+          display_order: index,
+        }));
+
+        const { error: mediaError } = await supabase
+          .from('memory_media')
+          .insert(mediaInserts);
+
+        if (mediaError) throw mediaError;
       }
-
-      const { error } = await supabase.from('memories').insert({
-        user_id: user.id,
-        title: title.trim(),
-        description: description.trim() || null,
-        start_date: format(startDate, 'yyyy-MM-dd'),
-        end_date: isPeriod && endDate ? format(endDate, 'yyyy-MM-dd') : null,
-        image_url: imageUrl,
-      });
-
-      if (error) throw error;
 
       toast.success('Memória criada com sucesso!');
       onOpenChange(false);
@@ -134,15 +117,12 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
     setStartDate(undefined);
     setEndDate(undefined);
     setIsPeriod(false);
-    setMediaFile(null);
-    setMediaPreview(null);
+    setMediaFiles([]);
   };
-
-  const isVideo = mediaFile?.type.startsWith('video/');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nova Memória</DialogTitle>
         </DialogHeader>
@@ -241,44 +221,11 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
           </div>
 
           <div className="space-y-2">
-            <Label>Foto ou Vídeo</Label>
-            {mediaPreview ? (
-              <div className="relative">
-                {isVideo ? (
-                  <video src={mediaPreview} className="w-full rounded-lg max-h-64" controls />
-                ) : (
-                  <img src={mediaPreview} alt="Preview" className="w-full rounded-lg max-h-64 object-cover" />
-                )}
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-2 right-2"
-                  onClick={handleRemoveMedia}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-                <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <Label htmlFor="media" className="cursor-pointer">
-                  <span className="text-sm text-primary hover:underline">
-                    Clique para selecionar
-                  </span>
-                  <Input
-                    id="media"
-                    type="file"
-                    accept="image/*,video/*"
-                    className="hidden"
-                    onChange={handleMediaSelect}
-                  />
-                </Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  JPG, PNG, MP4 ou WEBM
-                </p>
-              </div>
-            )}
+            <Label>Fotos e Vídeos (até 10 arquivos)</Label>
+            <MediaUploader
+              onMediaChange={setMediaFiles}
+              maxFiles={10}
+            />
           </div>
 
           <div className="flex gap-3 pt-4">

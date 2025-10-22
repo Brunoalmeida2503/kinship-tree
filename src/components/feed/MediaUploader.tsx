@@ -4,7 +4,7 @@ import { Image, Video, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-interface MediaFile {
+export interface MediaFile {
   file: File;
   preview: string;
   type: 'image' | 'video';
