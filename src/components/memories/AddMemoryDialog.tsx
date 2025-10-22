@@ -48,10 +48,10 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
     setMediaPreview(null);
   };
 
-  const uploadMedia = async (file: File): Promise<string> => {
+  const uploadMedia = async (file: File, userId: string): Promise<string> => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${crypto.randomUUID()}.${fileExt}`;
-    const filePath = `${fileName}`;
+    const filePath = `${userId}/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from('posts')
@@ -102,7 +102,7 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
 
       let imageUrl = null;
       if (mediaFile) {
-        imageUrl = await uploadMedia(mediaFile);
+        imageUrl = await uploadMedia(mediaFile, user.id);
       }
 
       const { error } = await supabase.from('memories').insert({
