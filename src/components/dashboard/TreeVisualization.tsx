@@ -343,7 +343,7 @@ export function TreeVisualization() {
     );
 
     return (
-      <div className="w-full overflow-auto bg-muted/20 rounded-lg">
+      <div className="w-full bg-muted/20 rounded-lg">
         <div className="flex items-center justify-center gap-2 p-2 border-b border-border">
           <Button
             variant="outline"
@@ -361,12 +361,14 @@ export function TreeVisualization() {
             +
           </Button>
         </div>
-        <div className="flex items-center justify-center p-8">
+        <div className="w-full p-4 md:p-8">
           <svg 
-            width={svgWidth * zoom} 
-            height={svgHeight * zoom} 
+            width="100%"
+            height="auto"
             viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+            preserveAspectRatio="xMidYMid meet"
             className="mx-auto"
+            style={{ transform: `scale(${zoom})`, transformOrigin: 'center', transition: 'transform 0.2s' }}
           >
             {/* Conexões entre gerações */}
             {parentNodes.length > 0 && (
@@ -675,7 +677,7 @@ export function TreeVisualization() {
       </CardHeader>
       <CardContent>
         {treeData ? (
-          <div className="overflow-x-auto">
+          <div>
             {viewMode === 'graph' ? renderGraphView() : renderListView()}
           </div>
         ) : (
