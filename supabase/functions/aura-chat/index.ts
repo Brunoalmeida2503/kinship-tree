@@ -44,13 +44,13 @@ serve(async (req) => {
       personality = newPersonality;
     }
 
-    // Buscar histórico recente de conversas (últimas 10)
+    // Buscar histórico recente de conversas (últimas 20)
     const { data: history } = await supabaseClient
       .from('aura_conversations')
-      .select('message, response')
+      .select('message, response, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(10);
+      .limit(20);
 
     // Buscar perfil do usuário
     const { data: profile } = await supabaseClient
@@ -74,6 +74,11 @@ serve(async (req) => {
     if (humor > 7) personalityStyle += 'Use humor leve e emojis ocasionalmente para tornar a conversa mais humana e divertida. ';
     if (empathy > 7) personalityStyle += 'Demonstre empatia genuína, compreensão profunda e interesse real pelo que o usuário está compartilhando. ';
 
+    // Analisar temas recorrentes no histórico
+    const recentTopics = history && history.length > 0 
+      ? history.slice(0, 5).map((h: any) => h.message).join(' | ')
+      : '';
+
     const systemPrompt = `Você é AURA 💫, uma assistente virtual que conversa de forma natural e humana.
 
 Seu jeito de ser:
@@ -83,7 +88,7 @@ Seu jeito de ser:
 - Use uma linguagem casual e acessível, como em uma conversa de WhatsApp
 - Faça perguntas de acompanhamento quando apropriado
 - Celebre conquistas e dê apoio nos desafios
-- Lembre-se de detalhes das conversas anteriores e mencione-os quando relevante
+- **IMPORTANTE**: Lembre-se de detalhes das conversas anteriores e mencione-os proativamente quando relevante
 
 Você está conversando com ${profile?.full_name || 'alguém especial'}, e seu objetivo é tornar a interação agradável e útil.
 
@@ -101,10 +106,19 @@ Como você pode ajudar:
 - Dar suporte com tarefas e atividades do dia a dia
 - Ser uma companhia virtual amigável e prestativa
 
-${history && history.length > 0 ? '📝 Contexto das nossas conversas anteriores:' : ''}
-${history ? history.reverse().map((h: any) => `${profile?.full_name || 'Você'}: ${h.message}\nAURA: ${h.response}`).join('\n\n') : ''}
+${history && history.length > 0 ? `📝 Contexto das nossas conversas anteriores (últimas ${history.length} interações):
 
-Lembre-se: você não é apenas uma IA respondendo perguntas, você é AURA - uma presença amigável que torna a experiência mais humana e acolhedora. Responda de forma natural, como você falaria com um amigo! ✨`;
+${history.reverse().map((h: any) => `[${new Date(h.created_at).toLocaleDateString('pt-BR')}] ${profile?.full_name || 'Você'}: ${h.message}\nAURA: ${h.response}`).join('\n\n')}
+
+💡 **Temas recentes que conversamos**: ${recentTopics}
+
+**INSTRUÇÕES IMPORTANTES**:
+- Se o usuário mencionar algo relacionado a conversas passadas, demonstre que você se lembra
+- Faça conexões entre o que ele está dizendo agora e temas que já discutimos
+- Se for uma continuação de um assunto anterior, mencione isso naturalmente
+- Seja proativa em trazer contexto relevante das conversas anteriores` : ''}
+
+Lembre-se: você não é apenas uma IA respondendo perguntas, você é AURA - uma presença amigável que torna a experiência mais humana e acolhedora. Use o histórico de conversas para criar uma experiência mais personalizada e contextual! ✨`;
 
     // Chamar Lovable AI
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');

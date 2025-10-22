@@ -27,7 +27,7 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -35,11 +35,14 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
     }
   }, [open]);
 
+  // Scroll para última mensagem sempre que as mensagens mudarem
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
+    scrollToBottom();
+  }, [messages, isLoading]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   const loadHistory = async () => {
     if (!user) return;
@@ -149,7 +152,7 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 p-6" ref={scrollRef}>
+        <ScrollArea className="flex-1 p-6">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
               <Avatar className="h-24 w-24">
@@ -205,6 +208,7 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
                   </div>
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </ScrollArea>
