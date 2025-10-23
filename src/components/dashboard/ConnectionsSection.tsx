@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { UserPlus, Check, X } from 'lucide-react';
+import { UserPlus, Check, X, Users, Heart, Globe } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const relationshipTypes = [
   { value: 'pai', label: 'Pai' },
@@ -32,6 +33,12 @@ const relationshipTypes = [
   { value: 'outro', label: 'Outro' }
 ];
 
+const friendRelationshipTypes = [
+  { value: 'amigo', label: 'Amigo' },
+  { value: 'amiga', label: 'Amiga' },
+  { value: 'colega', label: 'Colega' }
+];
+
 export function ConnectionsSection() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -42,6 +49,9 @@ export function ConnectionsSection() {
   const [relationship, setRelationship] = useState('');
   const [theirRelationship, setTheirRelationship] = useState('');
   const [loading, setLoading] = useState(false);
+  const [connectionType, setConnectionType] = useState<'family' | 'friend'>('family');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [filterType, setFilterType] = useState<'all' | 'family' | 'friend'>('all');
 
   useEffect(() => {
     if (user) {
@@ -137,7 +147,8 @@ export function ConnectionsSection() {
         relationship_from_requester: relationship as any,
         relationship_from_receiver: theirRelationship as any,
         is_ancestor: isAncestor,
-        ancestor_confirmed_by: isAncestor ? [] : null
+        ancestor_confirmed_by: isAncestor ? [] : null,
+        connection_type: connectionType
       }]);
 
     if (error) {
@@ -151,13 +162,25 @@ export function ConnectionsSection() {
         title: 'Solicitação enviada!',
         description: isAncestor 
           ? `Solicitação de ancestral enviada para ${selectedUser.full_name}. Seus parentes diretos precisarão confirmar.`
+          : connectionType === 'friend'
+          ? `Solicitação de amizade enviada para ${selectedUser.full_name}!`
           : `${selectedUser.full_name} receberá sua solicitação.`
       });
       setSelectedUser(null);
       setSearchEmail('');
       setRelationship('');
       setTheirRelationship('');
+      setIsDialogOpen(false);
     }
+  };
+
+  const openDialog = (type: 'family' | 'friend') => {
+    setConnectionType(type);
+    setIsDialogOpen(true);
+    setSelectedUser(null);
+    setSearchEmail('');
+    setRelationship('');
+    setTheirRelationship('');
   };
 
   const handleRequest = async (connectionId: string, accept: boolean) => {
@@ -182,19 +205,27 @@ export function ConnectionsSection() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5" />
-            Nova Conexão Familiar
+            Nova Conexão
           </CardTitle>
-          <CardDescription>Busque pessoas pelo email e crie vínculos familiares</CardDescription>
+          <CardDescription>Adicione familiares ou amigos</CardDescription>
         </CardHeader>
         <CardContent>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button>Adicionar Familiar</Button>
-            </DialogTrigger>
+          <div className="flex gap-2">
+            <Button onClick={() => openDialog('family')}>Adicionar Familiar</Button>
+            <Button variant="outline" onClick={() => openDialog('friend')}>Adicionar Amigo</Button>
+          </div>
+          
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Adicionar Familiar</DialogTitle>
-                <DialogDescription>Busque a pessoa pelo email e defina o grau de parentesco</DialogDescription>
+                <DialogTitle>
+                  {connectionType === 'family' ? 'Adicionar Familiar' : 'Adicionar Amigo'}
+                </DialogTitle>
+                <DialogDescription>
+                  {connectionType === 'family' 
+                    ? 'Busque a pessoa pelo nome e defina o grau de parentesco'
+                    : 'Busque a pessoa pelo nome para adicionar como amigo'}
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="flex gap-2">
@@ -213,13 +244,17 @@ export function ConnectionsSection() {
                     <p className="font-medium">{selectedUser.full_name}</p>
                     
                     <div className="space-y-2">
-                      <Label>Essa pessoa é meu/minha:</Label>
+                      <Label>
+                        {connectionType === 'family' 
+                          ? 'Essa pessoa é meu/minha:' 
+                          : 'Tipo de amizade:'}
+                      </Label>
                       <Select value={relationship} onValueChange={setRelationship}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione o parentesco" />
+                          <SelectValue placeholder={connectionType === 'family' ? 'Selecione o parentesco' : 'Selecione o tipo'} />
                         </SelectTrigger>
                         <SelectContent>
-                          {relationshipTypes.map(type => (
+                          {(connectionType === 'family' ? relationshipTypes : friendRelationshipTypes).map(type => (
                             <SelectItem key={type.value} value={type.value}>
                               {type.label}
                             </SelectItem>
@@ -229,13 +264,17 @@ export function ConnectionsSection() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Eu sou o/a {relationship || '...'} dessa pessoa, então eu sou:</Label>
+                      <Label>
+                        {connectionType === 'family'
+                          ? `Eu sou o/a ${relationship || '...'} dessa pessoa, então eu sou:`
+                          : 'Para essa pessoa, eu sou:'}
+                      </Label>
                       <Select value={theirRelationship} onValueChange={setTheirRelationship}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione seu parentesco" />
+                          <SelectValue placeholder={connectionType === 'family' ? 'Selecione seu parentesco' : 'Selecione o tipo'} />
                         </SelectTrigger>
                         <SelectContent>
-                          {relationshipTypes.map(type => (
+                          {(connectionType === 'family' ? relationshipTypes : friendRelationshipTypes).map(type => (
                             <SelectItem key={type.value} value={type.value}>
                               {type.label}
                             </SelectItem>
@@ -265,9 +304,18 @@ export function ConnectionsSection() {
               {pendingRequests.map((request) => (
                 <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
-                    <p className="font-medium">{request.requester.full_name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{request.requester.full_name}</p>
+                      {request.connection_type === 'friend' ? (
+                        <Heart className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">
-                      Quer ser seu/sua {request.relationship_from_receiver}
+                      {request.connection_type === 'friend'
+                        ? 'Quer ser seu amigo(a)'
+                        : `Quer ser seu/sua ${request.relationship_from_receiver}`}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -288,11 +336,32 @@ export function ConnectionsSection() {
       <Card>
         <CardHeader>
           <CardTitle>Minhas Conexões</CardTitle>
-          <CardDescription>{connections.length} conexões familiares</CardDescription>
+          <CardDescription>
+            {connections.filter(c => filterType === 'all' || c.connection_type === filterType).length} conexões
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {connections.map((connection) => {
+            <Tabs value={filterType} onValueChange={(v) => setFilterType(v as any)}>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="all" className="gap-2">
+                  <Globe className="h-4 w-4" />
+                  Todas
+                </TabsTrigger>
+                <TabsTrigger value="family" className="gap-2">
+                  <Users className="h-4 w-4" />
+                  Família
+                </TabsTrigger>
+                <TabsTrigger value="friend" className="gap-2">
+                  <Heart className="h-4 w-4" />
+                  Amigos
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            
+            {connections
+              .filter(c => filterType === 'all' || c.connection_type === filterType)
+              .map((connection) => {
               const otherPerson = connection.requester_id === user?.id 
                 ? connection.receiver 
                 : connection.requester;
@@ -309,9 +378,13 @@ export function ConnectionsSection() {
                 </div>
               );
             })}
-            {connections.length === 0 && (
+            {connections.filter(c => filterType === 'all' || c.connection_type === filterType).length === 0 && (
               <p className="text-muted-foreground text-center py-8">
-                Você ainda não tem conexões. Comece adicionando familiares!
+                {filterType === 'all' 
+                  ? 'Você ainda não tem conexões. Comece adicionando familiares ou amigos!'
+                  : filterType === 'family'
+                  ? 'Você ainda não tem conexões familiares.'
+                  : 'Você ainda não tem amigos adicionados.'}
               </p>
             )}
           </div>

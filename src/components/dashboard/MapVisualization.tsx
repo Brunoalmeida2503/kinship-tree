@@ -8,8 +8,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Globe, Map, MapPin, User, X, Calendar } from 'lucide-react';
+import { Globe, Map, MapPin, User, X, Calendar, Users, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type ZoomLevel = 'world' | 'continent' | 'country' | 'state';
 
@@ -35,6 +36,7 @@ const MapVisualization = () => {
   const map = useRef<mapboxgl.Map | null>(null);
   const [currentZoom, setCurrentZoom] = useState<ZoomLevel>('world');
   const [selectedLocation, setSelectedLocation] = useState<{ users: UserLocation[], location: string } | null>(null);
+  const [connectionFilter, setConnectionFilter] = useState<'all' | 'family' | 'friend'>('all');
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -50,16 +52,24 @@ const MapVisualization = () => {
 
     try {
       // Buscar perfil do usuário e suas conexões
-      const { data: connections, error } = await supabase
+      let query = supabase
         .from('connections')
         .select(`
           id,
           requester_id,
           receiver_id,
-          status
+          status,
+          connection_type
         `)
         .eq('status', 'accepted')
         .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);
+      
+      // Aplicar filtro de tipo de conexão
+      if (connectionFilter !== 'all') {
+        query = query.eq('connection_type', connectionFilter);
+      }
+      
+      const { data: connections, error } = await query;
 
       if (error) throw error;
 
@@ -259,18 +269,41 @@ const MapVisualization = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (map.current && user) {
+      loadConnections();
+    }
+  }, [connectionFilter]);
+
   return (
     <>
       <Card className="p-6">
         <div className="space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
-            <h3 className="text-lg font-semibold">Mapa de Conexões da Família</h3>
+            <h3 className="text-lg font-semibold">Mapa de Conexões</h3>
             <div className="flex items-center gap-2">
               <Button onClick={loadConnections} variant="outline" size="sm">
                 Atualizar
               </Button>
             </div>
           </div>
+          
+          <Tabs value={connectionFilter} onValueChange={(v) => setConnectionFilter(v as any)}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="all" className="gap-2">
+                <Globe className="h-4 w-4" />
+                Todas
+              </TabsTrigger>
+              <TabsTrigger value="family" className="gap-2">
+                <Users className="h-4 w-4" />
+                Família
+              </TabsTrigger>
+              <TabsTrigger value="friend" className="gap-2">
+                <Heart className="h-4 w-4" />
+                Amigos
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
           
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm text-muted-foreground">Nível de Zoom:</span>

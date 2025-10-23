@@ -98,6 +98,7 @@ export type Database = {
       connections: {
         Row: {
           ancestor_confirmed_by: string[] | null
+          connection_type: string
           created_at: string | null
           id: string
           is_ancestor: boolean | null
@@ -110,6 +111,7 @@ export type Database = {
         }
         Insert: {
           ancestor_confirmed_by?: string[] | null
+          connection_type?: string
           created_at?: string | null
           id?: string
           is_ancestor?: boolean | null
@@ -122,6 +124,7 @@ export type Database = {
         }
         Update: {
           ancestor_confirmed_by?: string[] | null
+          connection_type?: string
           created_at?: string | null
           id?: string
           is_ancestor?: boolean | null

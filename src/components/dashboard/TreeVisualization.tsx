@@ -42,6 +42,7 @@ export function TreeVisualization() {
       .from('connections')
       .select('*')
       .eq('status', 'accepted')
+      .eq('connection_type', 'family')
       .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);
 
     if (error) {
