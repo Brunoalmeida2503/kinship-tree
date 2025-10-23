@@ -4,7 +4,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Share2, Loader2, Users, UsersRound, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -37,8 +36,8 @@ export function ShareMemoryDialog({ memoryId, open, onOpenChange }: ShareMemoryD
   const [shareWithTree, setShareWithTree] = useState(false);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [selectedUser, setSelectedUser] = useState<string>('');
-  const [selectedGroup, setSelectedGroup] = useState<string>('');
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [currentShares, setCurrentShares] = useState<Share[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -139,26 +138,28 @@ export function ShareMemoryDialog({ memoryId, open, onOpenChange }: ShareMemoryD
     }
   };
 
-  const handleShareWithUser = async () => {
-    if (!selectedUser) return;
+  const handleShareWithUsers = async () => {
+    if (selectedUsers.length === 0) return;
 
     setSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
+      const shares = selectedUsers.map(userId => ({
+        memory_id: memoryId,
+        shared_by: user.id,
+        shared_with_user_id: userId,
+      }));
+
       const { error } = await supabase
         .from('memory_shares')
-        .insert({
-          memory_id: memoryId,
-          shared_by: user.id,
-          shared_with_user_id: selectedUser,
-        });
+        .insert(shares);
 
       if (error) throw error;
 
-      toast.success('Memória compartilhada com sucesso!');
-      setSelectedUser('');
+      toast.success(`Memória compartilhada com ${selectedUsers.length} pessoa(s)!`);
+      setSelectedUsers([]);
       loadData();
     } catch (error) {
       console.error('Erro:', error);
@@ -168,26 +169,28 @@ export function ShareMemoryDialog({ memoryId, open, onOpenChange }: ShareMemoryD
     }
   };
 
-  const handleShareWithGroup = async () => {
-    if (!selectedGroup) return;
+  const handleShareWithGroups = async () => {
+    if (selectedGroups.length === 0) return;
 
     setSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
 
+      const shares = selectedGroups.map(groupId => ({
+        memory_id: memoryId,
+        shared_by: user.id,
+        shared_with_group_id: groupId,
+      }));
+
       const { error } = await supabase
         .from('memory_shares')
-        .insert({
-          memory_id: memoryId,
-          shared_by: user.id,
-          shared_with_group_id: selectedGroup,
-        });
+        .insert(shares);
 
       if (error) throw error;
 
-      toast.success('Memória compartilhada com o grupo!');
-      setSelectedGroup('');
+      toast.success(`Memória compartilhada com ${selectedGroups.length} grupo(s)!`);
+      setSelectedGroups([]);
       loadData();
     } catch (error) {
       console.error('Erro:', error);
@@ -195,6 +198,22 @@ export function ShareMemoryDialog({ memoryId, open, onOpenChange }: ShareMemoryD
     } finally {
       setSaving(false);
     }
+  };
+
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUsers(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const toggleGroupSelection = (groupId: string) => {
+    setSelectedGroups(prev => 
+      prev.includes(groupId) 
+        ? prev.filter(id => id !== groupId)
+        : [...prev, groupId]
+    );
   };
 
   const handleRemoveShare = async (shareId: string) => {
@@ -252,47 +271,75 @@ export function ShareMemoryDialog({ memoryId, open, onOpenChange }: ShareMemoryD
             </div>
           </div>
 
-          {/* Compartilhar com usuário específico */}
+          {/* Compartilhar com pessoas específicas */}
           <div className="space-y-3">
-            <Label>Compartilhar com pessoa específica</Label>
-            <div className="flex gap-2">
-              <Select value={selectedUser} onValueChange={setSelectedUser}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Selecione uma pessoa" />
-                </SelectTrigger>
-                <SelectContent>
-                  {connections.map((conn) => (
-                    <SelectItem key={conn.id} value={conn.id}>
-                      {conn.full_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button onClick={handleShareWithUser} disabled={!selectedUser || saving}>
-                <Users className="h-4 w-4" />
+            <div className="flex items-center justify-between">
+              <Label>Compartilhar com pessoas específicas</Label>
+              <Button 
+                onClick={handleShareWithUsers} 
+                disabled={selectedUsers.length === 0 || saving}
+                size="sm"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Compartilhar ({selectedUsers.length})
               </Button>
+            </div>
+            <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
+              {connections.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhuma conexão disponível
+                </p>
+              ) : (
+                connections.map((conn) => (
+                  <div key={conn.id} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`user-${conn.id}`}
+                      checked={selectedUsers.includes(conn.id)}
+                      onCheckedChange={() => toggleUserSelection(conn.id)}
+                      disabled={saving}
+                    />
+                    <Label htmlFor={`user-${conn.id}`} className="cursor-pointer flex-1">
+                      {conn.full_name}
+                    </Label>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
-          {/* Compartilhar com grupo */}
+          {/* Compartilhar com grupos */}
           <div className="space-y-3">
-            <Label>Compartilhar com grupo</Label>
-            <div className="flex gap-2">
-              <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Selecione um grupo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {groups.map((group) => (
-                    <SelectItem key={group.id} value={group.id}>
-                      {group.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button onClick={handleShareWithGroup} disabled={!selectedGroup || saving}>
-                <UsersRound className="h-4 w-4" />
+            <div className="flex items-center justify-between">
+              <Label>Compartilhar com grupos</Label>
+              <Button 
+                onClick={handleShareWithGroups} 
+                disabled={selectedGroups.length === 0 || saving}
+                size="sm"
+              >
+                <UsersRound className="h-4 w-4 mr-2" />
+                Compartilhar ({selectedGroups.length})
               </Button>
+            </div>
+            <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
+              {groups.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhum grupo disponível
+                </p>
+              ) : (
+                groups.map((group) => (
+                  <div key={group.id} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`group-${group.id}`}
+                      checked={selectedGroups.includes(group.id)}
+                      onCheckedChange={() => toggleGroupSelection(group.id)}
+                      disabled={saving}
+                    />
+                    <Label htmlFor={`group-${group.id}`} className="cursor-pointer flex-1">
+                      {group.name}
+                    </Label>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
