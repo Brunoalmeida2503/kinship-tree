@@ -2,6 +2,8 @@ import { Home, User, Target, Images, LogOut, GitBranch, Users } from "lucide-rea
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
+import logoDark from "@/assets/logo-dark.png";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   Sidebar,
   SidebarContent,
@@ -33,8 +35,11 @@ export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { themeColor } = useTheme();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
+  
+  const currentLogo = themeColor === 'green' ? logoDark : logo;
 
   const isActive = (path: string) => currentPath === path;
 
@@ -47,7 +52,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className={`flex items-center px-4 py-3 ${collapsed ? 'justify-center' : ''}`}>
-          <img src={logo} alt="Tree Logo" className={collapsed ? "h-8 w-auto" : "h-10 w-auto"} />
+          <img src={currentLogo} alt="Tree Logo" className={collapsed ? "h-8 w-auto" : "h-10 w-auto"} />
         </div>
       </SidebarHeader>
 
