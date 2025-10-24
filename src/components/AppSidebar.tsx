@@ -31,7 +31,7 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, setOpenMobile, isMobile } = useSidebar();
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -43,13 +43,19 @@ export function AppSidebar() {
 
   const isActive = (path: string) => currentPath === path;
 
+  const handleNavClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
   };
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" className="w-56">
       <SidebarHeader>
         <div className={`flex items-center px-4 py-3 ${collapsed ? 'justify-center' : ''}`}>
           <img src={currentLogo} alt="Tree Logo" className={collapsed ? "h-8 w-auto" : "h-10 w-auto"} />
@@ -64,7 +70,7 @@ export function AppSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <NavLink to={item.url} end>
+                    <NavLink to={item.url} end onClick={handleNavClick}>
                       <item.icon />
                       <span>{item.title}</span>
                     </NavLink>
