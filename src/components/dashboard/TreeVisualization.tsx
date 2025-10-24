@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TreePine, User } from 'lucide-react';
+import { TreePine, User, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ZoomIn, ZoomOut } from 'lucide-react';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface TreeNode {
   id: string;
@@ -27,7 +27,10 @@ export function TreeVisualization() {
     root: TreeNode;
   } | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'graph'>('graph');
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(1.2);
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     if (user) {
@@ -311,6 +314,30 @@ export function TreeVisualization() {
     });
   };
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsPanning(true);
+    setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isPanning) return;
+    setPanOffset({
+      x: e.clientX - panStart.x,
+      y: e.clientY - panStart.y,
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsPanning(false);
+  };
+
+  const handleZoomIn = () => setZoom(Math.min(3, zoom + 0.2));
+  const handleZoomOut = () => setZoom(Math.max(0.5, zoom - 0.2));
+  const handleResetView = () => {
+    setZoom(1.2);
+    setPanOffset({ x: 0, y: 0 });
+  };
+
   const renderGraphView = () => {
     if (!treeData) return null;
 
@@ -345,32 +372,67 @@ export function TreeVisualization() {
 
     return (
       <div className="w-full bg-muted/20 rounded-lg">
-        <div className="flex items-center justify-center gap-2 p-2 border-b border-border">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
-          >
-            -
-          </Button>
-          <span className="text-sm font-medium min-w-[60px] text-center">{Math.round(zoom * 100)}%</span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setZoom(Math.min(2, zoom + 0.1))}
-          >
-            +
-          </Button>
+        <div className="flex items-center justify-between gap-2 p-3 border-b border-border">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleZoomOut}
+              title="Reduzir zoom"
+            >
+              <ZoomOut className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleZoomIn}
+              title="Aumentar zoom"
+            >
+              <ZoomIn className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleResetView}
+              title="Resetar visualização"
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Arraste para navegar • Role para zoom
+          </p>
         </div>
-        <div className="w-full p-4 md:p-8">
-          <svg 
-            width="100%"
-            height="auto"
-            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-            preserveAspectRatio="xMidYMid meet"
-            className="mx-auto"
-            style={{ transform: `scale(${zoom})`, transformOrigin: 'center', transition: 'transform 0.2s' }}
+        <ScrollArea className="w-full h-[600px]">
+          <div 
+            className="w-full p-4 md:p-8 cursor-grab active:cursor-grabbing"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+            onWheel={(e) => {
+              e.preventDefault();
+              if (e.deltaY < 0) {
+                handleZoomIn();
+              } else {
+                handleZoomOut();
+              }
+            }}
           >
+            <svg 
+              width="100%"
+              height="auto"
+              viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+              preserveAspectRatio="xMidYMid meet"
+              className="mx-auto pointer-events-none"
+              style={{ 
+                transform: `scale(${zoom}) translate(${panOffset.x / zoom}px, ${panOffset.y / zoom}px)`, 
+                transformOrigin: 'center', 
+                transition: isPanning ? 'none' : 'transform 0.2s',
+                minWidth: `${svgWidth * zoom}px`,
+                minHeight: `${svgHeight * zoom}px`
+              }}
+            >
             {/* Conexões entre gerações */}
             {parentNodes.length > 0 && (
               <>
@@ -506,8 +568,11 @@ export function TreeVisualization() {
                 </foreignObject>
               </g>
             ))}
-          </svg>
-        </div>
+            </svg>
+          </div>
+          <ScrollBar orientation="horizontal" />
+          <ScrollBar orientation="vertical" />
+        </ScrollArea>
       </div>
     );
   };
