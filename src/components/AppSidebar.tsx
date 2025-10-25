@@ -44,9 +44,7 @@ export function AppSidebar() {
   const isActive = (path: string) => currentPath === path;
 
   const handleNavClick = () => {
-    if (isMobile) {
-      setOpenMobile(false);
-    }
+    setOpenMobile(false);
   };
 
   const handleLogout = async () => {
