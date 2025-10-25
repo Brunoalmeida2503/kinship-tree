@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TreePine, User, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { TreePine, User, ZoomIn, ZoomOut, Maximize2, Move } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TreeNode {
   id: string;
@@ -22,12 +23,14 @@ interface TreeNode {
 
 export function TreeVisualization() {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
+  const containerRef = useRef<HTMLDivElement>(null);
   const [treeData, setTreeData] = useState<{
     generations: Map<number, TreeNode[]>;
     root: TreeNode;
   } | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'graph'>('graph');
-  const [zoom, setZoom] = useState(1.2);
+  const [zoom, setZoom] = useState(isMobile ? 0.6 : 1);
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -331,10 +334,28 @@ export function TreeVisualization() {
     setIsPanning(false);
   };
 
-  const handleZoomIn = () => setZoom(Math.min(3, zoom + 0.2));
-  const handleZoomOut = () => setZoom(Math.max(0.5, zoom - 0.2));
+  const handleZoomIn = () => setZoom(Math.min(3, zoom + (isMobile ? 0.1 : 0.2)));
+  const handleZoomOut = () => setZoom(Math.max(0.3, zoom - (isMobile ? 0.1 : 0.2)));
+  
   const handleResetView = () => {
-    setZoom(1.2);
+    setZoom(isMobile ? 0.6 : 1);
+    setPanOffset({ x: 0, y: 0 });
+  };
+
+  const handleFitToScreen = () => {
+    if (!containerRef.current) return;
+    const container = containerRef.current;
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    
+    const treeWidth = 1800;
+    const treeHeight = 700;
+    
+    const zoomX = (containerWidth * 0.9) / treeWidth;
+    const zoomY = (containerHeight * 0.85) / treeHeight;
+    const optimalZoom = Math.min(zoomX, zoomY, 2);
+    
+    setZoom(Math.max(optimalZoom, 0.3));
     setPanOffset({ x: 0, y: 0 });
   };
 
@@ -371,45 +392,66 @@ export function TreeVisualization() {
     );
 
     return (
-      <div className="w-full bg-muted/20 rounded-lg">
-        <div className="flex items-center justify-between gap-2 p-3 border-b border-border">
-          <div className="flex items-center gap-2">
+      <div ref={containerRef} className="w-full bg-muted/20 rounded-lg">
+        <div className="flex items-center justify-between gap-2 p-2 sm:p-3 border-b border-border">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Button
               variant="outline"
-              size="sm"
+              size={isMobile ? "icon" : "sm"}
               onClick={handleZoomOut}
               title="Reduzir zoom"
+              className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
             >
-              <ZoomOut className="h-4 w-4" />
+              <ZoomOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
             <Button
               variant="outline"
-              size="sm"
+              size={isMobile ? "icon" : "sm"}
               onClick={handleZoomIn}
               title="Aumentar zoom"
+              className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
             >
-              <ZoomIn className="h-4 w-4" />
+              <ZoomIn className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
             <Button
               variant="outline"
-              size="sm"
-              onClick={handleResetView}
-              title="Resetar visualização"
+              size={isMobile ? "icon" : "sm"}
+              onClick={handleFitToScreen}
+              title="Ajustar à tela"
+              className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
             >
-              <Maximize2 className="h-4 w-4" />
+              <Maximize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size={isMobile ? "icon" : "sm"}
+              onClick={handleResetView}
+              title="Resetar"
+              className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
+            >
+              <Move className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">
             Arraste para navegar • Role para zoom
           </p>
         </div>
-        <ScrollArea className="w-full h-[600px]">
+        <ScrollArea className="w-full h-[400px] sm:h-[500px] md:h-[600px]">
           <div 
-            className="w-full p-4 md:p-8 cursor-grab active:cursor-grabbing"
+            className="w-full p-2 sm:p-4 md:p-8 cursor-grab active:cursor-grabbing touch-pan-y"
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onTouchStart={(e) => {
+              const touch = e.touches[0];
+              handleMouseDown({ clientX: touch.clientX, clientY: touch.clientY, preventDefault: () => {} } as any);
+            }}
+            onTouchMove={(e) => {
+              const touch = e.touches[0];
+              handleMouseMove({ clientX: touch.clientX, clientY: touch.clientY } as any);
+            }}
+            onTouchEnd={handleMouseUp}
             onWheel={(e) => {
               e.preventDefault();
               if (e.deltaY < 0) {
@@ -424,11 +466,11 @@ export function TreeVisualization() {
               height="auto"
               viewBox={`0 0 ${svgWidth} ${svgHeight}`}
               preserveAspectRatio="xMidYMid meet"
-              className="mx-auto pointer-events-none"
+              className="mx-auto pointer-events-none select-none"
               style={{ 
                 transform: `scale(${zoom}) translate(${panOffset.x / zoom}px, ${panOffset.y / zoom}px)`, 
                 transformOrigin: 'center', 
-                transition: isPanning ? 'none' : 'transform 0.2s',
+                transition: isPanning ? 'none' : 'transform 0.2s ease-out',
                 minWidth: `${svgWidth * zoom}px`,
                 minHeight: `${svgHeight * zoom}px`
               }}
@@ -539,35 +581,46 @@ export function TreeVisualization() {
             ))}
 
             {/* Renderizar nós */}
-            {allNodes.map(node => (
-              <g key={node.id} transform={`translate(${(node.x || 0) - 60}, ${(node.y || 0) - 30})`}>
-                <rect
-                  width="120"
-                  height="60"
-                  rx="8"
-                  fill="hsl(var(--card))"
-                  stroke="hsl(var(--border))"
-                  strokeWidth="1.5"
-                  className="transition-all hover:stroke-primary"
-                />
-                <foreignObject x="6" y="6" width="36" height="36">
-                  <Avatar className="w-9 h-9 border border-primary/50">
-                    <AvatarImage src={node.avatar_url} alt={node.name} />
-                    <AvatarFallback className="bg-primary/20 text-xs">
-                      <User className="w-4 h-4 text-primary" />
-                    </AvatarFallback>
-                  </Avatar>
-                </foreignObject>
-                <foreignObject x="45" y="8" width="70" height="48">
-                  <div className="text-xs">
-                    <p className="font-semibold text-foreground truncate leading-tight">{node.name}</p>
-                    {node.relationship !== 'root' && (
-                      <p className="text-[10px] text-muted-foreground capitalize mt-0.5">{node.relationship}</p>
-                    )}
-                  </div>
-                </foreignObject>
-              </g>
-            ))}
+            {allNodes.map(node => {
+              const nodeWidth = isMobile ? 100 : 120;
+              const nodeHeight = isMobile ? 50 : 60;
+              const avatarSize = isMobile ? 28 : 36;
+              const textWidth = isMobile ? 58 : 70;
+              
+              return (
+                <g key={node.id} transform={`translate(${(node.x || 0) - nodeWidth/2}, ${(node.y || 0) - nodeHeight/2})`}>
+                  <rect
+                    width={nodeWidth}
+                    height={nodeHeight}
+                    rx={isMobile ? "6" : "8"}
+                    fill="hsl(var(--card))"
+                    stroke="hsl(var(--border))"
+                    strokeWidth="1.5"
+                    className="transition-all hover:stroke-primary"
+                  />
+                  <foreignObject x="6" y={isMobile ? "4" : "6"} width={avatarSize} height={avatarSize}>
+                    <Avatar className={`${isMobile ? 'w-7 h-7' : 'w-9 h-9'} border border-primary/50`}>
+                      <AvatarImage src={node.avatar_url} alt={node.name} />
+                      <AvatarFallback className="bg-primary/20 text-xs">
+                        <User className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} text-primary`} />
+                      </AvatarFallback>
+                    </Avatar>
+                  </foreignObject>
+                  <foreignObject x={isMobile ? "37" : "45"} y={isMobile ? "6" : "8"} width={textWidth} height={nodeHeight - 12}>
+                    <div className={isMobile ? "text-[10px]" : "text-xs"}>
+                      <p className="font-semibold text-foreground truncate leading-tight">
+                        {isMobile && node.name.length > 12 ? node.name.substring(0, 10) + '...' : node.name}
+                      </p>
+                      {node.relationship !== 'root' && (
+                        <p className={`${isMobile ? 'text-[8px]' : 'text-[10px]'} text-muted-foreground capitalize mt-0.5`}>
+                          {node.relationship}
+                        </p>
+                      )}
+                    </div>
+                  </foreignObject>
+                </g>
+              );
+            })}
             </svg>
           </div>
           <ScrollBar orientation="horizontal" />
