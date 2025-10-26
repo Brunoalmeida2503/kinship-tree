@@ -51,7 +51,7 @@ export const SixDegreesMission = () => {
       .from("missions")
       .select(`
         *,
-        profiles!missions_target_id_fkey(full_name, avatar_url)
+        target_profile:profiles!target_id(full_name, avatar_url)
       `)
       .eq("user_id", user.id)
       .eq("status", "active")
@@ -65,14 +65,7 @@ export const SixDegreesMission = () => {
 
     if (missions && missions.length > 0) {
       const mission: any = missions[0];
-      const targetProfile = mission.profiles;
-      setActiveMission({
-        ...mission,
-        target_profile: targetProfile ? {
-          full_name: targetProfile.full_name,
-          avatar_url: targetProfile.avatar_url
-        } : undefined
-      });
+      setActiveMission(mission);
       await loadSuggestions(mission.id, mission.current_degree);
     }
   };
@@ -85,7 +78,7 @@ export const SixDegreesMission = () => {
         suggested_user_id,
         connection_strength,
         common_connections,
-        profiles!mission_suggestions_suggested_user_id_fkey(id, full_name, avatar_url)
+        suggested_profile:profiles!suggested_user_id(id, full_name, avatar_url)
       `)
       .eq("mission_id", missionId)
       .eq("degree", currentDegree)
@@ -99,9 +92,9 @@ export const SixDegreesMission = () => {
 
     if (data) {
       const formattedSuggestions = data.map((s: any) => ({
-        id: s.profiles.id,
-        full_name: s.profiles.full_name,
-        avatar_url: s.profiles.avatar_url,
+        id: s.suggested_profile.id,
+        full_name: s.suggested_profile.full_name,
+        avatar_url: s.suggested_profile.avatar_url,
         connection_strength: s.connection_strength,
         common_connections: s.common_connections,
       }));
