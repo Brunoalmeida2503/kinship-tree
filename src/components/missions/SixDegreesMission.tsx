@@ -51,10 +51,7 @@ export const SixDegreesMission = () => {
 
     const { data: missions, error } = await supabase
       .from("missions")
-      .select(`
-        *,
-        target_profile:profiles!target_id(full_name, avatar_url)
-      `)
+      .select("*")
       .eq("user_id", user.id)
       .eq("status", "active")
       .order("created_at", { ascending: false })
@@ -67,6 +64,15 @@ export const SixDegreesMission = () => {
 
     if (missions && missions.length > 0) {
       const mission: any = missions[0];
+      
+      // Fetch target profile separately
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url")
+        .eq("id", mission.target_id)
+        .single();
+      
+      mission.target_profile = profile;
       setActiveMission(mission);
       await loadSuggestions(mission.id, mission.current_degree);
     }

@@ -41,17 +41,27 @@ const MissionHistory = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("missions")
-      .select(`
-        *,
-        target_profile:profiles!target_id(full_name, avatar_url)
-      `)
+      .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error loading mission history:", error);
-    } else {
-      setMissions(data as any);
+    } else if (data) {
+      // Fetch all target profiles
+      const targetIds = data.map((m: any) => m.target_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .in("id", targetIds);
+      
+      // Map profiles to missions
+      const missionsWithProfiles = data.map((mission: any) => ({
+        ...mission,
+        target_profile: profiles?.find((p) => p.id === mission.target_id)
+      }));
+      
+      setMissions(missionsWithProfiles as any);
     }
     setLoading(false);
   };
