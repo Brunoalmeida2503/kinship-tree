@@ -22,7 +22,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 
 const menuItems = [
-  { title: "Timeline", url: "/", icon: Home },
+  { title: "Moments", url: "/", icon: Home },
   { title: "Árvore", url: "/tree", icon: GitBranch },
   { title: "Grupos", url: "/groups", icon: Users },
   { title: "Missões", url: "/missions", icon: Target },
