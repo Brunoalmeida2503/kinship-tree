@@ -16,6 +16,7 @@ import Dashboard from "./pages/Dashboard";
 import Missions from "./pages/Missions";
 import MissionActive from "./pages/MissionActive";
 import MissionHistory from "./pages/MissionHistory";
+import MissionExplore from "./pages/MissionExplore";
 import Memories from "./pages/Memories";
 import Profile from "./pages/Profile";
 import Group from "./pages/Group";
@@ -58,6 +59,7 @@ const App = () => (
                           <Route path="/missions" element={<Missions />} />
                           <Route path="/missions/active" element={<MissionActive />} />
                           <Route path="/missions/history" element={<MissionHistory />} />
+                          <Route path="/missions/:id" element={<MissionExplore />} />
                           <Route path="/memories" element={<Memories />} />
                           <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/groups" element={<Groups />} />

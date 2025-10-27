@@ -5,7 +5,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Target, CheckCircle, XCircle, Clock } from "lucide-react";
+import { ArrowLeft, Target, CheckCircle, XCircle, Clock, Trash2, Eye } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -26,8 +37,11 @@ interface HistoricalMission {
 const MissionHistory = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [missions, setMissions] = useState<HistoricalMission[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [missionToDelete, setMissionToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -97,6 +111,41 @@ const MissionHistory = () => {
       default:
         return "destructive";
     }
+  };
+
+  const handleDeleteClick = (missionId: string) => {
+    setMissionToDelete(missionId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!missionToDelete) return;
+
+    const { error } = await supabase
+      .from("missions")
+      .delete()
+      .eq("id", missionToDelete);
+
+    if (error) {
+      toast({
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir a missão.",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Missão excluída",
+        description: "A missão foi removida do histórico.",
+      });
+      setMissions(missions.filter(m => m.id !== missionToDelete));
+    }
+
+    setDeleteDialogOpen(false);
+    setMissionToDelete(null);
+  };
+
+  const handleExplore = (missionId: string) => {
+    navigate(`/missions/${missionId}`);
   };
 
   if (loading) {
@@ -178,11 +227,45 @@ const MissionHistory = () => {
                     </div>
                   </div>
                 </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleExplore(mission.id)}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Explorar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDeleteClick(mission.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </Card>
           ))}
         </div>
       )}
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir missão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta missão? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm}>
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
