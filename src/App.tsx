@@ -14,6 +14,8 @@ import Feed from "./pages/Feed";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Missions from "./pages/Missions";
+import MissionActive from "./pages/MissionActive";
+import MissionHistory from "./pages/MissionHistory";
 import Memories from "./pages/Memories";
 import Profile from "./pages/Profile";
 import Group from "./pages/Group";
@@ -54,6 +56,8 @@ const App = () => (
                           <Route path="/tree" element={<Dashboard />} />
                           <Route path="/profile" element={<Profile />} />
                           <Route path="/missions" element={<Missions />} />
+                          <Route path="/missions/active" element={<MissionActive />} />
+                          <Route path="/missions/history" element={<MissionHistory />} />
                           <Route path="/memories" element={<Memories />} />
                           <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/groups" element={<Groups />} />

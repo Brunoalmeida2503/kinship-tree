@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -32,6 +33,7 @@ interface Suggestion {
 
 export const SixDegreesMission = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [activeMission, setActiveMission] = useState<Mission | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -152,7 +154,7 @@ export const SixDegreesMission = () => {
         description: "Comece sua jornada de 6 graus de separação.",
       });
 
-      await loadActiveMission();
+      navigate("/missions/active");
     } catch (error) {
       console.error("Error starting mission:", error);
       toast({
@@ -226,38 +228,29 @@ export const SixDegreesMission = () => {
             Conecte-se com qualquer pessoa em até 6 elos
           </p>
         </div>
-        {!activeMission && <StartMissionDialog onStart={startMission} loading={loading} />}
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate("/missions/history")}>
+            Histórico
+          </Button>
+          {!activeMission && <StartMissionDialog onStart={startMission} loading={loading} />}
+        </div>
       </div>
 
       {activeMission ? (
-        <div className="space-y-6">
-          <Card className="p-6">
-            <div className="flex items-center gap-4 mb-4">
-              <Users className="h-6 w-6 text-primary" />
-              <div>
-                <h2 className="text-xl font-semibold">Missão Ativa</h2>
-                <p className="text-sm text-muted-foreground">
-                  Conectando com {activeMission.target_profile?.full_name}
-                </p>
-              </div>
+        <Card className="p-6">
+          <div className="text-center space-y-4">
+            <Users className="h-16 w-16 mx-auto text-primary" />
+            <div>
+              <h2 className="text-2xl font-semibold">Você tem uma missão ativa!</h2>
+              <p className="text-muted-foreground mt-2">
+                Conectando com {activeMission.target_profile?.full_name}
+              </p>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="font-medium">Grau atual:</span>
-              <span className="text-2xl font-bold text-primary">
-                {activeMission.current_degree}
-              </span>
-              <span className="text-muted-foreground">/ 6</span>
-            </div>
-          </Card>
-
-          <MissionPath path={activeMission.path} currentDegree={activeMission.current_degree} />
-
-          <MissionSuggestions
-            suggestions={suggestions}
-            onAction={recordAction}
-            activeMission={activeMission}
-          />
-        </div>
+            <Button onClick={() => navigate("/missions/active")} size="lg">
+              Continuar Missão
+            </Button>
+          </div>
+        </Card>
       ) : (
         <Card className="p-12 text-center">
           <Target className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
