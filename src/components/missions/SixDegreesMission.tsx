@@ -81,13 +81,7 @@ export const SixDegreesMission = () => {
   const loadSuggestions = async (missionId: string, currentDegree: number) => {
     const { data, error } = await supabase
       .from("mission_suggestions")
-      .select(`
-        id,
-        suggested_user_id,
-        connection_strength,
-        common_connections,
-        suggested_profile:profiles!suggested_user_id(id, full_name, avatar_url)
-      `)
+      .select("id, suggested_user_id, connection_strength, common_connections")
       .eq("mission_id", missionId)
       .eq("degree", currentDegree)
       .order("connection_strength", { ascending: false })
@@ -98,15 +92,27 @@ export const SixDegreesMission = () => {
       return;
     }
 
-    if (data) {
-      const formattedSuggestions = data.map((s: any) => ({
-        id: s.suggested_profile.id,
-        full_name: s.suggested_profile.full_name,
-        avatar_url: s.suggested_profile.avatar_url,
-        connection_strength: s.connection_strength,
-        common_connections: s.common_connections,
-      }));
-      setSuggestions(formattedSuggestions);
+    if (data && data.length > 0) {
+      // Fetch profiles separately
+      const userIds = data.map((s: any) => s.suggested_user_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .in("id", userIds);
+
+      if (profiles) {
+        const formattedSuggestions = data.map((s: any) => {
+          const profile = profiles.find((p) => p.id === s.suggested_user_id);
+          return {
+            id: s.suggested_user_id,
+            full_name: profile?.full_name || "Desconhecido",
+            avatar_url: profile?.avatar_url || "",
+            connection_strength: s.connection_strength,
+            common_connections: s.common_connections,
+          };
+        });
+        setSuggestions(formattedSuggestions);
+      }
     }
   };
 
@@ -140,7 +146,35 @@ export const SixDegreesMission = () => {
 
       if (response.error) throw response.error;
 
-      const { suggestions: calculatedSuggestions } = response.data;
+      const { suggestions: calculatedSuggestions, shortestPath } = response.data;
+
+      // Save path with profile data
+      if (shortestPath && shortestPath.length > 0) {
+        const pathWithProfiles = [];
+        for (const userId of shortestPath) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("id, full_name, avatar_url, latitude, longitude")
+            .eq("id", userId)
+            .single();
+          
+          if (profile) {
+            pathWithProfiles.push({
+              id: profile.id,
+              name: profile.full_name,
+              avatar_url: profile.avatar_url,
+              latitude: profile.latitude,
+              longitude: profile.longitude,
+            });
+          }
+        }
+
+        // Update mission with path
+        await supabase
+          .from("missions")
+          .update({ path: pathWithProfiles })
+          .eq("id", mission.id);
+      }
 
       // Save suggestions
       if (calculatedSuggestions && calculatedSuggestions.length > 0) {

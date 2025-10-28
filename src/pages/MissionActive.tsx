@@ -85,13 +85,7 @@ const MissionActive = () => {
   const loadSuggestions = async (missionId: string, currentDegree: number) => {
     const { data, error } = await supabase
       .from("mission_suggestions")
-      .select(`
-        id,
-        suggested_user_id,
-        connection_strength,
-        common_connections,
-        suggested_profile:profiles!suggested_user_id(id, full_name, avatar_url)
-      `)
+      .select("id, suggested_user_id, connection_strength, common_connections")
       .eq("mission_id", missionId)
       .eq("degree", currentDegree)
       .order("connection_strength", { ascending: false })
@@ -102,15 +96,27 @@ const MissionActive = () => {
       return;
     }
 
-    if (data) {
-      const formattedSuggestions = data.map((s: any) => ({
-        id: s.suggested_profile.id,
-        full_name: s.suggested_profile.full_name,
-        avatar_url: s.suggested_profile.avatar_url,
-        connection_strength: s.connection_strength,
-        common_connections: s.common_connections,
-      }));
-      setSuggestions(formattedSuggestions);
+    if (data && data.length > 0) {
+      // Fetch profiles separately
+      const userIds = data.map((s: any) => s.suggested_user_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .in("id", userIds);
+
+      if (profiles) {
+        const formattedSuggestions = data.map((s: any) => {
+          const profile = profiles.find((p) => p.id === s.suggested_user_id);
+          return {
+            id: s.suggested_user_id,
+            full_name: profile?.full_name || "Desconhecido",
+            avatar_url: profile?.avatar_url || "",
+            connection_strength: s.connection_strength,
+            common_connections: s.common_connections,
+          };
+        });
+        setSuggestions(formattedSuggestions);
+      }
     }
   };
 
