@@ -123,6 +123,10 @@ export function TreeVisualization() {
       'esposa': 'conjuge',
       'tio': 'tio',
       'tia': 'tia',
+      'sobrinho': 'sobrinho',
+      'sobrinha': 'sobrinha',
+      'primo': 'primo',
+      'prima': 'prima',
       'root': 'root',
     };
     return map[v] || v;
@@ -206,11 +210,19 @@ export function TreeVisualization() {
       } else if (rel === 'irmao' || rel === 'irma') {
         node.generation = 0;
         generations.get(0)!.push(node);
+      } else if (rel === 'primo' || rel === 'prima') {
+        // Primos são da mesma geração (0)
+        node.generation = 0;
+        generations.get(0)!.push(node);
       } else if (rel === 'filho' || rel === 'filha') {
         node.generation = 1;
         generations.get(1)!.push(node);
         // Filho pertence ao root
         root.children.push(node);
+      } else if (rel === 'sobrinho' || rel === 'sobrinha') {
+        // Sobrinhos são da geração 1 (filhos dos irmãos)
+        node.generation = 1;
+        generations.get(1)!.push(node);
       } else if (rel === 'neto' || rel === 'neta') {
         node.generation = 2;
         generations.get(2)!.push(node);
@@ -635,14 +647,16 @@ export function TreeVisualization() {
 
     const { generations, root } = treeData;
 
-    const siblings = (generations.get(0) || []).filter((n) => !n.isRoot);
+    const siblings = (generations.get(0) || []).filter((n) => !n.isRoot && (n.relationship === 'irmao' || n.relationship === 'irma'));
+    const cousins = (generations.get(0) || []).filter((n) => n.relationship === 'primo' || n.relationship === 'prima');
     const parents = (generations.get(-1) || []).filter(
       (n) => n.relationship === 'pai' || n.relationship === 'mãe' || n.relationship === 'mae'
     );
     const unclesAunts = (generations.get(-1) || []).filter(
       (n) => n.relationship === 'tio' || n.relationship === 'tia'
     );
-    const children = generations.get(1) || [];
+    const children = (generations.get(1) || []).filter((n) => n.relationship === 'filho' || n.relationship === 'filha');
+    const nephewsNieces = (generations.get(1) || []).filter((n) => n.relationship === 'sobrinho' || n.relationship === 'sobrinha');
     const grandchildren = generations.get(2) || [];
     const grandparents = generations.get(-2) || [];
 
@@ -724,12 +738,36 @@ export function TreeVisualization() {
           </div>
         )}
 
+        {/* Primos */}
+        {cousins.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="font-semibold text-sm text-muted-foreground">Primos</h3>
+            <div className="grid gap-2">
+              {cousins.map((n) => (
+                <PersonRow key={n.id} node={n} />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Filhos */}
         {children.length > 0 && (
           <div className="space-y-2">
             <h3 className="font-semibold text-sm text-muted-foreground">Filhos</h3>
             <div className="grid gap-2">
               {children.map((n) => (
+                <PersonRow key={n.id} node={n} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Sobrinhos */}
+        {nephewsNieces.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="font-semibold text-sm text-muted-foreground">Sobrinhos</h3>
+            <div className="grid gap-2">
+              {nephewsNieces.map((n) => (
                 <PersonRow key={n.id} node={n} />
               ))}
             </div>
