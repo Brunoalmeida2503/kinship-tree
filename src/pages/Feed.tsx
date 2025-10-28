@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Users, UserPlus, Trash2, Pencil, MoreVertical } from "lucide-react";
+import { Loader2, Send, Users, UserPlus, Trash2, Pencil, MoreVertical, Share2 } from "lucide-react";
 import { postSchema } from "@/lib/validation";
 import { z } from "zod";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { MediaUploader, uploadMediaFiles } from "@/components/feed/MediaUploader
 import { MediaGallery } from "@/components/feed/MediaGallery";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { SharePostDialog } from "@/components/feed/SharePostDialog";
 import {
   Popover,
   PopoverContent,
@@ -84,6 +85,7 @@ const Feed = () => {
   const [deleting, setDeleting] = useState(false);
   const [editing, setEditing] = useState(false);
   const [filterUserId, setFilterUserId] = useState<string | null>(null);
+  const [postToShare, setPostToShare] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -676,6 +678,12 @@ const Feed = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
+                            onClick={() => setPostToShare(post.id)}
+                          >
+                            <Share2 className="h-4 w-4 mr-2" />
+                            Compartilhar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
                             onClick={() => {
                               setPostToEdit(post);
                               setEditContent(post.content);
@@ -795,6 +803,15 @@ const Feed = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Share Post Dialog */}
+      {postToShare && (
+        <SharePostDialog
+          postId={postToShare}
+          open={!!postToShare}
+          onOpenChange={(open) => !open && setPostToShare(null)}
+        />
+      )}
     </div>
   );
 };
