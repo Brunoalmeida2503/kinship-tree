@@ -16,6 +16,8 @@ import { MediaGallery } from "@/components/feed/MediaGallery";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { SharePostDialog } from "@/components/feed/SharePostDialog";
+import { EditPostDialog } from "@/components/feed/EditPostDialog";
+import { PostComments } from "@/components/feed/PostComments";
 import {
   Popover,
   PopoverContent,
@@ -81,9 +83,7 @@ const Feed = () => {
   const [userGroups, setUserGroups] = useState<Group[]>([]);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
   const [postToEdit, setPostToEdit] = useState<Post | null>(null);
-  const [editContent, setEditContent] = useState("");
   const [deleting, setDeleting] = useState(false);
-  const [editing, setEditing] = useState(false);
   const [filterUserId, setFilterUserId] = useState<string | null>(null);
   const [postToShare, setPostToShare] = useState<string | null>(null);
 
@@ -478,39 +478,6 @@ const Feed = () => {
     }
   };
 
-  const handleEditPost = async () => {
-    if (!postToEdit || !editContent.trim()) return;
-
-    setEditing(true);
-    try {
-      const { error } = await supabase
-        .from("posts")
-        .update({ content: editContent })
-        .eq("id", postToEdit.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Post atualizado",
-        description: "O post foi editado com sucesso",
-      });
-      
-      setPosts(posts.map(p => 
-        p.id === postToEdit.id ? { ...p, content: editContent } : p
-      ));
-      setPostToEdit(null);
-      setEditContent("");
-    } catch (error) {
-      console.error("Error editing post:", error);
-      toast({
-        title: "Erro ao editar post",
-        description: "Não foi possível atualizar o post",
-        variant: "destructive",
-      });
-    } finally {
-      setEditing(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -684,10 +651,7 @@ const Feed = () => {
                             Compartilhar
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => {
-                              setPostToEdit(post);
-                              setEditContent(post.content);
-                            }}
+                            onClick={() => setPostToEdit(post)}
                           >
                             <Pencil className="h-4 w-4 mr-2" />
                             Editar
@@ -731,6 +695,12 @@ const Feed = () => {
                   )}
 
                   {renderYouTubeEmbeds(post.content)}
+
+                  {!post.is_group_post && (
+                    <div className="mt-4 pt-4 border-t">
+                      <PostComments postId={post.id} />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))
@@ -768,41 +738,12 @@ const Feed = () => {
       </AlertDialog>
 
       {/* Edit Post Dialog */}
-      <Dialog open={!!postToEdit} onOpenChange={() => setPostToEdit(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar post</DialogTitle>
-          </DialogHeader>
-          <Textarea
-            value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
-            className="min-h-[150px]"
-            placeholder="Edite seu post..."
-          />
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setPostToEdit(null)}
-              disabled={editing}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleEditPost}
-              disabled={editing || !editContent.trim()}
-            >
-              {editing ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Salvando...
-                </>
-              ) : (
-                "Salvar"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EditPostDialog
+        post={postToEdit}
+        open={!!postToEdit}
+        onOpenChange={() => setPostToEdit(null)}
+        onSuccess={fetchPosts}
+      />
 
       {/* Share Post Dialog */}
       {postToShare && (
