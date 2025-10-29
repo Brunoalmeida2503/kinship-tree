@@ -30,7 +30,7 @@ export function TreeVisualization() {
     root: TreeNode;
   } | null>(null);
   const [viewMode, setViewMode] = useState<'list' | 'graph'>('graph');
-  const [zoom, setZoom] = useState(isMobile ? 0.6 : 1);
+  const [zoom, setZoom] = useState(isMobile ? 0.5 : 0.7);
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -276,12 +276,12 @@ export function TreeVisualization() {
     generations: Map<number, TreeNode[]>,
     root: TreeNode
   ) => {
-    const nodeWidth = 120;
-    const nodeSpacing = 40;
-    const spouseSpacing = 20;
-    const verticalSpacing = 140;
-    const baseY = 300; // Y do usuário (geração 0)
-    const centerX = 800;
+    const nodeWidth = 100;
+    const nodeSpacing = 30;
+    const spouseSpacing = 15;
+    const verticalSpacing = 120;
+    const baseY = 250; // Y do usuário (geração 0)
+    const centerX = 600;
 
     // Processar cada geração
     generations.forEach((nodes, generation) => {
@@ -350,7 +350,7 @@ export function TreeVisualization() {
   const handleZoomOut = () => setZoom(Math.max(0.3, zoom - (isMobile ? 0.1 : 0.2)));
   
   const handleResetView = () => {
-    setZoom(isMobile ? 0.6 : 1);
+    setZoom(isMobile ? 0.5 : 0.7);
     setPanOffset({ x: 0, y: 0 });
   };
 
@@ -360,8 +360,8 @@ export function TreeVisualization() {
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
     
-    const treeWidth = 1800;
-    const treeHeight = 700;
+    const treeWidth = 1200;
+    const treeHeight = 600;
     
     const zoomX = (containerWidth * 0.9) / treeWidth;
     const zoomY = (containerHeight * 0.85) / treeHeight;
@@ -397,8 +397,8 @@ export function TreeVisualization() {
       seen.add(root.spouse.id);
     }
 
-    const svgWidth = 1800;
-    const svgHeight = 700;
+    const svgWidth = 1200;
+    const svgHeight = 600;
     const parentNodes = (generations.get(-1) || []).filter(
       (n) => n.relationship === 'pai' || n.relationship === 'mae'
     );
