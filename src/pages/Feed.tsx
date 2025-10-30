@@ -99,9 +99,14 @@ const Feed = () => {
       setFilterUserId(state.filterUserId);
     }
     
-    fetchPosts();
     fetchUserGroups();
   }, [user, navigate, location]);
+
+  useEffect(() => {
+    if (user) {
+      fetchPosts();
+    }
+  }, [user, filterUserId]);
 
   const fetchUserGroups = async () => {
     if (!user) return;
