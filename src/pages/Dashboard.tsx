@@ -3,12 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ProfileSection } from '@/components/dashboard/ProfileSection';
 import { ConnectionsSection } from '@/components/dashboard/ConnectionsSection';
 import { GroupsSection } from '@/components/dashboard/GroupsSection';
 import { TreeVisualization } from '@/components/dashboard/TreeVisualization';
 import MapVisualization from '@/components/dashboard/MapVisualization';
-import { LogOut, Users, Network, TreePine, UserCircle, Map } from 'lucide-react';
+import { LogOut, Users, Network, TreePine, Map } from 'lucide-react';
 
 export default function Dashboard() {
   const { user, signOut, loading } = useAuth();
@@ -47,7 +46,7 @@ export default function Dashboard() {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
             <TabsTrigger value="tree" className="flex items-center gap-2">
               <TreePine className="h-4 w-4" />
               <span className="hidden sm:inline">Árvore</span>
@@ -63,10 +62,6 @@ export default function Dashboard() {
             <TabsTrigger value="groups" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Grupos</span>
-            </TabsTrigger>
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <UserCircle className="h-4 w-4" />
-              <span className="hidden sm:inline">Perfil</span>
             </TabsTrigger>
           </TabsList>
 
@@ -84,10 +79,6 @@ export default function Dashboard() {
 
           <TabsContent value="groups" className="space-y-4">
             <GroupsSection />
-          </TabsContent>
-
-          <TabsContent value="profile" className="space-y-4">
-            <ProfileSection />
           </TabsContent>
         </Tabs>
       </main>
