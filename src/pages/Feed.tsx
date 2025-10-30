@@ -203,7 +203,7 @@ const Feed = () => {
       
       let groupPostsData: any[] = [];
       let groupsMap: Record<string, { id: string; name: string; avatar_url: string | null; created_by: string }> = {};
-      if (groupIds.length > 0) {
+      if (groupIds.length > 0 && !filterUserId) {
         const { data, error: groupPostsError } = await supabase
           .from("group_posts")
           .select(`
