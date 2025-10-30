@@ -23,7 +23,10 @@ export function ProfileSection() {
   const { themeColor, setThemeColor } = useTheme();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [profile, setProfile] = useState({
     full_name: '',
     birth_date: '',
@@ -62,10 +65,15 @@ export function ProfileSection() {
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error loading profile:', error);
+      toast({
+        title: 'Erro ao carregar perfil',
+        description: error.message,
+        variant: 'destructive'
+      });
       return;
     }
 
@@ -177,9 +185,22 @@ export function ProfileSection() {
 
     setLoading(true);
 
+    const updateData = {
+      full_name: profile.full_name,
+      birth_date: profile.birth_date || null,
+      bio: profile.bio || null,
+      location: profile.location || null,
+      latitude: profile.latitude,
+      longitude: profile.longitude,
+      language: profile.language,
+      country: profile.country || null,
+      state: profile.state || null,
+      city: profile.city || null
+    };
+
     const { error } = await supabase
       .from('profiles')
-      .update(profile)
+      .update(updateData)
       .eq('id', user.id);
 
     if (error) {
@@ -191,6 +212,12 @@ export function ProfileSection() {
     } else {
       // Update i18n language
       i18n.changeLanguage(profile.language);
+      // Update theme color in profile
+      await supabase
+        .from('profiles')
+        .update({ theme_color: themeColor })
+        .eq('id', user.id);
+      
       toast({
         title: t('profile.profileUpdated'),
         description: t('profile.profileUpdatedDescription')
@@ -458,6 +485,76 @@ export function ProfileSection() {
             {loading ? t('profile.saving') : t('profile.saveProfile')}
           </Button>
         </form>
+
+        <div className="mt-6 pt-6 border-t">
+          <h3 className="text-lg font-semibold mb-4">Alterar Senha</h3>
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            if (newPassword !== confirmPassword) {
+              toast({
+                title: 'Erro',
+                description: 'As senhas não coincidem',
+                variant: 'destructive'
+              });
+              return;
+            }
+            if (newPassword.length < 6) {
+              toast({
+                title: 'Erro',
+                description: 'A senha deve ter no mínimo 6 caracteres',
+                variant: 'destructive'
+              });
+              return;
+            }
+            setChangingPassword(true);
+            const { error } = await supabase.auth.updateUser({
+              password: newPassword
+            });
+            if (error) {
+              toast({
+                title: 'Erro ao alterar senha',
+                description: error.message,
+                variant: 'destructive'
+              });
+            } else {
+              toast({
+                title: 'Senha alterada',
+                description: 'Sua senha foi alterada com sucesso'
+              });
+              setNewPassword('');
+              setConfirmPassword('');
+            }
+            setChangingPassword(false);
+          }} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="new_password">Nova Senha</Label>
+              <Input
+                id="new_password"
+                type="password"
+                placeholder="••••••••"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm_password">Confirmar Nova Senha</Label>
+              <Input
+                id="confirm_password"
+                type="password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={6}
+              />
+            </div>
+            <Button type="submit" disabled={changingPassword}>
+              {changingPassword ? 'Alterando...' : 'Alterar Senha'}
+            </Button>
+          </form>
+        </div>
       </CardContent>
     </Card>
   );
