@@ -17,11 +17,12 @@ import { profileSchema } from '@/lib/validation';
 import { z } from 'zod';
 
 export function ProfileSection() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const { t, i18n } = useTranslation();
   const { themeColor, setThemeColor } = useTheme();
   const [loading, setLoading] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -47,10 +48,13 @@ export function ProfileSection() {
   const [loadingGeo, setLoadingGeo] = useState(false);
 
   useEffect(() => {
+    loadCountries();
+  }, []);
+
+  useEffect(() => {
     if (user) {
       loadProfile();
     }
-    loadCountries();
   }, [user]);
 
   const loadCountries = async () => {
@@ -61,6 +65,8 @@ export function ProfileSection() {
   const loadProfile = async () => {
     if (!user) return;
 
+    setLoadingProfile(true);
+    
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -74,36 +80,62 @@ export function ProfileSection() {
         description: error.message,
         variant: 'destructive'
       });
+      setLoadingProfile(false);
       return;
     }
 
     if (data) {
       const userLanguage = data.language || 'pt-BR';
-      setProfile({
+      const profileData = {
         full_name: data.full_name || '',
         birth_date: data.birth_date || '',
         bio: data.bio || '',
         location: data.location || '',
         avatar_url: data.avatar_url || '',
-        latitude: data.latitude || null,
-        longitude: data.longitude || null,
+        latitude: data.latitude ? Number(data.latitude) : null,
+        longitude: data.longitude ? Number(data.longitude) : null,
         language: userLanguage,
         country: data.country || '',
         state: data.state || '',
         city: data.city || ''
-      });
+      };
+      
+      setProfile(profileData);
+      
       // Update i18n language
       i18n.changeLanguage(userLanguage);
       
       // Load states if country exists
       if (data.country) {
-        handleCountryChange(data.country);
+        const loadStatesAsync = async () => {
+          setLoadingGeo(true);
+          const statesData = await fetchStates(data.country);
+          setStates(statesData);
+          setLoadingGeo(false);
+        };
+        loadStatesAsync();
       }
+      
       // Load cities if state exists
       if (data.country && data.state) {
-        handleStateChange(data.state, data.country);
+        const loadCitiesAsync = async () => {
+          setLoadingGeo(true);
+          const citiesData = await fetchCities(data.country, data.state);
+          setCities(citiesData);
+          setLoadingGeo(false);
+        };
+        loadCitiesAsync();
       }
+    } else {
+      // Se não há dados, criar perfil inicial
+      toast({
+        title: 'Perfil não encontrado',
+        description: 'Criando perfil inicial...',
+        variant: 'default'
+      });
     }
+    
+    setLoadingProfile(false);
   };
 
   const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -222,6 +254,9 @@ export function ProfileSection() {
         title: t('profile.profileUpdated'),
         description: t('profile.profileUpdatedDescription')
       });
+      
+      // Recarregar perfil após salvar
+      await loadProfile();
     }
 
     setLoading(false);
@@ -282,7 +317,12 @@ export function ProfileSection() {
         <CardDescription>{t('profile.description')}</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {loadingProfile || authLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex flex-col items-center gap-4 mb-6">
             <Avatar className="h-24 w-24">
               <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
@@ -485,8 +525,10 @@ export function ProfileSection() {
             {loading ? t('profile.saving') : t('profile.saveProfile')}
           </Button>
         </form>
+        )}
 
-        <div className="mt-6 pt-6 border-t">
+        {!loadingProfile && !authLoading && (
+          <div className="mt-6 pt-6 border-t">
           <h3 className="text-lg font-semibold mb-4">Alterar Senha</h3>
           <form onSubmit={async (e) => {
             e.preventDefault();
@@ -555,6 +597,7 @@ export function ProfileSection() {
             </Button>
           </form>
         </div>
+        )}
       </CardContent>
     </Card>
   );
