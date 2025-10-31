@@ -2,11 +2,13 @@ import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TreePine, User, ZoomIn, ZoomOut, Maximize2, Move } from 'lucide-react';
+import { TreePine, User, ZoomIn, ZoomOut, Maximize2, Move, Map as MapIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { useIsMobile } from '@/hooks/use-mobile';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 interface TreeNode {
   id: string;
@@ -25,15 +27,18 @@ export function TreeVisualization() {
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const containerRef = useRef<HTMLDivElement>(null);
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<mapboxgl.Map | null>(null);
   const [treeData, setTreeData] = useState<{
     generations: Map<number, TreeNode[]>;
     root: TreeNode;
   } | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'graph'>('graph');
+  const [viewMode, setViewMode] = useState<'list' | 'graph' | 'map'>('graph');
   const [zoom, setZoom] = useState(isMobile ? 0.5 : 0.7);
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [allConnections, setAllConnections] = useState<any[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -41,14 +46,20 @@ export function TreeVisualization() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (viewMode === 'map' && mapContainer.current && !map.current) {
+      initializeMap();
+    }
+  }, [viewMode, allConnections]);
+
   const loadConnections = async () => {
     if (!user) return;
 
+    // Carregar todas as conexões (família e amigos)
     const { data: connections, error } = await supabase
       .from('connections')
       .select('*')
       .eq('status', 'accepted')
-      .eq('connection_type', 'family')
       .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);
 
     if (error) {
@@ -59,6 +70,7 @@ export function TreeVisualization() {
     if (!connections || connections.length === 0) {
       console.log('No connections found');
       setTreeData(null);
+      setAllConnections([]);
       return;
     }
 
@@ -71,7 +83,7 @@ export function TreeVisualization() {
 
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, full_name, avatar_url')
+      .select('id, full_name, avatar_url, latitude, longitude')
       .in('id', Array.from(profileIds));
 
     if (profilesError) {
@@ -89,8 +101,19 @@ export function TreeVisualization() {
       receiver: profilesMap.get(conn.receiver_id)
     }));
 
-    console.log('Loaded connections:', connectionsWithProfiles);
-    buildTree(connectionsWithProfiles);
+    setAllConnections(connectionsWithProfiles);
+
+    // Filtrar apenas conexões de família para a árvore
+    const familyConnections = connectionsWithProfiles.filter(
+      conn => conn.connection_type === 'family'
+    );
+
+    if (familyConnections.length > 0) {
+      console.log('Loaded connections:', connectionsWithProfiles);
+      buildTree(familyConnections);
+    } else {
+      setTreeData(null);
+    }
   };
 
   const getFirstAndLastName = (fullName: string) => {
@@ -801,6 +824,145 @@ export function TreeVisualization() {
     );
   };
 
+  const initializeMap = async () => {
+    if (!mapContainer.current || !user || map.current) return;
+
+    const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN;
+    if (!MAPBOX_TOKEN) {
+      console.error('Mapbox token not configured');
+      return;
+    }
+
+    // Buscar perfil do usuário atual
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('latitude, longitude')
+      .eq('id', user.id)
+      .single();
+
+    if (!userProfile?.latitude || !userProfile?.longitude) {
+      console.warn('User location not set');
+      return;
+    }
+
+    mapboxgl.accessToken = MAPBOX_TOKEN;
+
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/light-v11',
+      center: [userProfile.longitude, userProfile.latitude],
+      zoom: 10,
+    });
+
+    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+    map.current.on('load', () => {
+      if (!map.current) return;
+
+      const bounds = new mapboxgl.LngLatBounds();
+      const coordinates: [number, number][] = [];
+
+      // Adicionar marcador do usuário
+      const userMarker = document.createElement('div');
+      userMarker.className = 'w-10 h-10 bg-primary rounded-full border-4 border-white shadow-lg flex items-center justify-center';
+      userMarker.innerHTML = '<span class="text-white font-bold text-sm">Você</span>';
+
+      new mapboxgl.Marker(userMarker)
+        .setLngLat([userProfile.longitude, userProfile.latitude])
+        .addTo(map.current);
+
+      bounds.extend([userProfile.longitude, userProfile.latitude]);
+      coordinates.push([userProfile.longitude, userProfile.latitude]);
+
+      // Processar cada conexão
+      allConnections.forEach((conn) => {
+        const otherPerson = conn.requester_id === user.id ? conn.receiver : conn.requester;
+        
+        if (!otherPerson?.latitude || !otherPerson?.longitude) return;
+
+        const isFamilyConnection = conn.connection_type === 'family';
+        const lineColor = isFamilyConnection ? '#22c55e' : '#eab308'; // verde para família, amarelo para amigos
+
+        // Adicionar marcador da conexão
+        const markerEl = document.createElement('div');
+        markerEl.className = `w-8 h-8 rounded-full border-3 shadow-lg`;
+        markerEl.style.backgroundColor = lineColor;
+        markerEl.style.borderColor = 'white';
+
+        const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(
+          `<div class="p-2">
+            <p class="font-semibold">${otherPerson.full_name}</p>
+            <p class="text-xs text-muted-foreground">${isFamilyConnection ? 'Família' : 'Amigo'}</p>
+          </div>`
+        );
+
+        new mapboxgl.Marker(markerEl)
+          .setLngLat([otherPerson.longitude, otherPerson.latitude])
+          .setPopup(popup)
+          .addTo(map.current!);
+
+        bounds.extend([otherPerson.longitude, otherPerson.latitude]);
+
+        // Adicionar linha conectando usuário à conexão
+        const lineId = `line-${conn.id}`;
+        const lineCoordinates = [
+          [userProfile.longitude, userProfile.latitude],
+          [otherPerson.longitude, otherPerson.latitude],
+        ];
+
+        map.current!.addSource(lineId, {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'LineString',
+              coordinates: lineCoordinates,
+            },
+          },
+        });
+
+        map.current!.addLayer({
+          id: lineId,
+          type: 'line',
+          source: lineId,
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round',
+          },
+          paint: {
+            'line-color': lineColor,
+            'line-width': 3,
+            'line-opacity': 0.7,
+          },
+        });
+      });
+
+      // Ajustar mapa para mostrar todos os marcadores
+      if (coordinates.length > 1) {
+        map.current!.fitBounds(bounds, { padding: 50, maxZoom: 14 });
+      }
+    });
+  };
+
+  const renderMapView = () => {
+    return (
+      <div className="w-full h-[500px] rounded-lg overflow-hidden border border-border">
+        <div ref={mapContainer} className="w-full h-full" />
+        {(!allConnections || allConnections.length === 0) && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+            <div className="text-center">
+              <MapIcon className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">
+                Nenhuma conexão com localização cadastrada
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -829,11 +991,21 @@ export function TreeVisualization() {
             >
               Lista
             </Button>
+            <Button
+              variant={viewMode === 'map' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('map')}
+            >
+              <MapIcon className="h-4 w-4 mr-1" />
+              Mapa
+            </Button>
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        {treeData ? (
+        {viewMode === 'map' ? (
+          renderMapView()
+        ) : treeData ? (
           <div>
             {viewMode === 'graph' ? renderGraphView() : renderListView()}
           </div>
