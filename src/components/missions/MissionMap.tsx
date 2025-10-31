@@ -13,24 +13,17 @@ interface MissionMapProps {
   };
 }
 
+const MAPBOX_TOKEN = 'pk.eyJ1IjoidHJlZS1zb2NpYWwiLCJhIjoiY21nbTlid2J6MWU4NzJrcHFxbDc0NDhpZyJ9.BTX2-dUn_I-MyG-NBnL1Ew';
+
 export const MissionMap = ({ path, targetProfile }: MissionMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const [mapError, setMapError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    // Check if Mapbox token is available
-    const mapboxToken = import.meta.env.VITE_MAPBOX_TOKEN;
-    
-    if (!mapboxToken) {
-      setMapError("Token do Mapbox não configurado. Configure VITE_MAPBOX_TOKEN nas variáveis de ambiente.");
-      return;
-    }
-
     try {
-      mapboxgl.accessToken = mapboxToken;
+      mapboxgl.accessToken = MAPBOX_TOKEN;
 
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
@@ -92,20 +85,8 @@ export const MissionMap = ({ path, targetProfile }: MissionMapProps) => {
       };
     } catch (error) {
       console.error("Error initializing map:", error);
-      setMapError("Erro ao inicializar o mapa. Verifique a configuração do Mapbox.");
     }
   }, [path]);
-
-  if (mapError) {
-    return (
-      <Card className="p-6">
-        <Alert>
-          <MapPin className="h-4 w-4" />
-          <AlertDescription>{mapError}</AlertDescription>
-        </Alert>
-      </Card>
-    );
-  }
 
   return (
     <Card className="p-6">
