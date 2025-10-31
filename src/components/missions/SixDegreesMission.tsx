@@ -272,7 +272,7 @@ export const SixDegreesMission = () => {
           <Button variant="outline" onClick={() => navigate("/missions/history")}>
             Histórico
           </Button>
-          {!activeMission && <StartMissionDialog onStart={startMission} loading={loading} />}
+          <StartMissionDialog onStart={startMission} loading={loading} />
         </div>
       </div>
 
@@ -286,9 +286,12 @@ export const SixDegreesMission = () => {
                 Conectando com {activeMission.target_profile?.full_name}
               </p>
             </div>
-            <Button onClick={() => navigate("/missions/active")} size="lg">
-              Continuar Missão
-            </Button>
+            <div className="flex gap-3 justify-center">
+              <Button onClick={() => navigate("/missions/active")} size="lg">
+                Continuar Missão
+              </Button>
+              <StartMissionDialog onStart={startMission} loading={loading} />
+            </div>
           </div>
         </Card>
       ) : (
