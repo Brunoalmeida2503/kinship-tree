@@ -845,104 +845,121 @@ export function TreeVisualization() {
       return;
     }
 
-    mapboxgl.accessToken = MAPBOX_TOKEN;
+    try {
+      mapboxgl.accessToken = MAPBOX_TOKEN;
 
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/light-v11',
-      center: [userProfile.longitude, userProfile.latitude],
-      zoom: 10,
-    });
-
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-    map.current.on('load', () => {
-      if (!map.current) return;
-
-      const bounds = new mapboxgl.LngLatBounds();
-      const coordinates: [number, number][] = [];
-
-      // Adicionar marcador do usuário
-      const userMarker = document.createElement('div');
-      userMarker.className = 'w-10 h-10 bg-primary rounded-full border-4 border-white shadow-lg flex items-center justify-center';
-      userMarker.innerHTML = '<span class="text-white font-bold text-sm">Você</span>';
-
-      new mapboxgl.Marker(userMarker)
-        .setLngLat([userProfile.longitude, userProfile.latitude])
-        .addTo(map.current);
-
-      bounds.extend([userProfile.longitude, userProfile.latitude]);
-      coordinates.push([userProfile.longitude, userProfile.latitude]);
-
-      // Processar cada conexão
-      allConnections.forEach((conn) => {
-        const otherPerson = conn.requester_id === user.id ? conn.receiver : conn.requester;
-        
-        if (!otherPerson?.latitude || !otherPerson?.longitude) return;
-
-        const isFamilyConnection = conn.connection_type === 'family';
-        const lineColor = isFamilyConnection ? '#22c55e' : '#eab308'; // verde para família, amarelo para amigos
-
-        // Adicionar marcador da conexão
-        const markerEl = document.createElement('div');
-        markerEl.className = `w-8 h-8 rounded-full border-3 shadow-lg`;
-        markerEl.style.backgroundColor = lineColor;
-        markerEl.style.borderColor = 'white';
-
-        const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(
-          `<div class="p-2">
-            <p class="font-semibold">${otherPerson.full_name}</p>
-            <p class="text-xs text-muted-foreground">${isFamilyConnection ? 'Família' : 'Amigo'}</p>
-          </div>`
-        );
-
-        new mapboxgl.Marker(markerEl)
-          .setLngLat([otherPerson.longitude, otherPerson.latitude])
-          .setPopup(popup)
-          .addTo(map.current!);
-
-        bounds.extend([otherPerson.longitude, otherPerson.latitude]);
-
-        // Adicionar linha conectando usuário à conexão
-        const lineId = `line-${conn.id}`;
-        const lineCoordinates = [
-          [userProfile.longitude, userProfile.latitude],
-          [otherPerson.longitude, otherPerson.latitude],
-        ];
-
-        map.current!.addSource(lineId, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            properties: {},
-            geometry: {
-              type: 'LineString',
-              coordinates: lineCoordinates,
-            },
-          },
-        });
-
-        map.current!.addLayer({
-          id: lineId,
-          type: 'line',
-          source: lineId,
-          layout: {
-            'line-join': 'round',
-            'line-cap': 'round',
-          },
-          paint: {
-            'line-color': lineColor,
-            'line-width': 3,
-            'line-opacity': 0.7,
-          },
-        });
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/light-v11',
+        center: [userProfile.longitude, userProfile.latitude],
+        zoom: 10,
       });
 
-      // Ajustar mapa para mostrar todos os marcadores
-      if (coordinates.length > 1) {
-        map.current!.fitBounds(bounds, { padding: 50, maxZoom: 14 });
-      }
-    });
+      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+      map.current.on('load', () => {
+        if (!map.current) return;
+
+        const bounds = new mapboxgl.LngLatBounds();
+
+        // Adicionar marcador do usuário
+        const userMarker = document.createElement('div');
+        userMarker.style.backgroundColor = '#8B5CF6';
+        userMarker.style.width = '40px';
+        userMarker.style.height = '40px';
+        userMarker.style.borderRadius = '50%';
+        userMarker.style.border = '4px solid white';
+        userMarker.style.display = 'flex';
+        userMarker.style.alignItems = 'center';
+        userMarker.style.justifyContent = 'center';
+        userMarker.style.color = 'white';
+        userMarker.style.fontWeight = 'bold';
+        userMarker.style.fontSize = '12px';
+        userMarker.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+        userMarker.textContent = 'Você';
+
+        new mapboxgl.Marker(userMarker)
+          .setLngLat([userProfile.longitude, userProfile.latitude])
+          .addTo(map.current);
+
+        bounds.extend([userProfile.longitude, userProfile.latitude]);
+
+        // Processar cada conexão e adicionar linhas
+        allConnections.forEach((conn, index) => {
+          const otherPerson = conn.requester_id === user.id ? conn.receiver : conn.requester;
+          
+          if (!otherPerson?.latitude || !otherPerson?.longitude) return;
+
+          const isFamilyConnection = conn.connection_type === 'family';
+          const lineColor = isFamilyConnection ? '#22c55e' : '#eab308'; // verde para família, amarelo para amigos
+
+          // Adicionar marcador da conexão
+          const markerEl = document.createElement('div');
+          markerEl.style.backgroundColor = lineColor;
+          markerEl.style.width = '32px';
+          markerEl.style.height = '32px';
+          markerEl.style.borderRadius = '50%';
+          markerEl.style.border = '3px solid white';
+          markerEl.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+          markerEl.style.cursor = 'pointer';
+
+          const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(
+            `<div class="p-2">
+              <p class="font-semibold">${otherPerson.full_name}</p>
+              <p class="text-xs text-muted-foreground">${isFamilyConnection ? 'Família' : 'Amigo'}</p>
+            </div>`
+          );
+
+          new mapboxgl.Marker(markerEl)
+            .setLngLat([otherPerson.longitude, otherPerson.latitude])
+            .setPopup(popup)
+            .addTo(map.current!);
+
+          bounds.extend([otherPerson.longitude, otherPerson.latitude]);
+
+          // Adicionar linha conectando usuário à conexão
+          const lineId = `connection-line-${index}`;
+          const lineCoordinates: [number, number][] = [
+            [userProfile.longitude, userProfile.latitude],
+            [otherPerson.longitude, otherPerson.latitude],
+          ];
+
+          map.current!.addSource(lineId, {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'LineString',
+                coordinates: lineCoordinates,
+              },
+            },
+          });
+
+          map.current!.addLayer({
+            id: lineId,
+            type: 'line',
+            source: lineId,
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round',
+            },
+            paint: {
+              'line-color': lineColor,
+              'line-width': 3,
+              'line-opacity': 0.7,
+            },
+          });
+        });
+
+        // Ajustar mapa para mostrar todos os marcadores
+        if (allConnections.length > 0) {
+          map.current!.fitBounds(bounds, { padding: 80, maxZoom: 14 });
+        }
+      });
+    } catch (error) {
+      console.error('Error initializing map:', error);
+    }
   };
 
   const renderMapView = () => {
