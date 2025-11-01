@@ -102,11 +102,15 @@ const MapVisualization = () => {
         return;
       }
 
-      // Agrupar usuários por localização
+      // Agrupar usuários por localização (excluindo o usuário atual)
       const locationGroups = new globalThis.Map<string, UserLocation[]>();
       
       profiles?.forEach(profile => {
-        const key = `${profile.latitude},${profile.longitude}`;
+        // Não incluir o usuário atual nos marcadores de conexões
+        if (profile.id === user.id) return;
+        
+        // Usar longitude,latitude como chave (ordem correta para Mapbox)
+        const key = `${profile.longitude},${profile.latitude}`;
         if (!locationGroups.has(key)) {
           locationGroups.set(key, []);
         }
@@ -125,6 +129,60 @@ const MapVisualization = () => {
       }
       if (map.current?.getSource('connection-lines')) {
         map.current.removeSource('connection-lines');
+      }
+
+      // Adicionar linhas conectando o usuário às suas conexões PRIMEIRO (para ficarem atrás dos marcadores)
+      if (currentUserProfile?.latitude && currentUserProfile?.longitude && connections && connections.length > 0) {
+        const lineFeatures: any[] = [];
+
+        connections.forEach((conn) => {
+          const otherUserId = conn.requester_id === user.id ? conn.receiver_id : conn.requester_id;
+          const otherUserProfile = profiles?.find(p => p.id === otherUserId);
+
+          if (otherUserProfile?.latitude && otherUserProfile?.longitude) {
+            const lineColor = conn.connection_type === 'family' ? '#22c55e' : '#eab308'; // verde para família, amarelo para amigos
+
+            lineFeatures.push({
+              type: 'Feature',
+              properties: {
+                color: lineColor,
+                connectionType: conn.connection_type
+              },
+              geometry: {
+                type: 'LineString',
+                coordinates: [
+                  [currentUserProfile.longitude, currentUserProfile.latitude],
+                  [otherUserProfile.longitude, otherUserProfile.latitude]
+                ]
+              }
+            });
+          }
+        });
+
+        if (lineFeatures.length > 0) {
+          map.current!.addSource('connection-lines', {
+            type: 'geojson',
+            data: {
+              type: 'FeatureCollection',
+              features: lineFeatures
+            }
+          });
+
+          map.current!.addLayer({
+            id: 'connection-lines',
+            type: 'line',
+            source: 'connection-lines',
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round'
+            },
+            paint: {
+              'line-color': ['get', 'color'],
+              'line-width': 3,
+              'line-opacity': 0.7
+            }
+          });
+        }
       }
 
       // Adicionar marcador do usuário atual se tiver localização
@@ -187,7 +245,8 @@ const MapVisualization = () => {
 
       // Adicionar marcadores para cada localização
       locationGroups.forEach((usersAtLocation, locationKey) => {
-        const [lat, lng] = locationKey.split(',').map(Number);
+        // locationKey agora está como "longitude,latitude"
+        const [lng, lat] = locationKey.split(',').map(Number);
         const firstUser = usersAtLocation[0];
         
         const el = document.createElement('div');
@@ -270,60 +329,6 @@ const MapVisualization = () => {
           .setLngLat([lng, lat])
           .addTo(map.current!);
       });
-
-      // Adicionar linhas conectando o usuário às suas conexões
-      if (currentUserProfile?.latitude && currentUserProfile?.longitude && connections && connections.length > 0) {
-        const lineFeatures: any[] = [];
-
-        connections.forEach((conn) => {
-          const otherUserId = conn.requester_id === user.id ? conn.receiver_id : conn.requester_id;
-          const otherUserProfile = profiles?.find(p => p.id === otherUserId);
-
-          if (otherUserProfile?.latitude && otherUserProfile?.longitude) {
-            const lineColor = conn.connection_type === 'family' ? '#22c55e' : '#eab308'; // verde para família, amarelo para amigos
-
-            lineFeatures.push({
-              type: 'Feature',
-              properties: {
-                color: lineColor,
-                connectionType: conn.connection_type
-              },
-              geometry: {
-                type: 'LineString',
-                coordinates: [
-                  [currentUserProfile.longitude, currentUserProfile.latitude],
-                  [otherUserProfile.longitude, otherUserProfile.latitude]
-                ]
-              }
-            });
-          }
-        });
-
-        if (lineFeatures.length > 0) {
-          map.current!.addSource('connection-lines', {
-            type: 'geojson',
-            data: {
-              type: 'FeatureCollection',
-              features: lineFeatures
-            }
-          });
-
-          map.current!.addLayer({
-            id: 'connection-lines',
-            type: 'line',
-            source: 'connection-lines',
-            layout: {
-              'line-join': 'round',
-              'line-cap': 'round'
-            },
-            paint: {
-              'line-color': ['get', 'color'],
-              'line-width': 3,
-              'line-opacity': 0.7
-            }
-          });
-        }
-      }
 
       // Ajustar visualização inicial
       if (profiles && profiles.length > 0 && currentZoom === 'world') {
