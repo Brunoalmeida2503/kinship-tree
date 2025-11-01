@@ -51,6 +51,13 @@ const MapVisualization = () => {
     if (!user || !map.current) return;
 
     try {
+      // Buscar perfil do usuário logado
+      const { data: currentUserProfile } = await supabase
+        .from('profiles')
+        .select('id, full_name, latitude, longitude, location, avatar_url')
+        .eq('id', user.id)
+        .single();
+
       // Buscar perfil do usuário e suas conexões
       let query = supabase
         .from('connections')
@@ -106,10 +113,76 @@ const MapVisualization = () => {
         locationGroups.get(key)!.push(profile as UserLocation);
       });
 
-      // Limpar marcadores existentes
+      // Limpar marcadores e layers existentes
       const markers = document.getElementsByClassName('mapboxgl-marker');
       while (markers[0]) {
         markers[0].remove();
+      }
+
+      // Remover layers e sources antigos se existirem
+      if (map.current?.getLayer('connection-lines')) {
+        map.current.removeLayer('connection-lines');
+      }
+      if (map.current?.getSource('connection-lines')) {
+        map.current.removeSource('connection-lines');
+      }
+
+      // Adicionar marcador do usuário atual se tiver localização
+      if (currentUserProfile?.latitude && currentUserProfile?.longitude) {
+        const userEl = document.createElement('div');
+        userEl.className = 'current-user-marker';
+        userEl.style.position = 'relative';
+        userEl.style.width = '70px';
+        userEl.style.height = '70px';
+        userEl.style.borderRadius = '50%';
+        userEl.style.border = '5px solid hsl(var(--primary))';
+        userEl.style.boxShadow = '0 8px 24px rgba(0,0,0,0.6)';
+        userEl.style.cursor = 'pointer';
+        userEl.style.overflow = 'hidden';
+        userEl.style.backgroundColor = 'hsl(var(--background))';
+        userEl.style.zIndex = '100';
+        
+        if (currentUserProfile.avatar_url) {
+          userEl.style.backgroundImage = `url(${currentUserProfile.avatar_url})`;
+          userEl.style.backgroundSize = 'cover';
+          userEl.style.backgroundPosition = 'center';
+        } else {
+          userEl.style.display = 'flex';
+          userEl.style.alignItems = 'center';
+          userEl.style.justifyContent = 'center';
+          userEl.style.backgroundColor = 'hsl(var(--primary))';
+          userEl.style.color = 'hsl(var(--primary-foreground))';
+          userEl.style.fontSize = '24px';
+          userEl.style.fontWeight = 'bold';
+          const initials = currentUserProfile.full_name
+            .split(' ')
+            .map(n => n[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+          userEl.textContent = initials;
+        }
+
+        // Badge "Você"
+        const badge = document.createElement('div');
+        badge.style.position = 'absolute';
+        badge.style.bottom = '-8px';
+        badge.style.left = '50%';
+        badge.style.transform = 'translateX(-50%)';
+        badge.style.padding = '2px 8px';
+        badge.style.borderRadius = '12px';
+        badge.style.backgroundColor = 'hsl(var(--primary))';
+        badge.style.color = 'white';
+        badge.style.fontSize = '10px';
+        badge.style.fontWeight = 'bold';
+        badge.style.border = '2px solid white';
+        badge.style.whiteSpace = 'nowrap';
+        badge.textContent = 'Você';
+        userEl.appendChild(badge);
+
+        new mapboxgl.Marker(userEl)
+          .setLngLat([currentUserProfile.longitude, currentUserProfile.latitude])
+          .addTo(map.current!);
       }
 
       // Adicionar marcadores para cada localização
@@ -198,7 +271,59 @@ const MapVisualization = () => {
           .addTo(map.current!);
       });
 
-      // Removido: linhas de conexão não são mais necessárias
+      // Adicionar linhas conectando o usuário às suas conexões
+      if (currentUserProfile?.latitude && currentUserProfile?.longitude && connections && connections.length > 0) {
+        const lineFeatures: any[] = [];
+
+        connections.forEach((conn) => {
+          const otherUserId = conn.requester_id === user.id ? conn.receiver_id : conn.requester_id;
+          const otherUserProfile = profiles?.find(p => p.id === otherUserId);
+
+          if (otherUserProfile?.latitude && otherUserProfile?.longitude) {
+            const lineColor = conn.connection_type === 'family' ? '#22c55e' : '#eab308'; // verde para família, amarelo para amigos
+
+            lineFeatures.push({
+              type: 'Feature',
+              properties: {
+                color: lineColor,
+                connectionType: conn.connection_type
+              },
+              geometry: {
+                type: 'LineString',
+                coordinates: [
+                  [currentUserProfile.longitude, currentUserProfile.latitude],
+                  [otherUserProfile.longitude, otherUserProfile.latitude]
+                ]
+              }
+            });
+          }
+        });
+
+        if (lineFeatures.length > 0) {
+          map.current!.addSource('connection-lines', {
+            type: 'geojson',
+            data: {
+              type: 'FeatureCollection',
+              features: lineFeatures
+            }
+          });
+
+          map.current!.addLayer({
+            id: 'connection-lines',
+            type: 'line',
+            source: 'connection-lines',
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round'
+            },
+            paint: {
+              'line-color': ['get', 'color'],
+              'line-width': 3,
+              'line-opacity': 0.7
+            }
+          });
+        }
+      }
 
       // Ajustar visualização inicial
       if (profiles && profiles.length > 0 && currentZoom === 'world') {
