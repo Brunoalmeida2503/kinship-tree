@@ -249,72 +249,63 @@ const MapVisualization = () => {
         const [lng, lat] = locationKey.split(',').map(Number);
         const firstUser = usersAtLocation[0];
         
+        // Container do marcador de pin
         const el = document.createElement('div');
-        el.className = 'family-marker';
+        el.className = 'location-pin-marker';
         el.style.position = 'relative';
-        el.style.width = '60px';
+        el.style.width = '50px';
         el.style.height = '60px';
-        el.style.borderRadius = '50%';
-        el.style.border = '4px solid hsl(var(--primary))';
-        el.style.boxShadow = '0 6px 20px rgba(0,0,0,0.5)';
         el.style.cursor = 'pointer';
         el.style.transition = 'all 0.3s ease';
-        el.style.overflow = 'hidden';
-        el.style.backgroundColor = 'hsl(var(--background))';
         
-        // Se houver múltiplos usuários, criar um indicador
-        if (usersAtLocation.length > 1) {
-          // Badge com contador
-          const badge = document.createElement('div');
-          badge.style.position = 'absolute';
-          badge.style.top = '-6px';
-          badge.style.right = '-6px';
-          badge.style.width = '24px';
-          badge.style.height = '24px';
-          badge.style.borderRadius = '50%';
-          badge.style.backgroundColor = 'hsl(var(--destructive))';
-          badge.style.color = 'white';
-          badge.style.display = 'flex';
-          badge.style.alignItems = 'center';
-          badge.style.justifyContent = 'center';
-          badge.style.fontSize = '12px';
-          badge.style.fontWeight = 'bold';
-          badge.style.border = '2px solid white';
-          badge.style.zIndex = '10';
-          badge.textContent = usersAtLocation.length.toString();
-          el.appendChild(badge);
-        }
+        // Criar o pin de localização
+        const pin = document.createElement('div');
+        pin.style.position = 'absolute';
+        pin.style.width = '50px';
+        pin.style.height = '50px';
+        pin.style.backgroundColor = 'hsl(var(--primary))';
+        pin.style.borderRadius = '50% 50% 50% 0';
+        pin.style.transform = 'rotate(-45deg)';
+        pin.style.border = '3px solid white';
+        pin.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
         
-        // Imagem de perfil do primeiro usuário
-        if (firstUser.avatar_url) {
-          el.style.backgroundImage = `url(${firstUser.avatar_url})`;
-          el.style.backgroundSize = 'cover';
-          el.style.backgroundPosition = 'center';
-        } else {
-          el.style.display = 'flex';
-          el.style.alignItems = 'center';
-          el.style.justifyContent = 'center';
-          el.style.backgroundColor = 'hsl(var(--primary))';
-          el.style.color = 'hsl(var(--primary-foreground))';
-          el.style.fontSize = '20px';
-          el.style.fontWeight = 'bold';
-          const initials = firstUser.full_name
-            .split(' ')
-            .map(n => n[0])
-            .join('')
-            .toUpperCase()
-            .slice(0, 2);
-          el.textContent = initials;
-        }
+        // Círculo interno branco no centro do pin
+        const innerCircle = document.createElement('div');
+        innerCircle.style.position = 'absolute';
+        innerCircle.style.width = '20px';
+        innerCircle.style.height = '20px';
+        innerCircle.style.backgroundColor = 'white';
+        innerCircle.style.borderRadius = '50%';
+        innerCircle.style.top = '50%';
+        innerCircle.style.left = '50%';
+        innerCircle.style.transform = 'translate(-50%, -50%)';
+        innerCircle.style.display = 'flex';
+        innerCircle.style.alignItems = 'center';
+        innerCircle.style.justifyContent = 'center';
+        innerCircle.style.fontSize = '12px';
+        innerCircle.style.fontWeight = 'bold';
+        innerCircle.style.color = 'hsl(var(--primary))';
         
+        // Adicionar contador de usuários no centro
+        const counterText = document.createElement('span');
+        counterText.style.transform = 'rotate(45deg)';
+        counterText.textContent = usersAtLocation.length.toString();
+        innerCircle.appendChild(counterText);
+        
+        pin.appendChild(innerCircle);
+        el.appendChild(pin);
+        
+        // Efeito hover
         el.addEventListener('mouseenter', () => {
-          el.style.transform = 'scale(1.2)';
+          el.style.transform = 'scale(1.15)';
           el.style.zIndex = '1000';
+          pin.style.boxShadow = '0 6px 16px rgba(0,0,0,0.6)';
         });
         
         el.addEventListener('mouseleave', () => {
           el.style.transform = 'scale(1)';
           el.style.zIndex = '1';
+          pin.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
         });
 
         // Ao clicar, abrir diálogo com todos os usuários
@@ -325,7 +316,7 @@ const MapVisualization = () => {
           });
         });
 
-        new mapboxgl.Marker(el)
+        new mapboxgl.Marker({ element: el, anchor: 'bottom' })
           .setLngLat([lng, lat])
           .addTo(map.current!);
       });
