@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
-type ThemeColor = 'white' | 'green';
+type ThemeColor = 'white' | 'green' | 'echo';
 
 interface ThemeContextType {
   themeColor: ThemeColor;
@@ -53,6 +53,22 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       root.style.setProperty('--muted-foreground', '0 0% 90%');
       root.style.setProperty('--border', '142 100% 45%');
       root.style.setProperty('--input', '142 100% 45%');
+    } else if (theme === 'echo') {
+      // Tema Echo com sidebar azul
+      root.style.setProperty('--background', '21 0% 100%');
+      root.style.setProperty('--foreground', '142 45% 15%');
+      root.style.setProperty('--card', '0 0% 100%');
+      root.style.setProperty('--card-foreground', '142 45% 15%');
+      root.style.setProperty('--popover', '0 0% 100%');
+      root.style.setProperty('--popover-foreground', '142 45% 15%');
+      root.style.setProperty('--sidebar-background', '0 0% 98%');
+      root.style.setProperty('--sidebar-foreground', '192 100% 18%');
+      root.style.setProperty('--sidebar-accent', '142 30% 95%');
+      root.style.setProperty('--sidebar-accent-foreground', '192 100% 18%');
+      root.style.setProperty('--muted', '142 30% 95%');
+      root.style.setProperty('--muted-foreground', '142 20% 45%');
+      root.style.setProperty('--border', '142 30% 90%');
+      root.style.setProperty('--input', '142 30% 90%');
     } else {
       // Branco (tema original)
       root.style.setProperty('--background', '21 0% 100%');

@@ -464,7 +464,7 @@ export function ProfileSection() {
             <Label htmlFor="theme_color">Cor do Tema</Label>
             <Select
               value={themeColor}
-              onValueChange={(value) => setThemeColor(value as 'white' | 'green')}
+              onValueChange={(value) => setThemeColor(value as 'white' | 'green' | 'echo')}
             >
               <SelectTrigger id="theme_color">
                 <SelectValue />
@@ -472,6 +472,7 @@ export function ProfileSection() {
               <SelectContent>
                 <SelectItem value="white">Branco (Padrão)</SelectItem>
                 <SelectItem value="green">Verde</SelectItem>
+                <SelectItem value="echo">Echo</SelectItem>
               </SelectContent>
             </Select>
           </div>
