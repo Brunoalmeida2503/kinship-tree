@@ -443,7 +443,10 @@ export function ProfileSection() {
             <Label htmlFor="language">{t('profile.language')}</Label>
             <Select
               value={profile.language}
-              onValueChange={(value) => setProfile({ ...profile, language: value })}
+              onValueChange={(value) => {
+                setProfile({ ...profile, language: value });
+                i18n.changeLanguage(value);
+              }}
             >
               <SelectTrigger id="language">
                 <SelectValue />
