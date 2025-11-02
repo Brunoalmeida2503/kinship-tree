@@ -9,6 +9,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Globe, Map, MapPin, User, X, Calendar, Users, Heart } from 'lucide-react';
+
+// Adicionar estilos de animação para o marcador do usuário
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 0 3px hsla(var(--primary), 0.3), 0 0 30px hsla(var(--primary), 0.4);
+    }
+    50% {
+      transform: scale(1.05);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 0 0 6px hsla(var(--primary), 0.2), 0 0 40px hsla(var(--primary), 0.5);
+    }
+  }
+`;
+document.head.appendChild(style);
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -127,6 +143,9 @@ const MapVisualization = () => {
       if (map.current?.getLayer('connection-lines')) {
         map.current.removeLayer('connection-lines');
       }
+      if (map.current?.getLayer('connection-lines-glow')) {
+        map.current.removeLayer('connection-lines-glow');
+      }
       if (map.current?.getSource('connection-lines')) {
         map.current.removeSource('connection-lines');
       }
@@ -140,7 +159,7 @@ const MapVisualization = () => {
           const otherUserProfile = profiles?.find(p => p.id === otherUserId);
 
           if (otherUserProfile?.latitude && otherUserProfile?.longitude) {
-            const lineColor = conn.connection_type === 'family' ? '#22c55e' : '#eab308'; // verde para família, amarelo para amigos
+            const lineColor = conn.connection_type === 'family' ? '#10b981' : '#f59e0b';
 
             lineFeatures.push({
               type: 'Feature',
@@ -168,6 +187,24 @@ const MapVisualization = () => {
             }
           });
 
+          // Camada de sombra/glow das linhas
+          map.current!.addLayer({
+            id: 'connection-lines-glow',
+            type: 'line',
+            source: 'connection-lines',
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round'
+            },
+            paint: {
+              'line-color': ['get', 'color'],
+              'line-width': 8,
+              'line-opacity': 0.3,
+              'line-blur': 4
+            }
+          });
+
+          // Camada principal das linhas
           map.current!.addLayer({
             id: 'connection-lines',
             type: 'line',
@@ -178,8 +215,8 @@ const MapVisualization = () => {
             },
             paint: {
               'line-color': ['get', 'color'],
-              'line-width': 3,
-              'line-opacity': 0.7
+              'line-width': 4,
+              'line-opacity': 0.9
             }
           });
         }
@@ -194,11 +231,12 @@ const MapVisualization = () => {
         userEl.style.height = '70px';
         userEl.style.borderRadius = '50%';
         userEl.style.border = '5px solid hsl(var(--primary))';
-        userEl.style.boxShadow = '0 8px 24px rgba(0,0,0,0.6)';
+        userEl.style.boxShadow = '0 8px 24px rgba(0,0,0,0.6), 0 0 0 3px hsla(var(--primary), 0.3), 0 0 30px hsla(var(--primary), 0.4)';
         userEl.style.cursor = 'pointer';
         userEl.style.overflow = 'hidden';
         userEl.style.backgroundColor = 'hsl(var(--background))';
         userEl.style.zIndex = '100';
+        userEl.style.animation = 'pulse 2s ease-in-out infinite';
         
         if (currentUserProfile.avatar_url) {
           userEl.style.backgroundImage = `url(${currentUserProfile.avatar_url})`;
@@ -263,11 +301,12 @@ const MapVisualization = () => {
         pin.style.position = 'absolute';
         pin.style.width = '50px';
         pin.style.height = '50px';
-        pin.style.backgroundColor = 'hsl(var(--primary))';
+        pin.style.background = 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow, var(--primary))))';
         pin.style.borderRadius = '50% 50% 50% 0';
         pin.style.transform = 'rotate(-45deg)';
         pin.style.border = '3px solid white';
-        pin.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
+        pin.style.boxShadow = '0 6px 20px rgba(0,0,0,0.3), 0 0 0 2px hsla(var(--primary), 0.2)';
+        pin.style.transition = 'all 0.3s ease';
         
         // Círculo interno branco no centro do pin
         const innerCircle = document.createElement('div');
@@ -297,15 +336,17 @@ const MapVisualization = () => {
         
         // Efeito hover
         el.addEventListener('mouseenter', () => {
-          el.style.transform = 'scale(1.15)';
+          el.style.transform = 'scale(1.2)';
           el.style.zIndex = '1000';
-          pin.style.boxShadow = '0 6px 16px rgba(0,0,0,0.6)';
+          pin.style.boxShadow = '0 8px 30px rgba(0,0,0,0.4), 0 0 0 4px hsla(var(--primary), 0.3)';
+          pin.style.filter = 'brightness(1.1)';
         });
         
         el.addEventListener('mouseleave', () => {
           el.style.transform = 'scale(1)';
           el.style.zIndex = '1';
-          pin.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
+          pin.style.boxShadow = '0 6px 20px rgba(0,0,0,0.3), 0 0 0 2px hsla(var(--primary), 0.2)';
+          pin.style.filter = 'brightness(1)';
         });
 
         // Ao clicar, abrir diálogo com todos os usuários
