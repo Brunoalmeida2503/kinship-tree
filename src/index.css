@@ -48,7 +48,7 @@ All colors MUST be HSL.
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(142 30% 98%) 100%);
 
     --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 142 45% 15%;
+    --sidebar-foreground: 192 100% 18%;
     --sidebar-primary: 142 76% 36%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 142 30% 95%;
