@@ -38,21 +38,21 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     const root = document.documentElement;
     
     if (theme === 'green') {
-      // Verde #00AB3E = hsl(142, 100%, 34%)
-      root.style.setProperty('--background', '142 100% 34%');
+      // Tema Verde com tom 192 100% 18%
+      root.style.setProperty('--background', '192 100% 18%');
       root.style.setProperty('--foreground', '0 0% 100%');
-      root.style.setProperty('--card', '142 100% 30%');
+      root.style.setProperty('--card', '192 100% 15%');
       root.style.setProperty('--card-foreground', '0 0% 100%');
-      root.style.setProperty('--popover', '142 100% 30%');
+      root.style.setProperty('--popover', '192 100% 15%');
       root.style.setProperty('--popover-foreground', '0 0% 100%');
-      root.style.setProperty('--sidebar-background', '142 100% 34%');
+      root.style.setProperty('--sidebar-background', '192 100% 18%');
       root.style.setProperty('--sidebar-foreground', '0 0% 100%');
-      root.style.setProperty('--sidebar-accent', '142 100% 40%');
+      root.style.setProperty('--sidebar-accent', '192 100% 25%');
       root.style.setProperty('--sidebar-accent-foreground', '0 0% 100%');
-      root.style.setProperty('--muted', '142 100% 40%');
+      root.style.setProperty('--muted', '192 100% 25%');
       root.style.setProperty('--muted-foreground', '0 0% 90%');
-      root.style.setProperty('--border', '142 100% 45%');
-      root.style.setProperty('--input', '142 100% 45%');
+      root.style.setProperty('--border', '192 100% 30%');
+      root.style.setProperty('--input', '192 100% 30%');
     } else if (theme === 'echo') {
       // Tema Echo com sidebar azul
       root.style.setProperty('--background', '21 0% 100%');
