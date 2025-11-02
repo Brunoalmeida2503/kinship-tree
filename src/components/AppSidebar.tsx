@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 import logoDark from "@/assets/logo-dark.png";
 import logoWhiteTheme from "@/assets/logo-white-theme.png";
+import logoEcho from "@/assets/logo-echo.png";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
   Sidebar,
@@ -40,7 +41,7 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
   
-  const currentLogo = themeColor === 'white' ? logoWhiteTheme : themeColor === 'green' ? logoDark : logo;
+  const currentLogo = themeColor === 'white' ? logoWhiteTheme : themeColor === 'echo' ? logoEcho : logoDark;
 
   const isActive = (path: string) => currentPath === path;
 

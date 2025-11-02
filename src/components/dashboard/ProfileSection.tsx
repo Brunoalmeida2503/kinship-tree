@@ -472,7 +472,7 @@ export function ProfileSection() {
               <SelectContent>
                 <SelectItem value="white">Branco (Padrão)</SelectItem>
                 <SelectItem value="green">Verde</SelectItem>
-                <SelectItem value="echo">Echo</SelectItem>
+                <SelectItem value="echo">Verde Claro</SelectItem>
               </SelectContent>
             </Select>
           </div>
