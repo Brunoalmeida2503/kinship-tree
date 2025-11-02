@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 import logoDark from "@/assets/logo-dark.png";
+import logoWhiteTheme from "@/assets/logo-white-theme.png";
 import { useTheme } from "@/contexts/ThemeContext";
 import {
   Sidebar,
@@ -39,7 +40,7 @@ export function AppSidebar() {
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
   
-  const currentLogo = themeColor === 'green' ? logoDark : logo;
+  const currentLogo = themeColor === 'white' ? logoWhiteTheme : themeColor === 'green' ? logoDark : logo;
 
   const isActive = (path: string) => currentPath === path;
 
