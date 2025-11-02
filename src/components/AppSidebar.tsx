@@ -57,8 +57,8 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="w-56">
       <SidebarHeader>
-        <div className={`flex items-center px-4 py-3 ${collapsed ? 'justify-center' : ''}`}>
-          <img src={currentLogo} alt="Tree Logo" className={collapsed ? "h-8 w-auto" : "h-10 w-auto"} />
+        <div className="flex items-center justify-center px-4 py-3">
+          <img src={currentLogo} alt="Tree Logo" className={collapsed ? "h-12 w-auto" : "h-16 w-auto"} />
         </div>
       </SidebarHeader>
 
