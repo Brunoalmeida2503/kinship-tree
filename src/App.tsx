@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AuraButton } from "@/components/aura/AuraButton";
+import { useLanguageSync } from "@/hooks/useLanguageSync";
 import Index from "./pages/Index";
 import Feed from "./pages/Feed";
 import Auth from "./pages/Auth";
@@ -27,14 +28,11 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <ThemeProvider>
-          <Toaster />
-          <Sonner />
-        <BrowserRouter>
+const AppContent = () => {
+  useLanguageSync();
+  
+  return (
+    <BrowserRouter>
           <Routes>
             <Route path="/landing" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
@@ -77,6 +75,17 @@ const App = () => (
             />
           </Routes>
         </BrowserRouter>
+  );
+};
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <Toaster />
+          <Sonner />
+          <AppContent />
         </ThemeProvider>
       </AuthProvider>
     </TooltipProvider>
