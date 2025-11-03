@@ -28,5 +28,76 @@
     "en": "English",
     "es": "Spanish",
     "fr": "French"
+  },
+  "dashboard": {
+    "title": "Tree",
+    "logout": "Logout",
+    "loading": "Loading...",
+    "tree": "Tree",
+    "map": "Map",
+    "connections": "Connections",
+    "groups": "Groups"
+  },
+  "sidebar": {
+    "navigation": "Navigation",
+    "moments": "Moments",
+    "tree": "Tree",
+    "groups": "Groups",
+    "missions": "Missions",
+    "memories": "Memories",
+    "profile": "Profile",
+    "logout": "Logout"
+  },
+  "navbar": {
+    "features": "Features",
+    "howItWorks": "How It Works",
+    "about": "About",
+    "dashboard": "Dashboard",
+    "logout": "Logout",
+    "login": "Login",
+    "getStarted": "Get Started"
+  },
+  "feed": {
+    "title": "Timeline",
+    "userTimeline": "User Timeline",
+    "createPost": "What's on your mind?",
+    "shareWithTree": "Share with Tree",
+    "selectGroups": "Select Groups",
+    "post": "Post",
+    "posting": "Posting...",
+    "postCreated": "Post created!",
+    "postCreatedDescription": "Your post has been published successfully",
+    "postError": "Error creating post",
+    "postErrorDescription": "Could not publish the post",
+    "deletePost": "Delete Post",
+    "deletePostConfirm": "Are you sure you want to delete this post?",
+    "deletePostDescription": "This action cannot be undone.",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "postDeleted": "Post deleted",
+    "postDeletedDescription": "The post has been removed successfully",
+    "deleteError": "Error deleting post",
+    "deleteErrorDescription": "Could not remove the post",
+    "loadError": "Error loading posts",
+    "loadErrorDescription": "Could not load the feed",
+    "noGroups": "You are not a member of any groups yet",
+    "uploadImages": "Upload images or videos"
+  },
+  "memories": {
+    "title": "Memories",
+    "description": "Store and share your special moments",
+    "newMemory": "New Memory",
+    "loading": "Loading...",
+    "gallery": "Gallery",
+    "calendar": "Calendar"
+  },
+  "groups": {
+    "title": "My Groups",
+    "description": "Groups you are part of",
+    "loading": "Loading groups...",
+    "noGroups": "You are not part of any groups yet",
+    "members": "members",
+    "viewGroup": "View Group"
   }
 }

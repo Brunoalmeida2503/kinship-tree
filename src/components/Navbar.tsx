@@ -4,10 +4,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationBell } from "./notifications/NotificationBell";
 import logo from "@/assets/logo.png";
+import { useTranslation } from "react-i18next";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -24,13 +26,13 @@ const Navbar = () => {
           
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-foreground/80 hover:text-primary transition-colors">
-              Recursos
+              {t('navbar.features')}
             </a>
             <a href="#how-it-works" className="text-foreground/80 hover:text-primary transition-colors">
-              Como Funciona
+              {t('navbar.howItWorks')}
             </a>
             <a href="#about" className="text-foreground/80 hover:text-primary transition-colors">
-              Sobre
+              {t('navbar.about')}
             </a>
           </div>
           
@@ -39,19 +41,19 @@ const Navbar = () => {
               <>
                 <NotificationBell />
                 <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-                  Dashboard
+                  {t('navbar.dashboard')}
                 </Button>
                 <Button variant="default" onClick={handleLogout}>
-                  Sair
+                  {t('navbar.logout')}
                 </Button>
               </>
             ) : (
               <>
                 <Button variant="ghost" onClick={() => navigate("/auth")}>
-                  Entrar
+                  {t('navbar.login')}
                 </Button>
                 <Button variant="default" onClick={() => navigate("/auth")}>
-                  Começar
+                  {t('navbar.getStarted')}
                 </Button>
               </>
             )}

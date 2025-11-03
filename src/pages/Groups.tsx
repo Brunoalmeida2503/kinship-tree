@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Users, Lock, Globe } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface Group {
   id: string;
@@ -21,6 +22,7 @@ interface Group {
 const Groups = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -88,7 +90,7 @@ const Groups = () => {
       <div className="container mx-auto p-6 max-w-6xl">
         <Card>
           <CardContent className="py-8">
-            <div className="text-center text-muted-foreground">Carregando grupos...</div>
+            <div className="text-center text-muted-foreground">{t('groups.loading')}</div>
           </CardContent>
         </Card>
       </div>
@@ -99,15 +101,15 @@ const Groups = () => {
     <div className="container mx-auto p-6 max-w-6xl">
       <Card>
         <CardHeader>
-          <CardTitle>Meus Grupos</CardTitle>
+          <CardTitle>{t('groups.title')}</CardTitle>
           <CardDescription>
-            Grupos dos quais você faz parte
+            {t('groups.description')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {groups.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              Você ainda não faz parte de nenhum grupo
+              {t('groups.noGroups')}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -144,7 +146,7 @@ const Groups = () => {
                         
                         <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
                           <Users className="h-4 w-4" />
-                          <span>{group.member_count} membros</span>
+                          <span>{group.member_count} {t('groups.members')}</span>
                         </div>
                       </div>
                       
@@ -155,7 +157,7 @@ const Groups = () => {
                           navigate(`/group/${group.id}`);
                         }}
                       >
-                        Ver Grupo
+                        {t('groups.viewGroup')}
                       </Button>
                     </div>
                   </CardContent>

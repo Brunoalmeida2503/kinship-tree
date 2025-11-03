@@ -8,10 +8,12 @@ import { GroupsSection } from '@/components/dashboard/GroupsSection';
 import { TreeVisualization } from '@/components/dashboard/TreeVisualization';
 import MapVisualization from '@/components/dashboard/MapVisualization';
 import { LogOut, Users, Network, TreePine, Map } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function Dashboard() {
   const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('tree');
 
   useEffect(() => {
@@ -23,7 +25,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background-start to-background-end">
-        <div className="text-lg">Carregando...</div>
+        <div className="text-lg">{t('dashboard.loading')}</div>
       </div>
     );
   }
@@ -36,10 +38,10 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background-start to-background-end">
       <header className="border-b border-border-subtle bg-background/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-primary">Tree</h1>
+          <h1 className="text-2xl font-bold text-primary">{t('dashboard.title')}</h1>
           <Button variant="outline" onClick={signOut}>
             <LogOut className="mr-2 h-4 w-4" />
-            Sair
+            {t('dashboard.logout')}
           </Button>
         </div>
       </header>
@@ -49,19 +51,19 @@ export default function Dashboard() {
           <TabsList className="grid w-full grid-cols-4 lg:w-auto">
             <TabsTrigger value="tree" className="flex items-center gap-2">
               <TreePine className="h-4 w-4" />
-              <span className="hidden sm:inline">Árvore</span>
+              <span className="hidden sm:inline">{t('dashboard.tree')}</span>
             </TabsTrigger>
             <TabsTrigger value="map" className="flex items-center gap-2">
               <Map className="h-4 w-4" />
-              <span className="hidden sm:inline">Mapa</span>
+              <span className="hidden sm:inline">{t('dashboard.map')}</span>
             </TabsTrigger>
             <TabsTrigger value="connections" className="flex items-center gap-2">
               <Network className="h-4 w-4" />
-              <span className="hidden sm:inline">Conexões</span>
+              <span className="hidden sm:inline">{t('dashboard.connections')}</span>
             </TabsTrigger>
             <TabsTrigger value="groups" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Grupos</span>
+              <span className="hidden sm:inline">{t('dashboard.groups')}</span>
             </TabsTrigger>
           </TabsList>
 

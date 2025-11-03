@@ -8,10 +8,12 @@ import { AddMemoryDialog } from '@/components/memories/AddMemoryDialog';
 import { Button } from '@/components/ui/button';
 import { Calendar, Grid, Plus } from 'lucide-react';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function Memories() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [activeView, setActiveView] = useState<'gallery' | 'calendar'>('gallery');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
@@ -24,7 +26,7 @@ export default function Memories() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary to-background">
-        <div className="text-lg">Carregando...</div>
+        <div className="text-lg">{t('memories.loading')}</div>
       </div>
     );
   }
@@ -38,14 +40,14 @@ export default function Memories() {
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-4xl font-bold text-foreground mb-2">Memórias</h1>
+            <h1 className="text-4xl font-bold text-foreground mb-2">{t('memories.title')}</h1>
             <p className="text-muted-foreground">
-              Guarde e compartilhe seus momentos especiais
+              {t('memories.description')}
             </p>
           </div>
           <Button onClick={() => setIsAddDialogOpen(true)} size="lg">
             <Plus className="mr-2 h-5 w-5" />
-            Nova Memória
+            {t('memories.newMemory')}
           </Button>
         </div>
 
@@ -53,11 +55,11 @@ export default function Memories() {
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="gallery" className="flex items-center gap-2">
               <Grid className="h-4 w-4" />
-              Galeria
+              {t('memories.gallery')}
             </TabsTrigger>
             <TabsTrigger value="calendar" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              Calendário
+              {t('memories.calendar')}
             </TabsTrigger>
           </TabsList>
 

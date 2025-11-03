@@ -6,6 +6,7 @@ import logoDark from "@/assets/logo-dark.png";
 import logoWhiteTheme from "@/assets/logo-white-theme.png";
 import logoEcho from "@/assets/logo-echo.png";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useTranslation } from "react-i18next";
 import {
   Sidebar,
   SidebarContent,
@@ -23,23 +24,24 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 
-const menuItems = [
-  { title: "Moments", url: "/", icon: Home },
-  { title: "Árvore", url: "/tree", icon: GitBranch },
-  { title: "Grupos", url: "/groups", icon: Users },
-  { title: "Missões", url: "/missions", icon: Target },
-  { title: "Memórias", url: "/memories", icon: Images },
-  { title: "Perfil", url: "/profile", icon: User },
-];
-
 export function AppSidebar() {
   const { state, setOpenMobile, isMobile } = useSidebar();
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { themeColor } = useTheme();
+  const { t } = useTranslation();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
+  
+  const menuItems = [
+    { title: t('sidebar.moments'), url: "/", icon: Home },
+    { title: t('sidebar.tree'), url: "/tree", icon: GitBranch },
+    { title: t('sidebar.groups'), url: "/groups", icon: Users },
+    { title: t('sidebar.missions'), url: "/missions", icon: Target },
+    { title: t('sidebar.memories'), url: "/memories", icon: Images },
+    { title: t('sidebar.profile'), url: "/profile", icon: User },
+  ];
   
   const currentLogo = themeColor === 'white' ? logoWhiteTheme : themeColor === 'echo' ? logoEcho : logoDark;
 
@@ -64,7 +66,7 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Navegação</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('sidebar.navigation')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
@@ -91,7 +93,7 @@ export function AppSidebar() {
                 className="w-full flex items-center gap-2"
               >
                 <LogOut />
-                <span>Sair</span>
+                <span>{t('sidebar.logout')}</span>
               </button>
             </SidebarMenuButton>
           </SidebarMenuItem>
