@@ -9,6 +9,7 @@ import { ArrowLeft, Target, GitBranch, Map as MapIcon } from "lucide-react";
 import { MissionFlowchart } from "@/components/missions/MissionFlowchart";
 import { MissionMap } from "@/components/missions/MissionMap";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "react-i18next";
 
 interface Mission {
   id: string;
@@ -28,6 +29,7 @@ const MissionExplore = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [mission, setMission] = useState<Mission | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -69,11 +71,11 @@ const MissionExplore = () => {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case "completed":
-        return "Completada";
+        return t("missions.completed");
       case "active":
-        return "Ativa";
+        return t("missions.active");
       default:
-        return "Abandonada";
+        return t("missions.abandoned");
     }
   };
 
@@ -91,7 +93,7 @@ const MissionExplore = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">Carregando missão...</div>
+        <div className="text-center">{t("missions.loadingMission")}</div>
       </div>
     );
   }
@@ -109,10 +111,10 @@ const MissionExplore = () => {
         <div className="flex-1">
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Target className="h-8 w-8 text-primary" />
-            Explorar Missão
+            {t("missions.exploreMission")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Missão para {mission.target_profile?.full_name}
+            {t("missions.missionFor")} {mission.target_profile?.full_name}
           </p>
         </div>
         <Badge variant={getStatusVariant(mission.status)}>
@@ -123,9 +125,9 @@ const MissionExplore = () => {
       <Card className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold">Progresso da Missão</h3>
+            <h3 className="text-lg font-semibold">{t("missions.missionProgress")}</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Grau alcançado: {mission.current_degree} de 6
+              {t("missions.degreeReached")}: {mission.current_degree} {t("missions.of")} 6
             </p>
           </div>
           <div className="text-4xl font-bold text-primary">
@@ -138,17 +140,17 @@ const MissionExplore = () => {
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="flowchart" className="flex items-center gap-2">
             <GitBranch className="h-4 w-4" />
-            Fluxograma
+            {t("missions.flowchart")}
           </TabsTrigger>
           <TabsTrigger value="map" className="flex items-center gap-2">
             <MapIcon className="h-4 w-4" />
-            Mapa
+            {t("missions.map")}
           </TabsTrigger>
         </TabsList>
         <TabsContent value="flowchart" className="mt-6">
           <MissionFlowchart 
             path={mission.path || []} 
-            targetName={mission.target_profile?.full_name || "Alvo"}
+            targetName={mission.target_profile?.full_name || t("missions.target")}
           />
         </TabsContent>
         <TabsContent value="map" className="mt-6">

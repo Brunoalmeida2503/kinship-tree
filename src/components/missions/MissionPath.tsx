@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ChevronRight } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface MissionPathProps {
   path: any[];
@@ -8,13 +9,15 @@ interface MissionPathProps {
 }
 
 export const MissionPath = ({ path, currentDegree }: MissionPathProps) => {
+  const { t } = useTranslation();
+  
   if (!path || path.length === 0) {
     return null;
   }
 
   return (
     <Card className="p-6">
-      <h3 className="text-lg font-semibold mb-4">Caminho Percorrido</h3>
+      <h3 className="text-lg font-semibold mb-4">{t("missions.pathTraveled")}</h3>
       <div className="flex items-center gap-2 flex-wrap">
         {path.map((node, index) => (
           <div key={index} className="flex items-center gap-2">

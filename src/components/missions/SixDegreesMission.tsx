@@ -10,6 +10,7 @@ import { StartMissionDialog } from "./StartMissionDialog";
 import { MissionPath } from "./MissionPath";
 import { MissionSuggestions } from "./MissionSuggestions";
 import { MissionRitual } from "./MissionRitual";
+import { useTranslation } from "react-i18next";
 
 interface Mission {
   id: string;
@@ -35,6 +36,7 @@ export const SixDegreesMission = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [activeMission, setActiveMission] = useState<Mission | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(false);
@@ -105,7 +107,7 @@ export const SixDegreesMission = () => {
           const profile = profiles.find((p) => p.id === s.suggested_user_id);
           return {
             id: s.suggested_user_id,
-            full_name: profile?.full_name || "Desconhecido",
+            full_name: profile?.full_name || t("missions.unknown"),
             avatar_url: profile?.avatar_url || "",
             connection_strength: s.connection_strength,
             common_connections: s.common_connections,
@@ -190,16 +192,16 @@ export const SixDegreesMission = () => {
       }
 
       toast({
-        title: "Missão iniciada!",
-        description: "Comece sua jornada de 6 graus de separação.",
+        title: t("missions.missionStarted"),
+        description: t("missions.missionStartedDescription"),
       });
 
       navigate("/missions/active");
     } catch (error) {
       console.error("Error starting mission:", error);
       toast({
-        title: "Erro ao iniciar missão",
-        description: "Tente novamente mais tarde.",
+        title: t("missions.startError"),
+        description: t("missions.startErrorDescription"),
         variant: "destructive",
       });
     } finally {
@@ -219,8 +221,8 @@ export const SixDegreesMission = () => {
       });
 
       toast({
-        title: "Ação registrada!",
-        description: `${actionType} enviado com sucesso.`,
+        title: t("missions.actionRecorded"),
+        description: `${actionType} ${t("missions.actionRecordedDescription")}`,
       });
 
       // Check if this creates a connection to target
@@ -262,15 +264,15 @@ export const SixDegreesMission = () => {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Target className="h-8 w-8 text-primary" />
-            Seis Graus de Separação
+            {t("missions.title")}
           </h1>
           <p className="text-muted-foreground mt-2">
-            Conecte-se com qualquer pessoa em até 6 elos
+            {t("missions.subtitle")}
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => navigate("/missions/history")}>
-            Histórico
+            {t("missions.history")}
           </Button>
           <StartMissionDialog onStart={startMission} loading={loading} />
         </div>
@@ -281,14 +283,14 @@ export const SixDegreesMission = () => {
           <div className="text-center space-y-4">
             <Users className="h-16 w-16 mx-auto text-primary" />
             <div>
-              <h2 className="text-2xl font-semibold">Você tem uma missão ativa!</h2>
+              <h2 className="text-2xl font-semibold">{t("missions.activeMissionTitle")}</h2>
               <p className="text-muted-foreground mt-2">
-                Conectando com {activeMission.target_profile?.full_name}
+                {t("missions.connectingWith")} {activeMission.target_profile?.full_name}
               </p>
             </div>
             <div className="flex gap-3 justify-center">
               <Button onClick={() => navigate("/missions/active")} size="lg">
-                Continuar Missão
+                {t("missions.continueMission")}
               </Button>
               <StartMissionDialog onStart={startMission} loading={loading} />
             </div>
@@ -297,9 +299,9 @@ export const SixDegreesMission = () => {
       ) : (
         <Card className="p-12 text-center">
           <Target className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-          <h2 className="text-2xl font-semibold mb-2">Nenhuma missão ativa</h2>
+          <h2 className="text-2xl font-semibold mb-2">{t("missions.noActiveMission")}</h2>
           <p className="text-muted-foreground mb-6">
-            Inicie uma nova missão e tente alcançar alguém em até 6 graus de separação
+            {t("missions.noActiveMissionDescription")}
           </p>
           <StartMissionDialog onStart={startMission} loading={loading} />
         </Card>

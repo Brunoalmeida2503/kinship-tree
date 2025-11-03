@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Search, Target } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface StartMissionDialogProps {
   onStart: (targetId: string) => Promise<void>;
@@ -13,6 +14,7 @@ interface StartMissionDialogProps {
 }
 
 export const StartMissionDialog = ({ onStart, loading }: StartMissionDialogProps) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -53,20 +55,20 @@ export const StartMissionDialog = ({ onStart, loading }: StartMissionDialogProps
       <DialogTrigger asChild>
         <Button size="lg" className="gap-2">
           <Target className="h-5 w-5" />
-          Iniciar Missão
+          {t("missions.startMission")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Escolha seu alvo</DialogTitle>
+          <DialogTitle>{t("missions.chooseTarget")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-4">
           <div className="space-y-2">
-            <Label htmlFor="search">Buscar pessoa</Label>
+            <Label htmlFor="search">{t("missions.searchPerson")}</Label>
             <div className="flex gap-2">
               <Input
                 id="search"
-                placeholder="Nome da pessoa..."
+                placeholder={t("missions.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && searchUsers()}
@@ -79,7 +81,7 @@ export const StartMissionDialog = ({ onStart, loading }: StartMissionDialogProps
 
           {searchResults.length > 0 && (
             <div className="space-y-2">
-              <Label>Resultados</Label>
+              <Label>{t("missions.results")}</Label>
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {searchResults.map((user) => (
                   <button
@@ -108,7 +110,7 @@ export const StartMissionDialog = ({ onStart, loading }: StartMissionDialogProps
             className="w-full"
             size="lg"
           >
-            {loading ? "Iniciando..." : "Começar Missão"}
+            {loading ? t("missions.starting") : t("missions.startMission")}
           </Button>
         </div>
       </DialogContent>

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { MessageCircle, UserPlus, Send } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Suggestion {
   id: string;
@@ -19,11 +20,13 @@ interface MissionSuggestionsProps {
 }
 
 export const MissionSuggestions = ({ suggestions, onAction, activeMission }: MissionSuggestionsProps) => {
+  const { t } = useTranslation();
+  
   if (!suggestions || suggestions.length === 0) {
     return (
       <Card className="p-6 text-center">
         <p className="text-muted-foreground">
-          Nenhuma sugestão disponível no momento
+          {t("missions.noSuggestions")}
         </p>
       </Card>
     );
@@ -31,9 +34,9 @@ export const MissionSuggestions = ({ suggestions, onAction, activeMission }: Mis
 
   return (
     <Card className="p-6">
-      <h3 className="text-lg font-semibold mb-4">Sugestões de Conexão</h3>
+      <h3 className="text-lg font-semibold mb-4">{t("missions.suggestionsTitle")}</h3>
       <p className="text-sm text-muted-foreground mb-4">
-        Pessoas que podem te aproximar do seu alvo
+        {t("missions.suggestionsDescription")}
       </p>
       <div className="space-y-4">
         {suggestions.map((suggestion) => (
@@ -49,10 +52,10 @@ export const MissionSuggestions = ({ suggestions, onAction, activeMission }: Mis
               <h4 className="font-semibold">{suggestion.full_name}</h4>
               <div className="flex gap-2 mt-1">
                 <Badge variant="secondary" className="text-xs">
-                  {suggestion.common_connections} conexões em comum
+                  {suggestion.common_connections} {t("missions.commonConnections")}
                 </Badge>
                 <Badge variant="outline" className="text-xs">
-                  Força: {suggestion.connection_strength}
+                  {t("missions.strength")}: {suggestion.connection_strength}
                 </Badge>
               </div>
             </div>

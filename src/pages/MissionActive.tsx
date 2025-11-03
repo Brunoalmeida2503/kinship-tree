@@ -10,6 +10,7 @@ import { MissionFlowchart } from "@/components/missions/MissionFlowchart";
 import { MissionMap } from "@/components/missions/MissionMap";
 import { MissionSuggestions } from "@/components/missions/MissionSuggestions";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 interface Mission {
   id: string;
@@ -35,6 +36,7 @@ const MissionActive = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [activeMission, setActiveMission] = useState<Mission | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,7 +111,7 @@ const MissionActive = () => {
           const profile = profiles.find((p) => p.id === s.suggested_user_id);
           return {
             id: s.suggested_user_id,
-            full_name: profile?.full_name || "Desconhecido",
+            full_name: profile?.full_name || t("missions.unknown"),
             avatar_url: profile?.avatar_url || "",
             connection_strength: s.connection_strength,
             common_connections: s.common_connections,
@@ -132,8 +134,8 @@ const MissionActive = () => {
       });
 
       toast({
-        title: "Ação registrada!",
-        description: `${actionType} enviado com sucesso.`,
+        title: t("missions.actionRecorded"),
+        description: `${actionType} ${t("missions.actionRecordedDescription")}`,
       });
 
       if (targetUserId === activeMission.target_id) {
@@ -156,8 +158,8 @@ const MissionActive = () => {
       .eq("id", activeMission.id);
 
     toast({
-      title: "Missão Completada!",
-      description: "Parabéns! Você alcançou seu objetivo.",
+      title: t("missions.missionCompleted"),
+      description: t("missions.missionCompletedDescription"),
     });
 
     navigate("/missions/history");
@@ -166,7 +168,7 @@ const MissionActive = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">Carregando missão...</div>
+        <div className="text-center">{t("missions.loadingMission")}</div>
       </div>
     );
   }
@@ -184,10 +186,10 @@ const MissionActive = () => {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Target className="h-8 w-8 text-primary" />
-            Missão Ativa
+            {t("missions.activeMission")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Conectando com {activeMission.target_profile?.full_name}
+            {t("missions.connectingWith")} {activeMission.target_profile?.full_name}
           </p>
         </div>
       </div>
@@ -195,9 +197,9 @@ const MissionActive = () => {
       <Card className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold">Progresso</h3>
+            <h3 className="text-lg font-semibold">{t("missions.progress")}</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Você está no grau {activeMission.current_degree} de 6
+              {t("missions.youAreAtDegree")} {activeMission.current_degree} {t("missions.of")} 6
             </p>
           </div>
           <div className="text-4xl font-bold text-primary">
@@ -210,17 +212,17 @@ const MissionActive = () => {
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="flowchart" className="flex items-center gap-2">
             <GitBranch className="h-4 w-4" />
-            Fluxograma
+            {t("missions.flowchart")}
           </TabsTrigger>
           <TabsTrigger value="map" className="flex items-center gap-2">
             <MapIcon className="h-4 w-4" />
-            Mapa
+            {t("missions.map")}
           </TabsTrigger>
         </TabsList>
         <TabsContent value="flowchart" className="mt-6">
           <MissionFlowchart 
             path={activeMission.path || []} 
-            targetName={activeMission.target_profile?.full_name || "Alvo"}
+            targetName={activeMission.target_profile?.full_name || t("missions.target")}
           />
         </TabsContent>
         <TabsContent value="map" className="mt-6">
