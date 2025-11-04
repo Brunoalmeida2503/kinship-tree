@@ -3,29 +3,10 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Globe, Map, MapPin, User, X, Calendar, Users, Heart } from 'lucide-react';
-
-// Adicionar estilos de animação para o marcador do usuário
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes pulse {
-    0%, 100% {
-      transform: scale(1);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 0 3px hsla(var(--primary), 0.3), 0 0 30px hsla(var(--primary), 0.4);
-    }
-    50% {
-      transform: scale(1.05);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.7), 0 0 0 6px hsla(var(--primary), 0.2), 0 0 40px hsla(var(--primary), 0.5);
-    }
-  }
-`;
-document.head.appendChild(style);
-import { useNavigate } from 'react-router-dom';
+import { Globe, Map, MapPin, Users, Heart } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type ZoomLevel = 'world' | 'continent' | 'country' | 'state';
@@ -36,25 +17,14 @@ interface ZoomConfig {
   icon: React.ReactNode;
 }
 
-interface UserLocation {
-  id: string;
-  full_name: string;
-  avatar_url: string | null;
-  latitude: number;
-  longitude: number;
-  location: string | null;
-}
-
 const MAPBOX_TOKEN = 'pk.eyJ1IjoidHJlZS1zb2NpYWwiLCJhIjoiY21nbTlid2J6MWU4NzJrcHFxbDc0NDhpZyJ9.BTX2-dUn_I-MyG-NBnL1Ew';
 
 const MapVisualization = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [currentZoom, setCurrentZoom] = useState<ZoomLevel>('world');
-  const [selectedLocation, setSelectedLocation] = useState<{ users: UserLocation[], location: string } | null>(null);
   const [connectionFilter, setConnectionFilter] = useState<'all' | 'family' | 'friend'>('all');
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   const zoomLevels: Record<ZoomLevel, ZoomConfig> = {
     world: { zoom: 2, label: 'Mundo', icon: <Globe className="w-4 h-4" /> },
@@ -118,21 +88,6 @@ const MapVisualization = () => {
         return;
       }
 
-      // Agrupar usuários por localização (excluindo o usuário atual)
-      const locationGroups = new globalThis.Map<string, UserLocation[]>();
-      
-      profiles?.forEach(profile => {
-        // Não incluir o usuário atual nos marcadores de conexões
-        if (profile.id === user.id) return;
-        
-        // Usar longitude,latitude como chave (ordem correta para Mapbox)
-        const key = `${profile.longitude},${profile.latitude}`;
-        if (!locationGroups.has(key)) {
-          locationGroups.set(key, []);
-        }
-        locationGroups.get(key)!.push(profile as UserLocation);
-      });
-
       // Limpar marcadores e layers existentes
       const markers = document.getElementsByClassName('mapboxgl-marker');
       while (markers[0]) {
@@ -142,9 +97,6 @@ const MapVisualization = () => {
       // Remover layers e sources antigos se existirem
       if (map.current?.getLayer('connection-lines')) {
         map.current.removeLayer('connection-lines');
-      }
-      if (map.current?.getLayer('connection-lines-glow')) {
-        map.current.removeLayer('connection-lines-glow');
       }
       if (map.current?.getSource('connection-lines')) {
         map.current.removeSource('connection-lines');
@@ -159,7 +111,7 @@ const MapVisualization = () => {
           const otherUserProfile = profiles?.find(p => p.id === otherUserId);
 
           if (otherUserProfile?.latitude && otherUserProfile?.longitude) {
-            const lineColor = conn.connection_type === 'family' ? '#10b981' : '#f59e0b';
+            const lineColor = conn.connection_type === 'family' ? '#8B5CF6' : '#f59e0b';
 
             lineFeatures.push({
               type: 'Feature',
@@ -187,23 +139,6 @@ const MapVisualization = () => {
             }
           });
 
-          // Camada de sombra/glow das linhas
-          map.current!.addLayer({
-            id: 'connection-lines-glow',
-            type: 'line',
-            source: 'connection-lines',
-            layout: {
-              'line-join': 'round',
-              'line-cap': 'round'
-            },
-            paint: {
-              'line-color': ['get', 'color'],
-              'line-width': 8,
-              'line-opacity': 0.3,
-              'line-blur': 4
-            }
-          });
-
           // Camada principal das linhas
           map.current!.addLayer({
             id: 'connection-lines',
@@ -215,151 +150,91 @@ const MapVisualization = () => {
             },
             paint: {
               'line-color': ['get', 'color'],
-              'line-width': 4,
-              'line-opacity': 0.9
+              'line-width': 3,
+              'line-opacity': 0.8
             }
           });
         }
       }
 
-      // Adicionar marcador do usuário atual se tiver localização
+      // Adicionar marcador do usuário atual se tiver localização (marcador 0)
       if (currentUserProfile?.latitude && currentUserProfile?.longitude) {
-        const userEl = document.createElement('div');
-        userEl.className = 'current-user-marker';
-        userEl.style.position = 'relative';
-        userEl.style.width = '70px';
-        userEl.style.height = '70px';
-        userEl.style.borderRadius = '50%';
-        userEl.style.border = '5px solid hsl(var(--primary))';
-        userEl.style.boxShadow = '0 8px 24px rgba(0,0,0,0.6), 0 0 0 3px hsla(var(--primary), 0.3), 0 0 30px hsla(var(--primary), 0.4)';
-        userEl.style.cursor = 'pointer';
-        userEl.style.overflow = 'hidden';
-        userEl.style.backgroundColor = 'hsl(var(--background))';
-        userEl.style.zIndex = '100';
-        userEl.style.animation = 'pulse 2s ease-in-out infinite';
-        
-        if (currentUserProfile.avatar_url) {
-          userEl.style.backgroundImage = `url(${currentUserProfile.avatar_url})`;
-          userEl.style.backgroundSize = 'cover';
-          userEl.style.backgroundPosition = 'center';
-        } else {
-          userEl.style.display = 'flex';
-          userEl.style.alignItems = 'center';
-          userEl.style.justifyContent = 'center';
-          userEl.style.backgroundColor = 'hsl(var(--primary))';
-          userEl.style.color = 'hsl(var(--primary-foreground))';
-          userEl.style.fontSize = '24px';
-          userEl.style.fontWeight = 'bold';
-          const initials = currentUserProfile.full_name
-            .split(' ')
-            .map(n => n[0])
-            .join('')
-            .toUpperCase()
-            .slice(0, 2);
-          userEl.textContent = initials;
-        }
-
-        // Badge "Você"
-        const badge = document.createElement('div');
-        badge.style.position = 'absolute';
-        badge.style.bottom = '-8px';
-        badge.style.left = '50%';
-        badge.style.transform = 'translateX(-50%)';
-        badge.style.padding = '2px 8px';
-        badge.style.borderRadius = '12px';
-        badge.style.backgroundColor = 'hsl(var(--primary))';
-        badge.style.color = 'white';
-        badge.style.fontSize = '10px';
-        badge.style.fontWeight = 'bold';
-        badge.style.border = '2px solid white';
-        badge.style.whiteSpace = 'nowrap';
-        badge.textContent = 'Você';
-        userEl.appendChild(badge);
+        const userEl = document.createElement("div");
+        userEl.className = "tree-marker";
+        userEl.style.backgroundColor = "#10b981";
+        userEl.style.width = "42px";
+        userEl.style.height = "42px";
+        userEl.style.borderRadius = "50%";
+        userEl.style.border = "4px solid white";
+        userEl.style.cursor = "pointer";
+        userEl.style.display = "flex";
+        userEl.style.alignItems = "center";
+        userEl.style.justifyContent = "center";
+        userEl.style.color = "white";
+        userEl.style.fontWeight = "bold";
+        userEl.style.fontSize = "16px";
+        userEl.style.boxShadow = "0 3px 10px rgba(0,0,0,0.4)";
+        userEl.style.zIndex = "100";
+        userEl.textContent = "0";
 
         new mapboxgl.Marker(userEl)
           .setLngLat([currentUserProfile.longitude, currentUserProfile.latitude])
+          .setPopup(
+            new mapboxgl.Popup({ offset: 25 }).setHTML(
+              `<div class="p-2">
+                <p class="font-semibold">${currentUserProfile.full_name}</p>
+                <p class="text-xs text-muted-foreground">Você</p>
+              </div>`
+            )
+          )
           .addTo(map.current!);
       }
 
-      // Adicionar marcadores para cada localização
-      locationGroups.forEach((usersAtLocation, locationKey) => {
-        // locationKey agora está como "longitude,latitude"
-        const [lng, lat] = locationKey.split(',').map(Number);
-        const firstUser = usersAtLocation[0];
-        
-        // Container do marcador de pin
-        const el = document.createElement('div');
-        el.className = 'location-pin-marker';
-        el.style.position = 'relative';
-        el.style.width = '50px';
-        el.style.height = '60px';
-        el.style.cursor = 'pointer';
-        el.style.transition = 'all 0.3s ease';
-        
-        // Criar o pin de localização
-        const pin = document.createElement('div');
-        pin.style.position = 'absolute';
-        pin.style.width = '50px';
-        pin.style.height = '50px';
-        pin.style.background = 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow, var(--primary))))';
-        pin.style.borderRadius = '50% 50% 50% 0';
-        pin.style.transform = 'rotate(-45deg)';
-        pin.style.border = '3px solid white';
-        pin.style.boxShadow = '0 6px 20px rgba(0,0,0,0.3), 0 0 0 2px hsla(var(--primary), 0.2)';
-        pin.style.transition = 'all 0.3s ease';
-        
-        // Círculo interno branco no centro do pin
-        const innerCircle = document.createElement('div');
-        innerCircle.style.position = 'absolute';
-        innerCircle.style.width = '20px';
-        innerCircle.style.height = '20px';
-        innerCircle.style.backgroundColor = 'white';
-        innerCircle.style.borderRadius = '50%';
-        innerCircle.style.top = '50%';
-        innerCircle.style.left = '50%';
-        innerCircle.style.transform = 'translate(-50%, -50%)';
-        innerCircle.style.display = 'flex';
-        innerCircle.style.alignItems = 'center';
-        innerCircle.style.justifyContent = 'center';
-        innerCircle.style.fontSize = '12px';
-        innerCircle.style.fontWeight = 'bold';
-        innerCircle.style.color = 'hsl(var(--primary))';
-        
-        // Adicionar contador de usuários no centro
-        const counterText = document.createElement('span');
-        counterText.style.transform = 'rotate(45deg)';
-        counterText.textContent = usersAtLocation.length.toString();
-        innerCircle.appendChild(counterText);
-        
-        pin.appendChild(innerCircle);
-        el.appendChild(pin);
-        
-        // Efeito hover
-        el.addEventListener('mouseenter', () => {
-          el.style.transform = 'scale(1.2)';
-          el.style.zIndex = '1000';
-          pin.style.boxShadow = '0 8px 30px rgba(0,0,0,0.4), 0 0 0 4px hsla(var(--primary), 0.3)';
-          pin.style.filter = 'brightness(1.1)';
-        });
-        
-        el.addEventListener('mouseleave', () => {
-          el.style.transform = 'scale(1)';
-          el.style.zIndex = '1';
-          pin.style.boxShadow = '0 6px 20px rgba(0,0,0,0.3), 0 0 0 2px hsla(var(--primary), 0.2)';
-          pin.style.filter = 'brightness(1)';
-        });
+      // Adicionar marcadores numerados para cada usuário conectado
+      let markerIndex = 1;
+      profiles?.forEach(profile => {
+        // Pular o usuário atual
+        if (profile.id === user.id) return;
 
-        // Ao clicar, abrir diálogo com todos os usuários
-        el.addEventListener('click', () => {
-          setSelectedLocation({
-            users: usersAtLocation,
-            location: firstUser.location || 'Localização'
-          });
-        });
+        if (profile.latitude && profile.longitude) {
+          // Determinar cor baseada no tipo de conexão
+          const connection = connections?.find(
+            c => c.requester_id === profile.id || c.receiver_id === profile.id
+          );
+          const markerColor = connection?.connection_type === 'family' ? '#8B5CF6' : '#f59e0b';
 
-        new mapboxgl.Marker({ element: el, anchor: 'bottom' })
-          .setLngLat([lng, lat])
-          .addTo(map.current!);
+          const el = document.createElement("div");
+          el.className = "tree-marker";
+          el.style.backgroundColor = markerColor;
+          el.style.width = "36px";
+          el.style.height = "36px";
+          el.style.borderRadius = "50%";
+          el.style.border = "3px solid white";
+          el.style.cursor = "pointer";
+          el.style.display = "flex";
+          el.style.alignItems = "center";
+          el.style.justifyContent = "center";
+          el.style.color = "white";
+          el.style.fontWeight = "bold";
+          el.style.fontSize = "14px";
+          el.style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)";
+          el.textContent = markerIndex.toString();
+
+          new mapboxgl.Marker(el)
+            .setLngLat([profile.longitude, profile.latitude])
+            .setPopup(
+              new mapboxgl.Popup({ offset: 25 }).setHTML(
+                `<div class="p-2">
+                  <p class="font-semibold">${profile.full_name}</p>
+                  <p class="text-xs text-muted-foreground">${profile.location || 'Sem localização'}</p>
+                  <p class="text-xs text-muted-foreground mt-1">${connection?.connection_type === 'family' ? 'Família' : 'Amigo'}</p>
+                </div>`
+              )
+            )
+            .addTo(map.current!);
+
+          markerIndex++;
+        }
       });
 
       // Ajustar visualização inicial
@@ -491,61 +366,12 @@ const MapVisualization = () => {
           <div className="flex items-start gap-2 text-sm text-muted-foreground">
             <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <p>
-              Clique nos marcadores para ver as fotos dos membros da família naquela localização.
-              Use os botões de zoom para alternar entre visão mundial, continental, país e estado.
+              Os marcadores numerados mostram suas conexões. 0 = você, números seguintes = suas conexões.
+              Use os botões de zoom para alternar entre diferentes níveis de visualização.
             </p>
           </div>
         </div>
       </Card>
-
-      {/* Dialog de fotos dos usuários */}
-      <Dialog open={!!selectedLocation} onOpenChange={() => setSelectedLocation(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
-                {selectedLocation?.location}
-              </DialogTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSelectedLocation(null)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          </DialogHeader>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4">
-            {selectedLocation?.users.map((userProfile) => (
-              <div
-                key={userProfile.id}
-                className="flex flex-col items-center gap-3 p-4 rounded-lg border border-border hover:border-primary transition-all cursor-pointer bg-card group"
-                onClick={() => {
-                  setSelectedLocation(null);
-                  navigate('/', { state: { filterUserId: userProfile.id } });
-                }}
-              >
-                <Avatar className="w-24 h-24 border-4 border-primary group-hover:scale-110 transition-transform">
-                  <AvatarImage src={userProfile.avatar_url || undefined} alt={userProfile.full_name} />
-                  <AvatarFallback className="bg-primary/20 text-lg">
-                    <User className="w-10 h-10 text-primary" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="text-center">
-                  <p className="font-semibold text-sm">{userProfile.full_name}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{userProfile.location || 'Localização'}</p>
-                  <div className="flex items-center justify-center gap-1 mt-2 text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Calendar className="w-3 h-3" />
-                    <span>Ver Timeline</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 };
