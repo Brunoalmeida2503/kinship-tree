@@ -82,6 +82,11 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
 
+    if (!user) {
+      toast.error('Você precisa estar autenticado para usar o chat.');
+      return;
+    }
+
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -94,15 +99,26 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
     setIsLoading(true);
 
     try {
+      // Get fresh session to ensure token is valid
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error('Sessão expirada. Por favor, faça login novamente.');
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('aura-chat', {
         body: { message: input }
       });
 
       if (error) {
+        console.error('Edge function error:', error);
         if (error.message?.includes('429')) {
           toast.error('Muitas requisições. Por favor, aguarde um momento.');
         } else if (error.message?.includes('402')) {
           toast.error('Limite de uso atingido. Entre em contato com o suporte.');
+        } else if (error.message?.includes('Unauthorized')) {
+          toast.error('Sessão expirada. Por favor, faça login novamente.');
         } else {
           throw error;
         }
