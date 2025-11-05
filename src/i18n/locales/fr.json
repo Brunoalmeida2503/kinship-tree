@@ -1,4 +1,9 @@
 {
+  "maintenance": {
+    "title": "Site en Maintenance",
+    "message": "Nous améliorons Tree. Nous serons de retour bientôt!",
+    "footer": "Merci de votre compréhension."
+  },
   "profile": {
     "title": "Mon Profil",
     "description": "Mettez à jour vos informations personnelles",
