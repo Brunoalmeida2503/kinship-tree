@@ -1,5 +1,5 @@
 // Toggle this to enable/disable maintenance mode
-export const MAINTENANCE_MODE = true;
+export const MAINTENANCE_MODE = false;
 
 // List of routes that should remain accessible during maintenance
 // (e.g., for admin access)
