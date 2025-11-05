@@ -59,8 +59,12 @@ serve(async (req) => {
       .eq('id', user.id)
       .single();
 
+    console.log('User profile:', profile);
+    console.log('User language:', profile?.language);
+
     // Determinar idioma do usuário
     const userLanguage = profile?.language || 'pt-BR';
+    console.log('Selected language for Aura:', userLanguage);
     
     // Construir contexto de personalidade
     const traits = personality.personality_traits;
@@ -190,6 +194,7 @@ serve(async (req) => {
     };
 
     const texts = languageTexts[userLanguage] || languageTexts['pt-BR'];
+    console.log('Using language texts for:', userLanguage);
 
     // Definir personalidade baseada nos traços
     let personalityStyle = '';
