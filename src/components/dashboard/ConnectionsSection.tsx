@@ -210,9 +210,9 @@ export function ConnectionsSection() {
           <CardDescription>Adicione familiares ou amigos</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2">
-            <Button onClick={() => openDialog('family')}>Adicionar Familiar</Button>
-            <Button variant="outline" onClick={() => openDialog('friend')}>Adicionar Amigo</Button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button onClick={() => openDialog('family')} className="w-full sm:w-auto text-sm sm:text-base">Adicionar Familiar</Button>
+            <Button variant="outline" onClick={() => openDialog('friend')} className="w-full sm:w-auto text-sm sm:text-base">Adicionar Amigo</Button>
           </div>
           
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

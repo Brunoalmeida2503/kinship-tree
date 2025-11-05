@@ -44,10 +44,10 @@ const AppContent = () => {
                 <SidebarProvider>
                   <div className="flex min-h-screen w-full">
                     <AppSidebar />
-                    <main className="flex-1 flex flex-col">
-                      <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:px-6">
+                    <main className="flex-1 flex flex-col min-w-0">
+                      <header className="sticky top-0 z-10 flex h-12 sm:h-14 items-center gap-2 sm:gap-4 border-b bg-background px-3 sm:px-6">
                         <SidebarTrigger />
-                        <h1 className="text-lg font-semibold">Echos</h1>
+                        <h1 className="text-base sm:text-lg font-semibold truncate">Echos</h1>
                       </header>
                       <div className="flex-1 overflow-auto">
                         <Routes>

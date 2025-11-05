@@ -33,18 +33,18 @@ const FeaturesSection = () => {
   ];
 
   return (
-    <section className="py-20 px-4 bg-background">
+    <section className="py-12 sm:py-16 md:py-20 px-4 bg-background">
       <div className="container mx-auto max-w-6xl">
-        <div className="text-center mb-16 animate-fade-in">
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-foreground">
+        <div className="text-center mb-10 sm:mb-12 md:mb-16 animate-fade-in px-2">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 text-foreground">
             Como Funciona
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
             Uma nova forma de preservar e compartilhar sua história familiar
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
           {features.map((feature, index) => (
             <Card 
               key={index} 
@@ -52,7 +52,7 @@ const FeaturesSection = () => {
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {feature.image && (
-                <div className="h-48 overflow-hidden">
+                <div className="h-40 sm:h-44 md:h-48 overflow-hidden">
                   <img 
                     src={feature.image} 
                     alt={feature.title}
@@ -60,16 +60,16 @@ const FeaturesSection = () => {
                   />
                 </div>
               )}
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-                    <feature.icon className="w-6 h-6 text-primary" />
+              <CardContent className="p-4 sm:p-5 md:p-6">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className="p-2 sm:p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors flex-shrink-0">
+                    <feature.icon className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                   </div>
-                  <div>
-                    <h3 className="text-xl font-semibold mb-2 text-foreground">
+                  <div className="min-w-0">
+                    <h3 className="text-lg sm:text-xl font-semibold mb-1 sm:mb-2 text-foreground">
                       {feature.title}
                     </h3>
-                    <p className="text-muted-foreground">
+                    <p className="text-sm sm:text-base text-muted-foreground">
                       {feature.description}
                     </p>
                   </div>

@@ -18,41 +18,41 @@ const Navbar = () => {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+      <div className="container mx-auto px-3 sm:px-4">
+        <div className="flex items-center justify-between h-14 sm:h-16">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
-            <img src={logo} alt="Tree Logo" className="h-10 w-auto" />
+            <img src={logo} alt="Tree Logo" className="h-8 sm:h-10 w-auto" />
           </div>
           
-          <div className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-foreground/80 hover:text-primary transition-colors">
+          <div className="hidden lg:flex items-center gap-6 xl:gap-8">
+            <a href="#features" className="text-sm text-foreground/80 hover:text-primary transition-colors">
               {t('navbar.features')}
             </a>
-            <a href="#how-it-works" className="text-foreground/80 hover:text-primary transition-colors">
+            <a href="#how-it-works" className="text-sm text-foreground/80 hover:text-primary transition-colors">
               {t('navbar.howItWorks')}
             </a>
-            <a href="#about" className="text-foreground/80 hover:text-primary transition-colors">
+            <a href="#about" className="text-sm text-foreground/80 hover:text-primary transition-colors">
               {t('navbar.about')}
             </a>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
             {user ? (
               <>
                 <NotificationBell />
-                <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+                <Button variant="ghost" onClick={() => navigate("/dashboard")} size="sm" className="text-xs sm:text-sm">
                   {t('navbar.dashboard')}
                 </Button>
-                <Button variant="default" onClick={handleLogout}>
+                <Button variant="default" onClick={handleLogout} size="sm" className="hidden sm:flex text-xs sm:text-sm">
                   {t('navbar.logout')}
                 </Button>
               </>
             ) : (
               <>
-                <Button variant="ghost" onClick={() => navigate("/auth")}>
+                <Button variant="ghost" onClick={() => navigate("/auth")} size="sm" className="text-xs sm:text-sm px-2 sm:px-4">
                   {t('navbar.login')}
                 </Button>
-                <Button variant="default" onClick={() => navigate("/auth")}>
+                <Button variant="default" onClick={() => navigate("/auth")} size="sm" className="text-xs sm:text-sm px-2 sm:px-4">
                   {t('navbar.getStarted')}
                 </Button>
               </>

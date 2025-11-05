@@ -494,9 +494,9 @@ const Feed = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="container max-w-2xl mx-auto py-8 px-4">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold">
+      <main className="container max-w-2xl mx-auto py-4 sm:py-6 md:py-8 px-3 sm:px-4">
+        <div className="flex items-center justify-between mb-4 sm:mb-6 md:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold truncate">
             {filterUserId ? 'Timeline do Usuário' : 'Timeline'}
           </h1>
           {filterUserId && (

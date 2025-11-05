@@ -15,42 +15,42 @@ const HeroSection = () => {
         }}
       />
       
-      <div className="container relative z-10 mx-auto px-4 py-20">
+      <div className="container relative z-10 mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-20">
         <div className="max-w-4xl mx-auto text-center animate-fade-in">
-          <div className="mb-8 animate-slide-up">
-            <img src={logo} alt="Tree Logo" className="h-32 w-auto mx-auto" />
+          <div className="mb-6 sm:mb-8 animate-slide-up">
+            <img src={logo} alt="Tree Logo" className="h-24 sm:h-28 md:h-32 w-auto mx-auto" />
           </div>
           
-          <p className="text-xl md:text-2xl text-foreground/80 mb-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+          <p className="text-lg sm:text-xl md:text-2xl text-foreground/80 mb-3 sm:mb-4 animate-slide-up px-2" style={{ animationDelay: '0.2s' }}>
             A rede social que une gerações
           </p>
           
-          <p className="text-lg md:text-xl text-muted-foreground mb-12 max-w-2xl mx-auto animate-slide-up" style={{ animationDelay: '0.3s' }}>
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground mb-8 sm:mb-10 md:mb-12 max-w-2xl mx-auto animate-slide-up px-4" style={{ animationDelay: '0.3s' }}>
             Construa sua árvore genealógica, conecte-se com familiares e descubra as histórias que unem sua família através das gerações.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up" style={{ animationDelay: '0.4s' }}>
-            <Button variant="hero" size="xl">
-              <Users className="w-5 h-5" />
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center animate-slide-up px-4" style={{ animationDelay: '0.4s' }}>
+            <Button variant="hero" size="xl" className="w-full sm:w-auto">
+              <Users className="w-4 h-4 sm:w-5 sm:h-5" />
               Começar Agora
             </Button>
-            <Button variant="outline" size="xl">
+            <Button variant="outline" size="xl" className="w-full sm:w-auto">
               Saiba Mais
             </Button>
           </div>
           
-          <div className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto animate-slide-up" style={{ animationDelay: '0.5s' }}>
+          <div className="mt-12 sm:mt-14 md:mt-16 grid grid-cols-3 gap-4 sm:gap-6 md:gap-8 max-w-2xl mx-auto animate-slide-up px-2" style={{ animationDelay: '0.5s' }}>
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary mb-1">10k+</div>
-              <div className="text-sm text-muted-foreground">Famílias Conectadas</div>
+              <div className="text-xl sm:text-2xl md:text-3xl font-bold text-primary mb-1">10k+</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Famílias Conectadas</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary mb-1">50k+</div>
-              <div className="text-sm text-muted-foreground">Conexões Criadas</div>
+              <div className="text-xl sm:text-2xl md:text-3xl font-bold text-primary mb-1">50k+</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Conexões Criadas</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary mb-1">100k+</div>
-              <div className="text-sm text-muted-foreground">Histórias Compartilhadas</div>
+              <div className="text-xl sm:text-2xl md:text-3xl font-bold text-primary mb-1">100k+</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Histórias Compartilhadas</div>
             </div>
           </div>
         </div>

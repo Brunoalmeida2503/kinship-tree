@@ -98,21 +98,21 @@ const Groups = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <div className="container mx-auto p-3 sm:p-4 md:p-6 max-w-6xl">
       <Card>
         <CardHeader>
-          <CardTitle>{t('groups.title')}</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl sm:text-2xl">{t('groups.title')}</CardTitle>
+          <CardDescription className="text-sm sm:text-base">
             {t('groups.description')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {groups.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-8 text-sm sm:text-base text-muted-foreground">
               {t('groups.noGroups')}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {groups.map((group) => (
                 <Card 
                   key={group.id} 
