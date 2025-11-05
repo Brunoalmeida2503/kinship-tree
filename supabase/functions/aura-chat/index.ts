@@ -263,6 +263,15 @@ ${texts.remember}` : ''}
 ${texts.closing}`;
 
     // Chamar Lovable AI
+    // Enforce reply language regardless of user input language
+    const languageGuard = userLanguage === 'pt-BR'
+      ? 'Responda EXCLUSIVAMENTE em Português (Brasil). Não mude de idioma, mesmo que o usuário escreva em outro idioma.'
+      : userLanguage === 'en'
+      ? 'Always respond EXCLUSIVELY in English (US). Do not switch languages, even if the user writes in another language.'
+      : userLanguage === 'es'
+      ? 'Responde EXCLUSIVAMENTE en español. No cambies de idioma, aunque el usuario escriba en otro idioma.'
+      : 'Réponds EXCLUSIVEMENT en français. Ne change pas de langue, même si l’utilisateur écrit dans une autre langue.';
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -274,9 +283,10 @@ ${texts.closing}`;
         model: 'google/gemini-2.5-flash',
         messages: [
           { role: 'system', content: systemPrompt },
+          { role: 'system', content: languageGuard },
           { role: 'user', content: message }
         ],
-        temperature: 0.7 + (humor / 30), // Personalidade afeta temperatura
+        temperature: 0.7 + (humor / 30),
       }),
     });
 
