@@ -1,4 +1,4 @@
-import { Home, User, Target, Images, LogOut, GitBranch, Users } from "lucide-react";
+import { Home, User, Target, Images, LogOut, GitBranch, Users, Sparkles } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
@@ -38,6 +38,7 @@ export function AppSidebar() {
     { title: t('sidebar.moments'), url: "/", icon: Home },
     { title: t('sidebar.tree'), url: "/tree", icon: GitBranch },
     { title: t('sidebar.groups'), url: "/groups", icon: Users },
+    { title: "Sugestões", url: "/suggestions", icon: Sparkles },
     { title: t('sidebar.missions'), url: "/missions", icon: Target },
     { title: t('sidebar.memories'), url: "/memories", icon: Images },
     { title: t('sidebar.profile'), url: "/profile", icon: User },
