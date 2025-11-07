@@ -124,6 +124,8 @@ export function ConnectionsSection() {
   const loadSuggestions = async () => {
     if (!user) return;
 
+    console.log('🔍 Carregando sugestões de conexões...');
+
     // Buscar todas as conexões aceitas do usuário
     const { data: myConnections, error } = await supabase
       .from('connections')
@@ -135,7 +137,12 @@ export function ConnectionsSection() {
       .eq('status', 'accepted')
       .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);
 
-    if (error || !myConnections) return;
+    if (error || !myConnections) {
+      console.log('❌ Erro ao buscar conexões:', error);
+      return;
+    }
+
+    console.log('✅ Minhas conexões encontradas:', myConnections.length);
 
     const suggestedConnections: any[] = [];
     const processedPairs = new Set<string>();
@@ -198,6 +205,8 @@ export function ConnectionsSection() {
       }
     }
 
+    console.log('💡 Total de sugestões encontradas:', suggestedConnections.length);
+    console.log('Sugestões:', suggestedConnections);
     setSuggestions(suggestedConnections);
   };
 
