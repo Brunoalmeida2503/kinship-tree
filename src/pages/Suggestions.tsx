@@ -69,12 +69,18 @@ export default function Suggestions() {
       'pai': {
         'filho': { myRel: 'irmao', theirRel: 'irmao' },
         'filha': { myRel: 'irma', theirRel: 'irmao' },
-        'conjuge': { myRel: 'mae', theirRel: 'filho' }
+        'conjuge': { myRel: 'mae', theirRel: 'filho' },
+        // Pai -> irmão/irmã do pai => tio/tia
+        'irmao': { myRel: 'tio', theirRel: 'sobrinho' },
+        'irma': { myRel: 'tia', theirRel: 'sobrinho' }
       },
       'mae': {
         'filho': { myRel: 'irmao', theirRel: 'irmao' },
         'filha': { myRel: 'irma', theirRel: 'irmao' },
-        'conjuge': { myRel: 'pai', theirRel: 'filho' }
+        'conjuge': { myRel: 'pai', theirRel: 'filho' },
+        // Mãe -> irmão/irmã da mãe => tio/tia
+        'irmao': { myRel: 'tio', theirRel: 'sobrinho' },
+        'irma': { myRel: 'tia', theirRel: 'sobrinho' }
       },
       'filho': {
         'filho': { myRel: 'neto', theirRel: 'avo' },
