@@ -862,24 +862,32 @@ export function TreeVisualization() {
 
         const bounds = new mapboxgl.LngLatBounds();
 
-        // Adicionar marcador do usuário
+        // Adicionar marcador do usuário (estilo missão)
         const userMarker = document.createElement('div');
         userMarker.style.backgroundColor = '#8B5CF6';
-        userMarker.style.width = '40px';
-        userMarker.style.height = '40px';
+        userMarker.style.width = '44px';
+        userMarker.style.height = '44px';
         userMarker.style.borderRadius = '50%';
-        userMarker.style.border = '4px solid white';
+        userMarker.style.border = '3px solid white';
         userMarker.style.display = 'flex';
         userMarker.style.alignItems = 'center';
         userMarker.style.justifyContent = 'center';
         userMarker.style.color = 'white';
         userMarker.style.fontWeight = 'bold';
-        userMarker.style.fontSize = '12px';
+        userMarker.style.fontSize = '16px';
         userMarker.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-        userMarker.textContent = 'Você';
+        userMarker.textContent = '0';
 
         new mapboxgl.Marker(userMarker)
           .setLngLat([userProfile.longitude, userProfile.latitude])
+          .setPopup(
+            new mapboxgl.Popup({ offset: 25 }).setHTML(
+              `<div class="p-2">
+                <p class="font-semibold">Você</p>
+                <p class="text-xs text-muted-foreground">Centro da sua rede</p>
+              </div>`
+            )
+          )
           .addTo(map.current);
 
         bounds.extend([userProfile.longitude, userProfile.latitude]);
@@ -891,17 +899,25 @@ export function TreeVisualization() {
           if (!otherPerson?.latitude || !otherPerson?.longitude) return;
 
           const isFamilyConnection = conn.connection_type === 'family';
-          const lineColor = isFamilyConnection ? '#22c55e' : '#eab308'; // verde para família, amarelo para amigos
+          const markerColor = isFamilyConnection ? '#22c55e' : '#3b82f6'; // verde para família, azul para amigos
+          const lineColor = isFamilyConnection ? '#22c55e' : '#3b82f6';
 
-          // Adicionar marcador da conexão
+          // Adicionar marcador da conexão (estilo missão com número)
           const markerEl = document.createElement('div');
-          markerEl.style.backgroundColor = lineColor;
-          markerEl.style.width = '32px';
-          markerEl.style.height = '32px';
+          markerEl.style.backgroundColor = markerColor;
+          markerEl.style.width = '36px';
+          markerEl.style.height = '36px';
           markerEl.style.borderRadius = '50%';
           markerEl.style.border = '3px solid white';
+          markerEl.style.display = 'flex';
+          markerEl.style.alignItems = 'center';
+          markerEl.style.justifyContent = 'center';
+          markerEl.style.color = 'white';
+          markerEl.style.fontWeight = 'bold';
+          markerEl.style.fontSize = '14px';
           markerEl.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
           markerEl.style.cursor = 'pointer';
+          markerEl.textContent = (index + 1).toString();
 
           const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(
             `<div class="p-2">
@@ -947,7 +963,7 @@ export function TreeVisualization() {
             paint: {
               'line-color': lineColor,
               'line-width': 3,
-              'line-opacity': 0.7,
+              'line-opacity': 0.8,
             },
           });
         });
