@@ -39,6 +39,30 @@ const friendRelationshipTypes = [
   { value: 'colega', label: 'Colega' }
 ];
 
+// Mapeamento de relacionamentos reversos automáticos
+const reverseRelationshipMap: Record<string, string[]> = {
+  'pai': ['filho', 'filha'],
+  'mae': ['filho', 'filha'],
+  'filho': ['pai', 'mae'],
+  'filha': ['pai', 'mae'],
+  'irmao': ['irmao', 'irma'],
+  'irma': ['irmao', 'irma'],
+  'avo': ['neto', 'neta'],
+  'avó': ['neto', 'neta'],
+  'neto': ['avo', 'avó'],
+  'neta': ['avo', 'avó'],
+  'tio': ['sobrinho', 'sobrinha'],
+  'tia': ['sobrinho', 'sobrinha'],
+  'sobrinho': ['tio', 'tia'],
+  'sobrinha': ['tio', 'tia'],
+  'primo': ['primo', 'prima'],
+  'prima': ['primo', 'prima'],
+  'conjuge': ['conjuge'],
+  'amigo': ['amigo', 'amiga'],
+  'amiga': ['amigo', 'amiga'],
+  'colega': ['colega']
+};
+
 export function ConnectionsSection() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -92,6 +116,16 @@ export function ConnectionsSection() {
 
     if (!error && data) {
       setPendingRequests(data);
+    }
+  };
+
+  const handleRelationshipChange = (value: string) => {
+    setRelationship(value);
+    
+    // Definir automaticamente o relacionamento reverso
+    const reverseOptions = reverseRelationshipMap[value];
+    if (reverseOptions && reverseOptions.length > 0) {
+      setTheirRelationship(reverseOptions[0]);
     }
   };
 
@@ -249,7 +283,7 @@ export function ConnectionsSection() {
                           ? 'Essa pessoa é meu/minha:' 
                           : 'Tipo de amizade:'}
                       </Label>
-                      <Select value={relationship} onValueChange={setRelationship}>
+                      <Select value={relationship} onValueChange={handleRelationshipChange}>
                         <SelectTrigger>
                           <SelectValue placeholder={connectionType === 'family' ? 'Selecione o parentesco' : 'Selecione o tipo'} />
                         </SelectTrigger>
