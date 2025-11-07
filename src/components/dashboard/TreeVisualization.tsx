@@ -893,10 +893,20 @@ export function TreeVisualization() {
         bounds.extend([userProfile.longitude, userProfile.latitude]);
 
         // Processar cada conexão e adicionar linhas
+        console.log('Total conexões:', allConnections.length);
         allConnections.forEach((conn, index) => {
           const otherPerson = conn.requester_id === user.id ? conn.receiver : conn.requester;
           
-          if (!otherPerson?.latitude || !otherPerson?.longitude) return;
+          console.log(`Conexão ${index + 1}:`, {
+            nome: otherPerson?.full_name,
+            lat: otherPerson?.latitude,
+            lng: otherPerson?.longitude
+          });
+          
+          if (!otherPerson?.latitude || !otherPerson?.longitude) {
+            console.warn(`Conexão ${index + 1} sem localização`);
+            return;
+          }
 
           const isFamilyConnection = conn.connection_type === 'family';
           const markerColor = isFamilyConnection ? '#22c55e' : '#3b82f6'; // verde para família, azul para amigos
@@ -940,32 +950,40 @@ export function TreeVisualization() {
             [otherPerson.longitude, otherPerson.latitude],
           ];
 
-          map.current!.addSource(lineId, {
-            type: 'geojson',
-            data: {
-              type: 'Feature',
-              properties: {},
-              geometry: {
-                type: 'LineString',
-                coordinates: lineCoordinates,
-              },
-            },
-          });
+          console.log(`Adicionando linha ${index + 1}:`, lineCoordinates);
 
-          map.current!.addLayer({
-            id: lineId,
-            type: 'line',
-            source: lineId,
-            layout: {
-              'line-join': 'round',
-              'line-cap': 'round',
-            },
-            paint: {
-              'line-color': lineColor,
-              'line-width': 3,
-              'line-opacity': 0.8,
-            },
-          });
+          try {
+            map.current!.addSource(lineId, {
+              type: 'geojson',
+              data: {
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                  type: 'LineString',
+                  coordinates: lineCoordinates,
+                },
+              },
+            });
+
+            map.current!.addLayer({
+              id: lineId,
+              type: 'line',
+              source: lineId,
+              layout: {
+                'line-join': 'round',
+                'line-cap': 'round',
+              },
+              paint: {
+                'line-color': lineColor,
+                'line-width': 3,
+                'line-opacity': 0.8,
+              },
+            });
+            
+            console.log(`Linha ${index + 1} adicionada com sucesso`);
+          } catch (error) {
+            console.error(`Erro ao adicionar linha ${index + 1}:`, error);
+          }
         });
 
         // Ajustar mapa para mostrar todos os marcadores
