@@ -76,11 +76,13 @@ export function ConnectionsSection() {
   const [connectionType, setConnectionType] = useState<'family' | 'friend'>('family');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'family' | 'friend'>('all');
+  const [suggestions, setSuggestions] = useState<any[]>([]);
 
   useEffect(() => {
     if (user) {
       loadConnections();
       loadPendingRequests();
+      loadSuggestions();
     }
   }, [user]);
 
@@ -116,6 +118,166 @@ export function ConnectionsSection() {
 
     if (!error && data) {
       setPendingRequests(data);
+    }
+  };
+
+  const loadSuggestions = async () => {
+    if (!user) return;
+
+    // Buscar todas as conexões aceitas do usuário
+    const { data: myConnections, error } = await supabase
+      .from('connections')
+      .select(`
+        *,
+        requester:profiles!connections_requester_id_fkey(id, full_name, avatar_url),
+        receiver:profiles!connections_receiver_id_fkey(id, full_name, avatar_url)
+      `)
+      .eq('status', 'accepted')
+      .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);
+
+    if (error || !myConnections) return;
+
+    const suggestedConnections: any[] = [];
+    const processedPairs = new Set<string>();
+
+    // Para cada conexão minha
+    for (const conn of myConnections) {
+      const otherId = conn.requester_id === user.id ? conn.receiver_id : conn.requester_id;
+      const otherPerson = conn.requester_id === user.id ? conn.receiver : conn.requester;
+      const myRelToOther = conn.requester_id === user.id 
+        ? conn.relationship_from_requester 
+        : conn.relationship_from_receiver;
+
+      // Buscar conexões dessa pessoa
+      const { data: theirConnections } = await supabase
+        .from('connections')
+        .select(`
+          *,
+          requester:profiles!connections_requester_id_fkey(id, full_name, avatar_url),
+          receiver:profiles!connections_receiver_id_fkey(id, full_name, avatar_url)
+        `)
+        .eq('status', 'accepted')
+        .or(`requester_id.eq.${otherId},receiver_id.eq.${otherId}`);
+
+      if (!theirConnections) continue;
+
+      // Analisar cada conexão deles
+      for (const theirConn of theirConnections) {
+        const suggestedId = theirConn.requester_id === otherId ? theirConn.receiver_id : theirConn.requester_id;
+        
+        // Evitar sugerir eu mesmo ou conexões já existentes
+        if (suggestedId === user.id) continue;
+        
+        const pairKey = [user.id, suggestedId].sort().join('-');
+        if (processedPairs.has(pairKey)) continue;
+
+        // Verificar se já existe conexão
+        const existingConn = myConnections.find(c => 
+          (c.requester_id === suggestedId || c.receiver_id === suggestedId)
+        );
+        if (existingConn) continue;
+
+        const suggestedPerson = theirConn.requester_id === otherId ? theirConn.receiver : theirConn.requester;
+        const theirRelToSuggested = theirConn.requester_id === otherId
+          ? theirConn.relationship_from_requester
+          : theirConn.relationship_from_receiver;
+
+        // Deduzir relacionamento baseado na lógica familiar
+        const suggestedRel = deduceRelationship(myRelToOther, theirRelToSuggested);
+        
+        if (suggestedRel) {
+          processedPairs.add(pairKey);
+          suggestedConnections.push({
+            person: suggestedPerson,
+            suggestedRelationship: suggestedRel.myRel,
+            reverseRelationship: suggestedRel.theirRel,
+            throughPerson: otherPerson,
+            reason: `${otherPerson.full_name} é seu/sua ${myRelToOther} e ${suggestedPerson.full_name} é ${theirRelToSuggested} de ${otherPerson.full_name}`
+          });
+        }
+      }
+    }
+
+    setSuggestions(suggestedConnections);
+  };
+
+  const deduceRelationship = (myRelToMiddle: string, middleRelToTarget: string) => {
+    // Mapeamento de relacionamentos deduzidos
+    const deductionMap: Record<string, Record<string, { myRel: string, theirRel: string }>> = {
+      // Se X é meu pai/mãe e Y é filho/filha de X, então Y é meu irmão/irmã
+      'pai': {
+        'filho': { myRel: 'irmao', theirRel: 'irmao' },
+        'filha': { myRel: 'irma', theirRel: 'irmao' },
+        'conjuge': { myRel: 'mae', theirRel: 'filho' }
+      },
+      'mae': {
+        'filho': { myRel: 'irmao', theirRel: 'irmao' },
+        'filha': { myRel: 'irma', theirRel: 'irmao' },
+        'conjuge': { myRel: 'pai', theirRel: 'filho' }
+      },
+      // Se X é meu filho/filha e Y é filho/filha de X, então Y é meu neto/neta
+      'filho': {
+        'filho': { myRel: 'neto', theirRel: 'avo' },
+        'filha': { myRel: 'neta', theirRel: 'avo' },
+        'conjuge': { myRel: 'outro', theirRel: 'outro' }
+      },
+      'filha': {
+        'filho': { myRel: 'neto', theirRel: 'avo' },
+        'filha': { myRel: 'neta', theirRel: 'avo' },
+        'conjuge': { myRel: 'outro', theirRel: 'outro' }
+      },
+      // Se X é meu irmão/irmã e Y é filho/filha de X, então Y é meu sobrinho/sobrinha
+      'irmao': {
+        'filho': { myRel: 'sobrinho', theirRel: 'tio' },
+        'filha': { myRel: 'sobrinha', theirRel: 'tio' },
+        'conjuge': { myRel: 'outro', theirRel: 'outro' }
+      },
+      'irma': {
+        'filho': { myRel: 'sobrinho', theirRel: 'tia' },
+        'filha': { myRel: 'sobrinha', theirRel: 'tia' },
+        'conjuge': { myRel: 'outro', theirRel: 'outro' }
+      },
+      // Se X é meu tio/tia e Y é filho/filha de X, então Y é meu primo/prima
+      'tio': {
+        'filho': { myRel: 'primo', theirRel: 'primo' },
+        'filha': { myRel: 'prima', theirRel: 'primo' }
+      },
+      'tia': {
+        'filho': { myRel: 'primo', theirRel: 'primo' },
+        'filha': { myRel: 'prima', theirRel: 'primo' }
+      }
+    };
+
+    return deductionMap[myRelToMiddle]?.[middleRelToTarget] || null;
+  };
+
+  const sendSuggestionRequest = async (suggestion: any) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('connections')
+      .insert([{
+        requester_id: user.id,
+        receiver_id: suggestion.person.id,
+        relationship_from_requester: suggestion.suggestedRelationship,
+        relationship_from_receiver: suggestion.reverseRelationship,
+        is_ancestor: false,
+        ancestor_confirmed_by: null,
+        connection_type: 'family'
+      }]);
+
+    if (error) {
+      toast({
+        title: 'Erro ao enviar solicitação',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } else {
+      toast({
+        title: 'Solicitação enviada!',
+        description: `Solicitação enviada para ${suggestion.person.full_name}.`
+      });
+      loadSuggestions();
     }
   };
 
@@ -358,6 +520,47 @@ export function ConnectionsSection() {
                     </Button>
                     <Button size="sm" variant="destructive" onClick={() => handleRequest(request.id, false)}>
                       <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {suggestions.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Sugestões de Conexões Familiares
+            </CardTitle>
+            <CardDescription>
+              Baseado em suas conexões existentes, estas pessoas podem ter laço familiar com você
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {suggestions.map((suggestion, idx) => (
+                <div key={idx} className="p-4 border rounded-lg space-y-2">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="font-medium">{suggestion.person.full_name}</p>
+                      <p className="text-sm text-muted-foreground capitalize">
+                        Possível {suggestion.suggestedRelationship}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {suggestion.reason}
+                      </p>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      onClick={() => sendSuggestionRequest(suggestion)}
+                      className="shrink-0"
+                    >
+                      <UserPlus className="h-4 w-4 mr-1" />
+                      Conectar
                     </Button>
                   </div>
                 </div>
