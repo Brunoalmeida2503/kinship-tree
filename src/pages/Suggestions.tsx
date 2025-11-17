@@ -26,6 +26,7 @@ interface Suggestion {
   };
   reason: string;
   degree: number;
+  isPending?: boolean;
 }
 
 const relationshipLabels: Record<string, string> = {
