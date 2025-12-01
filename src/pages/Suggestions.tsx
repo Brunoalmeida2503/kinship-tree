@@ -65,13 +65,14 @@ export default function Suggestions() {
     }
   }, [user]);
 
-  const deduceRelationship = (myRelToMiddle: string, middleRelToTarget: string) => {
+  const deduceRelationship = (middleRelToMe: string, middleRelToTarget: string) => {
+    // Agora a chave é: o que a pessoa do MEIO é para MIM
     const deductionMap: Record<string, Record<string, { myRel: string, theirRel: string }>> = {
       'pai': {
         'filho': { myRel: 'irmao', theirRel: 'irmao' },
         'filha': { myRel: 'irma', theirRel: 'irmao' },
         'conjuge': { myRel: 'mae', theirRel: 'filho' },
-        // Pai -> irmão/irmã do pai => tio/tia
+        // Se meu pai é irmão de alguém, esse alguém é meu tio/tia
         'irmao': { myRel: 'tio', theirRel: 'sobrinho' },
         'irma': { myRel: 'tia', theirRel: 'sobrinho' }
       },
@@ -79,20 +80,12 @@ export default function Suggestions() {
         'filho': { myRel: 'irmao', theirRel: 'irmao' },
         'filha': { myRel: 'irma', theirRel: 'irmao' },
         'conjuge': { myRel: 'pai', theirRel: 'filho' },
-        // Mãe -> irmão/irmã da mãe => tio/tia
+        // Se minha mãe é irmã de alguém, esse alguém é meu tio/tia
         'irmao': { myRel: 'tio', theirRel: 'sobrinho' },
         'irma': { myRel: 'tia', theirRel: 'sobrinho' }
       },
-      'filho': {
-        'filho': { myRel: 'neto', theirRel: 'avo' },
-        'filha': { myRel: 'neta', theirRel: 'avo' },
-        'conjuge': { myRel: 'outro', theirRel: 'outro' }
-      },
-      'filha': {
-        'filho': { myRel: 'neto', theirRel: 'avo' },
-        'filha': { myRel: 'neta', theirRel: 'avo' },
-        'conjuge': { myRel: 'outro', theirRel: 'outro' }
-      },
+      // Não usamos mais filho/filha como chave pois agora a chave é "o que a pessoa do meio é para mim"
+      // Se alguém é meu filho e tem um filho, esse é meu neto (mas isso seria lógica reversa)
       'irmao': {
         'filho': { myRel: 'sobrinho', theirRel: 'tio' },
         'filha': { myRel: 'sobrinha', theirRel: 'tio' },
@@ -113,7 +106,7 @@ export default function Suggestions() {
       }
     };
 
-    return deductionMap[myRelToMiddle]?.[middleRelToTarget] || null;
+    return deductionMap[middleRelToMe]?.[middleRelToTarget] || null;
   };
 
   const loadSuggestions = async () => {
@@ -142,9 +135,10 @@ export default function Suggestions() {
     for (const conn of myConnections) {
       const otherId = conn.requester_id === user.id ? conn.receiver_id : conn.requester_id;
       const otherPerson = conn.requester_id === user.id ? conn.receiver : conn.requester;
-      const myRelToOther = conn.requester_id === user.id 
-        ? conn.relationship_from_requester 
-        : conn.relationship_from_receiver;
+      // CORREÇÃO: Pegar o que a OUTRA pessoa É para MIM, não o que EU sou para ela
+      const otherRelToMe = conn.requester_id === user.id 
+        ? conn.relationship_from_receiver  // O que o receiver é para mim (requester)
+        : conn.relationship_from_requester; // O que o requester é para mim (receiver)
 
       const { data: theirConnections } = await supabase
         .from('connections')
@@ -176,7 +170,7 @@ export default function Suggestions() {
           ? theirConn.relationship_from_requester
           : theirConn.relationship_from_receiver;
 
-        const suggestedRel = deduceRelationship(myRelToOther, theirRelToSuggested);
+        const suggestedRel = deduceRelationship(otherRelToMe, theirRelToSuggested);
         
         if (suggestedRel) {
           processedPairs.add(pairKey);
@@ -185,7 +179,7 @@ export default function Suggestions() {
             suggestedRelationship: suggestedRel.myRel,
             reverseRelationship: suggestedRel.theirRel,
             throughPerson: otherPerson,
-            reason: `${otherPerson.full_name} é seu/sua ${myRelToOther} e ${suggestedPerson.full_name} é ${theirRelToSuggested} de ${otherPerson.full_name}`,
+            reason: `${otherPerson.full_name} é seu/sua ${relationshipLabels[otherRelToMe] || otherRelToMe} e ${suggestedPerson.full_name} é ${relationshipLabels[theirRelToSuggested] || theirRelToSuggested} de ${otherPerson.full_name}`,
             degree: 2
           });
         }
