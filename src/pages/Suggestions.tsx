@@ -140,10 +140,10 @@ export default function Suggestions() {
       const otherId = conn.requester_id === user.id ? conn.receiver_id : conn.requester_id;
       const otherPerson = conn.requester_id === user.id ? conn.receiver : conn.requester;
       
-      // CORREÇÃO: Pegar o que a OUTRA pessoa É para MIM, não o que EU sou para ela
-      const otherRelToMe = conn.requester_id === user.id 
-        ? conn.relationship_from_receiver  // O que o receiver é para mim (requester)
-        : conn.relationship_from_requester; // O que o requester é para mim (receiver)
+      // CORREÇÃO: Pegar o que a OUTRA pessoa É para MIM
+      const otherRelToMe = conn.receiver_id === user.id 
+        ? conn.relationship_from_receiver  // Se EU sou receiver, pego o que o requester é para mim
+        : conn.relationship_from_requester; // Se EU sou requester, pego o que o receiver é para mim
       
       console.log(`👤 [SUGGESTIONS] Analisando conexão com ${otherPerson.full_name} (${otherId})`);
       console.log(`   Relacionamento: ${otherPerson.full_name} é meu/minha "${otherRelToMe}"`);
