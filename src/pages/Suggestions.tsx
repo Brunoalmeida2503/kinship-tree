@@ -113,6 +113,7 @@ export default function Suggestions() {
     if (!user) return;
 
     setLoading(true);
+    console.log('🔍 [SUGGESTIONS] Iniciando busca para usuário:', user.id);
 
     const { data: myConnections, error } = await supabase
       .from('connections')
@@ -125,9 +126,12 @@ export default function Suggestions() {
       .or(`requester_id.eq.${user.id},receiver_id.eq.${user.id}`);
 
     if (error || !myConnections) {
+      console.error('❌ [SUGGESTIONS] Erro ao buscar conexões:', error);
       setLoading(false);
       return;
     }
+
+    console.log('✅ [SUGGESTIONS] Minhas conexões:', myConnections.length, myConnections);
 
     const suggestedConnections: Suggestion[] = [];
     const processedPairs = new Set<string>();
@@ -135,10 +139,14 @@ export default function Suggestions() {
     for (const conn of myConnections) {
       const otherId = conn.requester_id === user.id ? conn.receiver_id : conn.requester_id;
       const otherPerson = conn.requester_id === user.id ? conn.receiver : conn.requester;
+      
       // CORREÇÃO: Pegar o que a OUTRA pessoa É para MIM, não o que EU sou para ela
       const otherRelToMe = conn.requester_id === user.id 
         ? conn.relationship_from_receiver  // O que o receiver é para mim (requester)
         : conn.relationship_from_requester; // O que o requester é para mim (receiver)
+      
+      console.log(`👤 [SUGGESTIONS] Analisando conexão com ${otherPerson.full_name} (${otherId})`);
+      console.log(`   Relacionamento: ${otherPerson.full_name} é meu/minha "${otherRelToMe}"`);
 
       const { data: theirConnections } = await supabase
         .from('connections')
@@ -150,29 +158,46 @@ export default function Suggestions() {
         .eq('status', 'accepted')
         .or(`requester_id.eq.${otherId},receiver_id.eq.${otherId}`);
 
-      if (!theirConnections) continue;
+      if (!theirConnections) {
+        console.log(`   ⚠️ Nenhuma conexão encontrada para ${otherPerson.full_name}`);
+        continue;
+      }
+
+      console.log(`   📋 ${otherPerson.full_name} tem ${theirConnections.length} conexões`);
 
       for (const theirConn of theirConnections) {
         const suggestedId = theirConn.requester_id === otherId ? theirConn.receiver_id : theirConn.requester_id;
         
-        if (suggestedId === user.id) continue;
+        if (suggestedId === user.id) {
+          console.log(`   ⏭️ Pulando: é o próprio usuário`);
+          continue;
+        }
         
         const pairKey = [user.id, suggestedId].sort().join('-');
-        if (processedPairs.has(pairKey)) continue;
+        if (processedPairs.has(pairKey)) {
+          console.log(`   ⏭️ Pulando: par já processado`);
+          continue;
+        }
 
         const existingConn = myConnections.find(c => 
           (c.requester_id === suggestedId || c.receiver_id === suggestedId)
         );
-        if (existingConn) continue;
+        if (existingConn) {
+          console.log(`   ⏭️ Pulando: já tem conexão existente`);
+          continue;
+        }
 
         const suggestedPerson = theirConn.requester_id === otherId ? theirConn.receiver : theirConn.requester;
         const theirRelToSuggested = theirConn.requester_id === otherId
           ? theirConn.relationship_from_requester
           : theirConn.relationship_from_receiver;
 
+        console.log(`   🔗 Deduzindo: ${otherPerson.full_name} (${otherRelToMe}) -> ${suggestedPerson.full_name} (${theirRelToSuggested})`);
+        
         const suggestedRel = deduceRelationship(otherRelToMe, theirRelToSuggested);
         
         if (suggestedRel) {
+          console.log(`   ✨ SUGESTÃO ENCONTRADA: ${suggestedPerson.full_name} é ${suggestedRel.myRel}`);
           processedPairs.add(pairKey);
           suggestedConnections.push({
             person: suggestedPerson,
@@ -182,10 +207,13 @@ export default function Suggestions() {
             reason: `${otherPerson.full_name} é seu/sua ${relationshipLabels[otherRelToMe] || otherRelToMe} e ${suggestedPerson.full_name} é ${relationshipLabels[theirRelToSuggested] || theirRelToSuggested} de ${otherPerson.full_name}`,
             degree: 2
           });
+        } else {
+          console.log(`   ❌ Nenhuma dedução encontrada para ${otherRelToMe} -> ${theirRelToSuggested}`);
         }
       }
     }
 
+    console.log(`🎯 [SUGGESTIONS] Total de sugestões encontradas: ${suggestedConnections.length}`, suggestedConnections);
     setSuggestions(suggestedConnections);
     setLoading(false);
   };
