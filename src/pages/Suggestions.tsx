@@ -66,43 +66,92 @@ export default function Suggestions() {
   }, [user]);
 
   const deduceRelationship = (middleRelToMe: string, middleRelToTarget: string) => {
-    // Agora a chave é: o que a pessoa do MEIO é para MIM
+    // middleRelToMe: o que a pessoa do MEIO é para MIM
+    // middleRelToTarget: o que a pessoa ALVO é para a pessoa do MEIO
     const deductionMap: Record<string, Record<string, { myRel: string, theirRel: string }>> = {
       'pai': {
         'filho': { myRel: 'irmao', theirRel: 'irmao' },
         'filha': { myRel: 'irma', theirRel: 'irmao' },
         'conjuge': { myRel: 'mae', theirRel: 'filho' },
-        // Se meu pai é irmão de alguém, esse alguém é meu tio/tia
         'irmao': { myRel: 'tio', theirRel: 'sobrinho' },
-        'irma': { myRel: 'tia', theirRel: 'sobrinho' }
+        'irma': { myRel: 'tia', theirRel: 'sobrinho' },
+        'pai': { myRel: 'avo', theirRel: 'neto' },
+        'mae': { myRel: 'ava', theirRel: 'neto' }
       },
       'mae': {
         'filho': { myRel: 'irmao', theirRel: 'irmao' },
         'filha': { myRel: 'irma', theirRel: 'irmao' },
         'conjuge': { myRel: 'pai', theirRel: 'filho' },
-        // Se minha mãe é irmã de alguém, esse alguém é meu tio/tia
         'irmao': { myRel: 'tio', theirRel: 'sobrinho' },
-        'irma': { myRel: 'tia', theirRel: 'sobrinho' }
+        'irma': { myRel: 'tia', theirRel: 'sobrinho' },
+        'pai': { myRel: 'avo', theirRel: 'neto' },
+        'mae': { myRel: 'ava', theirRel: 'neto' }
       },
-      // Não usamos mais filho/filha como chave pois agora a chave é "o que a pessoa do meio é para mim"
-      // Se alguém é meu filho e tem um filho, esse é meu neto (mas isso seria lógica reversa)
+      'filho': {
+        'filho': { myRel: 'neto', theirRel: 'avo' },
+        'filha': { myRel: 'neta', theirRel: 'avo' },
+        'conjuge': { myRel: 'outro', theirRel: 'outro' },
+        'pai': { myRel: 'conjuge', theirRel: 'conjuge' },
+        'mae': { myRel: 'conjuge', theirRel: 'conjuge' }
+      },
+      'filha': {
+        'filho': { myRel: 'neto', theirRel: 'ava' },
+        'filha': { myRel: 'neta', theirRel: 'ava' },
+        'conjuge': { myRel: 'outro', theirRel: 'outro' },
+        'pai': { myRel: 'conjuge', theirRel: 'conjuge' },
+        'mae': { myRel: 'conjuge', theirRel: 'conjuge' }
+      },
       'irmao': {
         'filho': { myRel: 'sobrinho', theirRel: 'tio' },
         'filha': { myRel: 'sobrinha', theirRel: 'tio' },
-        'conjuge': { myRel: 'outro', theirRel: 'outro' }
+        'conjuge': { myRel: 'outro', theirRel: 'outro' },
+        'pai': { myRel: 'pai', theirRel: 'filho' },
+        'mae': { myRel: 'mae', theirRel: 'filho' }
       },
       'irma': {
         'filho': { myRel: 'sobrinho', theirRel: 'tia' },
         'filha': { myRel: 'sobrinha', theirRel: 'tia' },
-        'conjuge': { myRel: 'outro', theirRel: 'outro' }
+        'conjuge': { myRel: 'outro', theirRel: 'outro' },
+        'pai': { myRel: 'pai', theirRel: 'filha' },
+        'mae': { myRel: 'mae', theirRel: 'filha' }
       },
       'tio': {
         'filho': { myRel: 'primo', theirRel: 'primo' },
-        'filha': { myRel: 'prima', theirRel: 'primo' }
+        'filha': { myRel: 'prima', theirRel: 'primo' },
+        'conjuge': { myRel: 'tia', theirRel: 'sobrinho' },
+        'irmao': { myRel: 'pai', theirRel: 'sobrinho' },
+        'irma': { myRel: 'mae', theirRel: 'sobrinho' }
       },
       'tia': {
         'filho': { myRel: 'primo', theirRel: 'primo' },
-        'filha': { myRel: 'prima', theirRel: 'primo' }
+        'filha': { myRel: 'prima', theirRel: 'primo' },
+        'conjuge': { myRel: 'tio', theirRel: 'sobrinha' },
+        'irmao': { myRel: 'pai', theirRel: 'sobrinha' },
+        'irma': { myRel: 'mae', theirRel: 'sobrinha' }
+      },
+      'conjuge': {
+        'filho': { myRel: 'filho', theirRel: 'mae' },
+        'filha': { myRel: 'filha', theirRel: 'mae' },
+        'pai': { myRel: 'outro', theirRel: 'outro' },
+        'mae': { myRel: 'outro', theirRel: 'outro' },
+        'irmao': { myRel: 'outro', theirRel: 'outro' },
+        'irma': { myRel: 'outro', theirRel: 'outro' }
+      },
+      'sobrinho': {
+        'pai': { myRel: 'irmao', theirRel: 'filho' },
+        'mae': { myRel: 'irma', theirRel: 'filho' }
+      },
+      'sobrinha': {
+        'pai': { myRel: 'irmao', theirRel: 'filha' },
+        'mae': { myRel: 'irma', theirRel: 'filha' }
+      },
+      'primo': {
+        'pai': { myRel: 'tio', theirRel: 'sobrinho' },
+        'mae': { myRel: 'tia', theirRel: 'sobrinho' }
+      },
+      'prima': {
+        'pai': { myRel: 'tio', theirRel: 'sobrinha' },
+        'mae': { myRel: 'tia', theirRel: 'sobrinha' }
       }
     };
 
