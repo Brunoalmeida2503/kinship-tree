@@ -96,35 +96,43 @@ export default function Suggestions() {
     const deductionMap: Record<string, Record<string, { myRel: string, theirRel: string }>> = {
       'pai': {
         'filho': { myRel: 'irmao', theirRel: 'irmao' },
-        'filha': { myRel: 'irma', theirRel: 'irmao' },
+        'filha': { myRel: 'irma', theirRel: 'irma' },
         'conjuge': { myRel: 'mae', theirRel: 'filho' },
         'irmao': { myRel: 'tio', theirRel: 'sobrinho' },
         'irma': { myRel: 'tia', theirRel: 'sobrinho' },
         'pai': { myRel: 'avo', theirRel: 'neto' },
-        'mae': { myRel: 'ava', theirRel: 'neto' }
+        'mae': { myRel: 'ava', theirRel: 'neto' },
+        'sobrinho': { myRel: 'primo', theirRel: 'primo' },
+        'sobrinha': { myRel: 'prima', theirRel: 'primo' }
       },
       'mae': {
         'filho': { myRel: 'irmao', theirRel: 'irmao' },
-        'filha': { myRel: 'irma', theirRel: 'irmao' },
+        'filha': { myRel: 'irma', theirRel: 'irma' },
         'conjuge': { myRel: 'pai', theirRel: 'filho' },
         'irmao': { myRel: 'tio', theirRel: 'sobrinho' },
         'irma': { myRel: 'tia', theirRel: 'sobrinho' },
         'pai': { myRel: 'avo', theirRel: 'neto' },
-        'mae': { myRel: 'ava', theirRel: 'neto' }
+        'mae': { myRel: 'ava', theirRel: 'neto' },
+        'sobrinho': { myRel: 'primo', theirRel: 'primo' },
+        'sobrinha': { myRel: 'prima', theirRel: 'primo' }
       },
       'filho': {
         'filho': { myRel: 'neto', theirRel: 'avo' },
         'filha': { myRel: 'neta', theirRel: 'avo' },
         'conjuge': { myRel: 'outro', theirRel: 'outro' },
         'pai': { myRel: 'conjuge', theirRel: 'conjuge' },
-        'mae': { myRel: 'conjuge', theirRel: 'conjuge' }
+        'mae': { myRel: 'conjuge', theirRel: 'conjuge' },
+        'irmao': { myRel: 'filho', theirRel: 'pai' },
+        'irma': { myRel: 'filha', theirRel: 'pai' }
       },
       'filha': {
         'filho': { myRel: 'neto', theirRel: 'ava' },
         'filha': { myRel: 'neta', theirRel: 'ava' },
         'conjuge': { myRel: 'outro', theirRel: 'outro' },
         'pai': { myRel: 'conjuge', theirRel: 'conjuge' },
-        'mae': { myRel: 'conjuge', theirRel: 'conjuge' }
+        'mae': { myRel: 'conjuge', theirRel: 'conjuge' },
+        'irmao': { myRel: 'filho', theirRel: 'mae' },
+        'irma': { myRel: 'filha', theirRel: 'mae' }
       },
       'irmao': {
         'filho': { myRel: 'sobrinho', theirRel: 'tio' },
@@ -177,10 +185,34 @@ export default function Suggestions() {
       'prima': {
         'pai': { myRel: 'tio', theirRel: 'sobrinha' },
         'mae': { myRel: 'tia', theirRel: 'sobrinha' }
+      },
+      'avo': {
+        'filho': { myRel: 'pai', theirRel: 'filho' },
+        'filha': { myRel: 'mae', theirRel: 'filho' },
+        'conjuge': { myRel: 'ava', theirRel: 'neto' },
+        'neto': { myRel: 'irmao', theirRel: 'irmao' },
+        'neta': { myRel: 'irma', theirRel: 'irmao' }
+      },
+      'ava': {
+        'filho': { myRel: 'pai', theirRel: 'filho' },
+        'filha': { myRel: 'mae', theirRel: 'filho' },
+        'conjuge': { myRel: 'avo', theirRel: 'neto' },
+        'neto': { myRel: 'irmao', theirRel: 'irmao' },
+        'neta': { myRel: 'irma', theirRel: 'irmao' }
+      },
+      'neto': {
+        'pai': { myRel: 'filho', theirRel: 'neto' },
+        'mae': { myRel: 'filha', theirRel: 'neto' }
+      },
+      'neta': {
+        'pai': { myRel: 'filho', theirRel: 'neta' },
+        'mae': { myRel: 'filha', theirRel: 'neta' }
       }
     };
 
-    return deductionMap[middleRelToMe]?.[middleRelToTarget] || null;
+    const result = deductionMap[middleRelToMe]?.[middleRelToTarget] || null;
+    console.log(`   📐 deduceRelationship(${middleRelToMe}, ${middleRelToTarget}) = `, result);
+    return result;
   };
 
   const loadSuggestions = async () => {
@@ -230,14 +262,13 @@ export default function Suggestions() {
           : conn2.relationship_from_receiver;
 
         // Verificar se essas duas pessoas já estão conectadas
-        const { data: existingConnection } = await supabase
+        const { data: existingConnections } = await supabase
           .from('connections')
           .select('id')
           .eq('status', 'accepted')
-          .or(`and(requester_id.eq.${person1Id},receiver_id.eq.${person2Id}),and(requester_id.eq.${person2Id},receiver_id.eq.${person1Id})`)
-          .single();
+          .or(`and(requester_id.eq.${person1Id},receiver_id.eq.${person2Id}),and(requester_id.eq.${person2Id},receiver_id.eq.${person1Id})`);
 
-        if (existingConnection) {
+        if (existingConnections && existingConnections.length > 0) {
           console.log(`   ⏭️ ${person1.full_name} e ${person2.full_name} já estão conectados`);
           continue;
         }
@@ -283,9 +314,9 @@ export default function Suggestions() {
         ? conn.relationship_from_requester
         : conn.relationship_from_receiver;
       
-      console.log(`👤 [SUGGESTIONS] Analisando conexões de ${otherPerson.full_name} (${otherRelToMe})`);
+      console.log(`👤 [SUGGESTIONS] Analisando conexões de ${otherPerson.full_name} (eu digo: ${otherRelToMe})`);
 
-      const { data: theirConnections } = await supabase
+      const { data: theirConnections, error: theirError } = await supabase
         .from('connections')
         .select(`
           *,
@@ -295,39 +326,61 @@ export default function Suggestions() {
         .eq('status', 'accepted')
         .or(`requester_id.eq.${otherId},receiver_id.eq.${otherId}`);
 
-      if (!theirConnections) continue;
+      if (theirError) {
+        console.error('❌ Erro ao buscar conexões:', theirError);
+        continue;
+      }
+      
+      console.log(`   📋 ${otherPerson.full_name} tem ${theirConnections?.length || 0} conexões`);
+
+      if (!theirConnections || theirConnections.length === 0) continue;
 
       for (const theirConn of theirConnections) {
         const suggestedId = theirConn.requester_id === otherId ? theirConn.receiver_id : theirConn.requester_id;
+        const suggestedPerson = theirConn.requester_id === otherId ? theirConn.receiver : theirConn.requester;
         
-        if (suggestedId === user.id) continue;
+        console.log(`   🔍 Verificando: ${suggestedPerson?.full_name || suggestedId}`);
+        
+        if (suggestedId === user.id) {
+          console.log(`      ⏭️ Pulando - é o próprio usuário`);
+          continue;
+        }
         
         const pairKey = [user.id, suggestedId].sort().join('-');
-        if (processedPairs.has(pairKey)) continue;
+        if (processedPairs.has(pairKey)) {
+          console.log(`      ⏭️ Pulando - já processado`);
+          continue;
+        }
 
         const existingConn = myConnections.find(c => 
           (c.requester_id === suggestedId || c.receiver_id === suggestedId)
         );
-        if (existingConn) continue;
+        if (existingConn) {
+          console.log(`      ⏭️ Pulando - já conectado diretamente`);
+          continue;
+        }
 
-        const suggestedPerson = theirConn.requester_id === otherId ? theirConn.receiver : theirConn.requester;
         const theirRelToSuggested = theirConn.requester_id === otherId
           ? theirConn.relationship_from_requester
           : theirConn.relationship_from_receiver;
 
+        console.log(`      📐 ${otherPerson.full_name} diz que ${suggestedPerson?.full_name} é: ${theirRelToSuggested}`);
+
         const suggestedRel = deduceRelationship(otherRelToMe, theirRelToSuggested);
         
         if (suggestedRel) {
-          console.log(`   ✨ SUGESTÃO 2º GRAU: ${suggestedPerson.full_name} é ${suggestedRel.myRel}`);
+          console.log(`      ✨ SUGESTÃO: ${suggestedPerson?.full_name} é meu/minha ${suggestedRel.myRel}`);
           processedPairs.add(pairKey);
           suggestedConnections.push({
             person: suggestedPerson,
             suggestedRelationship: suggestedRel.myRel,
             reverseRelationship: suggestedRel.theirRel,
             throughPerson: otherPerson,
-            reason: `${otherPerson.full_name} é seu/sua ${relationshipLabels[otherRelToMe] || otherRelToMe} e ${suggestedPerson.full_name} é ${relationshipLabels[theirRelToSuggested] || theirRelToSuggested} de ${otherPerson.full_name}`,
+            reason: `${otherPerson.full_name} é seu/sua ${relationshipLabels[otherRelToMe] || otherRelToMe} e ${suggestedPerson?.full_name} é ${relationshipLabels[theirRelToSuggested] || theirRelToSuggested} de ${otherPerson.full_name}`,
             degree: 2
           });
+        } else {
+          console.log(`      ❌ Não foi possível deduzir relação para (${otherRelToMe}, ${theirRelToSuggested})`);
         }
       }
     }
