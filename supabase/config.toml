@@ -2,3 +2,12 @@ project_id = "cbienzabsezakvlicaxq"
 
 [functions.aura-chat]
 verify_jwt = true
+
+[functions.calculate-mission-path]
+verify_jwt = true
+
+[functions.admin-reset-password]
+verify_jwt = true
+
+[functions.send-password-reset]
+verify_jwt = false

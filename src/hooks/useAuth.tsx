@@ -97,24 +97,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/`
-    });
-
-    if (error) {
-      toast({
-        title: "Erro ao enviar email",
-        description: error.message,
-        variant: "destructive"
+    try {
+      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+        body: {
+          email,
+          redirectUrl: `${window.location.origin}/auth`
+        }
       });
-    } else {
+
+      if (error) {
+        toast({
+          title: "Erro ao enviar email",
+          description: error.message,
+          variant: "destructive"
+        });
+        return { error };
+      }
+
+      if (data?.error) {
+        toast({
+          title: "Erro ao enviar email",
+          description: data.error,
+          variant: "destructive"
+        });
+        return { error: { message: data.error } };
+      }
+
       toast({
         title: "Email enviado!",
         description: "Verifique sua caixa de entrada para redefinir sua senha"
       });
-    }
 
-    return { error };
+      return { error: null };
+    } catch (err: any) {
+      toast({
+        title: "Erro ao enviar email",
+        description: err.message || "Erro desconhecido",
+        variant: "destructive"
+      });
+      return { error: err };
+    }
   };
 
   return (
