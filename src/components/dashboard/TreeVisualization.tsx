@@ -824,6 +824,36 @@ export function TreeVisualization() {
     );
   };
 
+  // Função para criar linha curva (arco) entre dois pontos
+  const createArcLine = (start: [number, number], end: [number, number], numPoints: number = 50): [number, number][] => {
+    const points: [number, number][] = [];
+    const midLng = (start[0] + end[0]) / 2;
+    const midLat = (start[1] + end[1]) / 2;
+    
+    // Calcular distância para determinar a curvatura
+    const distance = Math.sqrt(
+      Math.pow(end[0] - start[0], 2) + Math.pow(end[1] - start[1], 2)
+    );
+    
+    // Curvatura proporcional à distância
+    const curvature = Math.min(distance * 0.15, 0.5);
+    
+    // Ponto de controle perpendicular à linha
+    const angle = Math.atan2(end[1] - start[1], end[0] - start[0]);
+    const controlLng = midLng + Math.cos(angle + Math.PI / 2) * curvature;
+    const controlLat = midLat + Math.sin(angle + Math.PI / 2) * curvature;
+    
+    for (let i = 0; i <= numPoints; i++) {
+      const t = i / numPoints;
+      // Curva de Bézier quadrática
+      const lng = Math.pow(1 - t, 2) * start[0] + 2 * (1 - t) * t * controlLng + Math.pow(t, 2) * end[0];
+      const lat = Math.pow(1 - t, 2) * start[1] + 2 * (1 - t) * t * controlLat + Math.pow(t, 2) * end[1];
+      points.push([lng, lat]);
+    }
+    
+    return points;
+  };
+
   const initializeMap = async () => {
     if (!mapContainer.current || !user || map.current) return;
 
@@ -850,41 +880,104 @@ export function TreeVisualization() {
 
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v12',
+        style: 'mapbox://styles/mapbox/light-v11',
         center: [userProfile.longitude, userProfile.latitude],
         zoom: 10,
+        pitch: 15,
+        bearing: 0,
       });
 
-      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      map.current.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), 'top-right');
+
+      // Adicionar estilos CSS para animações
+      const styleSheet = document.createElement('style');
+      styleSheet.textContent = `
+        @keyframes pulse-ring {
+          0% { transform: scale(1); opacity: 1; }
+          100% { transform: scale(1.8); opacity: 0; }
+        }
+        @keyframes marker-bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-5px); }
+        }
+        .map-marker {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          animation: marker-bounce 0.5s ease-out;
+        }
+        .map-marker:hover {
+          transform: scale(1.15);
+          box-shadow: 0 8px 25px rgba(0,0,0,0.35);
+        }
+        .pulse-ring {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .marker-container {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+      `;
+      document.head.appendChild(styleSheet);
 
       map.current.on('load', () => {
         if (!map.current) return;
 
+        // Adicionar atmosfera suave ao mapa
+        map.current.setFog({
+          color: 'rgb(255, 255, 255)',
+          'high-color': 'rgb(200, 200, 225)',
+          'horizon-blend': 0.1,
+        });
+
         const bounds = new mapboxgl.LngLatBounds();
 
-        // Adicionar marcador do usuário (estilo missão)
-        const userMarker = document.createElement('div');
-        userMarker.style.backgroundColor = '#8B5CF6';
-        userMarker.style.width = '44px';
-        userMarker.style.height = '44px';
-        userMarker.style.borderRadius = '50%';
-        userMarker.style.border = '3px solid white';
-        userMarker.style.display = 'flex';
-        userMarker.style.alignItems = 'center';
-        userMarker.style.justifyContent = 'center';
-        userMarker.style.color = 'white';
-        userMarker.style.fontWeight = 'bold';
-        userMarker.style.fontSize = '16px';
-        userMarker.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-        userMarker.textContent = '0';
+        // Criar marcador do usuário com animação de pulso
+        const userMarkerContainer = document.createElement('div');
+        userMarkerContainer.className = 'marker-container';
+        userMarkerContainer.style.width = '52px';
+        userMarkerContainer.style.height = '52px';
 
-        new mapboxgl.Marker(userMarker)
+        const userPulse = document.createElement('div');
+        userPulse.className = 'pulse-ring';
+        userPulse.style.backgroundColor = 'rgba(139, 92, 246, 0.4)';
+        userMarkerContainer.appendChild(userPulse);
+
+        const userMarker = document.createElement('div');
+        userMarker.className = 'map-marker';
+        userMarker.style.cssText = `
+          position: absolute;
+          background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          border: 4px solid white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-weight: bold;
+          font-size: 18px;
+          box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+          cursor: pointer;
+        `;
+        userMarker.textContent = '★';
+        userMarkerContainer.appendChild(userMarker);
+
+        new mapboxgl.Marker(userMarkerContainer)
           .setLngLat([userProfile.longitude, userProfile.latitude])
           .setPopup(
-            new mapboxgl.Popup({ offset: 25 }).setHTML(
-              `<div class="p-2">
-                <p class="font-semibold">Você</p>
-                <p class="text-xs text-muted-foreground">Centro da sua rede</p>
+            new mapboxgl.Popup({ 
+              offset: 25,
+              className: 'rounded-lg shadow-xl'
+            }).setHTML(
+              `<div class="p-3">
+                <p class="font-bold text-base">Você</p>
+                <p class="text-sm text-gray-500">Centro da sua rede familiar</p>
               </div>`
             )
           )
@@ -892,104 +985,159 @@ export function TreeVisualization() {
 
         bounds.extend([userProfile.longitude, userProfile.latitude]);
 
-        // Processar cada conexão e adicionar linhas
-        console.log('Total conexões:', allConnections.length);
+        // Processar cada conexão com animação sequencial
         allConnections.forEach((conn, index) => {
           const otherPerson = conn.requester_id === user.id ? conn.receiver : conn.requester;
           
-          console.log(`Conexão ${index + 1}:`, {
-            nome: otherPerson?.full_name,
-            lat: otherPerson?.latitude,
-            lng: otherPerson?.longitude
-          });
-          
           if (!otherPerson?.latitude || !otherPerson?.longitude) {
-            console.warn(`Conexão ${index + 1} sem localização`);
             return;
           }
 
           const isFamilyConnection = conn.connection_type === 'family';
-          const markerColor = isFamilyConnection ? '#22c55e' : '#3b82f6'; // verde para família, azul para amigos
+          const markerGradient = isFamilyConnection 
+            ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
+            : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
           const lineColor = isFamilyConnection ? '#22c55e' : '#3b82f6';
+          const glowColor = isFamilyConnection ? 'rgba(34, 197, 94, 0.4)' : 'rgba(59, 130, 246, 0.4)';
 
-          // Adicionar marcador da conexão (estilo missão com número)
-          const markerEl = document.createElement('div');
-          markerEl.style.backgroundColor = markerColor;
-          markerEl.style.width = '36px';
-          markerEl.style.height = '36px';
-          markerEl.style.borderRadius = '50%';
-          markerEl.style.border = '3px solid white';
-          markerEl.style.display = 'flex';
-          markerEl.style.alignItems = 'center';
-          markerEl.style.justifyContent = 'center';
-          markerEl.style.color = 'white';
-          markerEl.style.fontWeight = 'bold';
-          markerEl.style.fontSize = '14px';
-          markerEl.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-          markerEl.style.cursor = 'pointer';
-          markerEl.textContent = (index + 1).toString();
+          // Criar marcador com animação de entrada atrasada
+          setTimeout(() => {
+            const markerContainer = document.createElement('div');
+            markerContainer.className = 'marker-container';
+            markerContainer.style.width = '44px';
+            markerContainer.style.height = '44px';
+            markerContainer.style.opacity = '0';
+            markerContainer.style.transition = 'opacity 0.5s ease-out';
 
-          const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(
-            `<div class="p-2">
-              <p class="font-semibold">${otherPerson.full_name}</p>
-              <p class="text-xs text-muted-foreground">${isFamilyConnection ? 'Família' : 'Amigo'}</p>
-            </div>`
-          );
+            const markerEl = document.createElement('div');
+            markerEl.className = 'map-marker';
+            markerEl.style.cssText = `
+              background: ${markerGradient};
+              width: 40px;
+              height: 40px;
+              border-radius: 50%;
+              border: 3px solid white;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-weight: bold;
+              font-size: 14px;
+              box-shadow: 0 4px 12px ${glowColor};
+              cursor: pointer;
+            `;
+            markerEl.textContent = (index + 1).toString();
+            markerContainer.appendChild(markerEl);
 
-          new mapboxgl.Marker(markerEl)
-            .setLngLat([otherPerson.longitude, otherPerson.latitude])
-            .setPopup(popup)
-            .addTo(map.current!);
+            const popup = new mapboxgl.Popup({ 
+              offset: 25,
+              className: 'rounded-lg shadow-xl'
+            }).setHTML(
+              `<div class="p-3">
+                <p class="font-bold text-base">${otherPerson.full_name}</p>
+                <p class="text-sm" style="color: ${lineColor}">${isFamilyConnection ? '👨‍👩‍👧‍👦 Família' : '👥 Amigo'}</p>
+              </div>`
+            );
 
-          bounds.extend([otherPerson.longitude, otherPerson.latitude]);
+            new mapboxgl.Marker(markerContainer)
+              .setLngLat([otherPerson.longitude, otherPerson.latitude])
+              .setPopup(popup)
+              .addTo(map.current!);
 
-          // Adicionar linha conectando usuário à conexão
-          const lineId = `connection-line-${index}`;
-          const lineCoordinates: [number, number][] = [
-            [userProfile.longitude, userProfile.latitude],
-            [otherPerson.longitude, otherPerson.latitude],
-          ];
+            // Fade in do marcador
+            requestAnimationFrame(() => {
+              markerContainer.style.opacity = '1';
+            });
 
-          console.log(`Adicionando linha ${index + 1}:`, lineCoordinates);
+            bounds.extend([otherPerson.longitude, otherPerson.latitude]);
 
-          try {
-            map.current!.addSource(lineId, {
-              type: 'geojson',
-              data: {
-                type: 'Feature',
-                properties: {},
-                geometry: {
-                  type: 'LineString',
-                  coordinates: lineCoordinates,
+            // Adicionar linha curva com animação
+            const lineId = `connection-line-${index}`;
+            const arcCoordinates = createArcLine(
+              [userProfile.longitude, userProfile.latitude],
+              [otherPerson.longitude, otherPerson.latitude]
+            );
+
+            try {
+              map.current!.addSource(lineId, {
+                type: 'geojson',
+                data: {
+                  type: 'Feature',
+                  properties: {},
+                  geometry: {
+                    type: 'LineString',
+                    coordinates: arcCoordinates,
+                  },
                 },
-              },
-            });
+              });
 
-            map.current!.addLayer({
-              id: lineId,
-              type: 'line',
-              source: lineId,
-              layout: {
-                'line-join': 'round',
-                'line-cap': 'round',
-              },
-              paint: {
-                'line-color': lineColor,
-                'line-width': 3,
-                'line-opacity': 0.8,
-              },
-            });
-            
-            console.log(`Linha ${index + 1} adicionada com sucesso`);
-          } catch (error) {
-            console.error(`Erro ao adicionar linha ${index + 1}:`, error);
-          }
+              // Linha de fundo (glow)
+              map.current!.addLayer({
+                id: `${lineId}-glow`,
+                type: 'line',
+                source: lineId,
+                layout: {
+                  'line-join': 'round',
+                  'line-cap': 'round',
+                },
+                paint: {
+                  'line-color': lineColor,
+                  'line-width': 8,
+                  'line-opacity': 0.2,
+                  'line-blur': 3,
+                },
+              });
+
+              // Linha principal
+              map.current!.addLayer({
+                id: lineId,
+                type: 'line',
+                source: lineId,
+                layout: {
+                  'line-join': 'round',
+                  'line-cap': 'round',
+                },
+                paint: {
+                  'line-color': lineColor,
+                  'line-width': 3,
+                  'line-opacity': 0.85,
+                },
+              });
+
+              // Linha de destaque (dash animado)
+              map.current!.addLayer({
+                id: `${lineId}-dash`,
+                type: 'line',
+                source: lineId,
+                layout: {
+                  'line-join': 'round',
+                  'line-cap': 'round',
+                },
+                paint: {
+                  'line-color': '#ffffff',
+                  'line-width': 1,
+                  'line-opacity': 0.5,
+                  'line-dasharray': [2, 4],
+                },
+              });
+
+            } catch (error) {
+              console.error(`Erro ao adicionar linha ${index + 1}:`, error);
+            }
+          }, index * 150); // Delay escalonado para animação sequencial
         });
 
-        // Ajustar mapa para mostrar todos os marcadores
-        if (allConnections.length > 0) {
-          map.current!.fitBounds(bounds, { padding: 80, maxZoom: 14 });
-        }
+        // Ajustar mapa para mostrar todos os marcadores com animação suave
+        setTimeout(() => {
+          if (allConnections.length > 0 && map.current) {
+            map.current.fitBounds(bounds, { 
+              padding: 100, 
+              maxZoom: 12,
+              duration: 1500,
+              essential: true
+            });
+          }
+        }, allConnections.length * 150 + 300);
       });
     } catch (error) {
       console.error('Error initializing map:', error);
