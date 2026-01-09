@@ -36,12 +36,12 @@ export function AppSidebar() {
   
   const menuItems = [
     { title: t('sidebar.seasons'), url: "/", icon: Home },
-    { title: "Echos", url: "/echos", icon: MessageCircle },
     { title: t('sidebar.tree'), url: "/tree", icon: GitBranch },
-    { title: t('sidebar.groups'), url: "/groups", icon: Users },
-    { title: "Sugestões", url: "/suggestions", icon: Sparkles },
-    { title: t('sidebar.missions'), url: "/missions", icon: Target },
     { title: t('sidebar.memories'), url: "/memories", icon: Images },
+    { title: "Echos", url: "/echos", icon: MessageCircle },
+    { title: "Sugestões", url: "/suggestions", icon: Sparkles },
+    { title: t('sidebar.groups'), url: "/groups", icon: Users },
+    { title: t('sidebar.missions'), url: "/missions", icon: Target },
     { title: t('sidebar.profile'), url: "/profile", icon: User },
   ];
   
