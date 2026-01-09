@@ -1011,6 +1011,7 @@ export type Database = {
           state: string | null
           theme_color: string | null
           updated_at: string | null
+          world_enabled: boolean | null
         }
         Insert: {
           avatar_url?: string | null
@@ -1028,6 +1029,7 @@ export type Database = {
           state?: string | null
           theme_color?: string | null
           updated_at?: string | null
+          world_enabled?: boolean | null
         }
         Update: {
           avatar_url?: string | null
@@ -1045,6 +1047,7 @@ export type Database = {
           state?: string | null
           theme_color?: string | null
           updated_at?: string | null
+          world_enabled?: boolean | null
         }
         Relationships: []
       }

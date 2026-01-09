@@ -23,6 +23,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 
 export function AppSidebar() {
   const { state, setOpenMobile, isMobile } = useSidebar();
@@ -33,8 +34,24 @@ export function AppSidebar() {
   const { t } = useTranslation();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
-  
-  const menuItems = [
+  const [worldEnabled, setWorldEnabled] = useState(false);
+
+  useEffect(() => {
+    const fetchWorldEnabled = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('world_enabled')
+        .eq('id', user.id)
+        .single();
+      if (data) {
+        setWorldEnabled(data.world_enabled || false);
+      }
+    };
+    fetchWorldEnabled();
+  }, [user]);
+
+  const baseMenuItems = [
     { title: t('sidebar.seasons'), url: "/", icon: Home },
     { title: t('sidebar.tree'), url: "/tree", icon: GitBranch },
     { title: t('sidebar.memories'), url: "/memories", icon: Images },
@@ -42,9 +59,11 @@ export function AppSidebar() {
     { title: "Sugestões", url: "/suggestions", icon: Sparkles },
     { title: t('sidebar.groups'), url: "/groups", icon: Users },
     { title: t('sidebar.missions'), url: "/missions", icon: Target },
-    { title: "World", url: "/world", icon: Globe },
-    { title: t('sidebar.profile'), url: "/profile", icon: User },
   ];
+
+  const menuItems = worldEnabled
+    ? [...baseMenuItems, { title: "World", url: "/world", icon: Globe }, { title: t('sidebar.profile'), url: "/profile", icon: User }]
+    : [...baseMenuItems, { title: t('sidebar.profile'), url: "/profile", icon: User }];
   
   const currentLogo = themeColor === 'white' ? logoWhiteTheme : themeColor === 'echo' ? logoEcho : logoDark;
 
