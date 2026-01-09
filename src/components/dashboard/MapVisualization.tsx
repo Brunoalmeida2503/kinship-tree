@@ -31,16 +31,23 @@ const MapVisualization = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Listener para navegação a partir do popup
+  // Listeners para navegação a partir do popup
   useEffect(() => {
-    const handleNavigateToMoments = (e: CustomEvent) => {
+    const handleNavigateToMemories = (e: CustomEvent) => {
       const userId = e.detail;
       navigate('/memories', { state: { filterUserId: userId } });
     };
 
-    window.addEventListener('navigateToMoments', handleNavigateToMoments as EventListener);
+    const handleNavigateToTimeline = (e: CustomEvent) => {
+      const userId = e.detail;
+      navigate('/feed', { state: { filterUserId: userId } });
+    };
+
+    window.addEventListener('navigateToMemories', handleNavigateToMemories as EventListener);
+    window.addEventListener('navigateToTimeline', handleNavigateToTimeline as EventListener);
     return () => {
-      window.removeEventListener('navigateToMoments', handleNavigateToMoments as EventListener);
+      window.removeEventListener('navigateToMemories', handleNavigateToMemories as EventListener);
+      window.removeEventListener('navigateToTimeline', handleNavigateToTimeline as EventListener);
     };
   }, [navigate]);
 
@@ -350,9 +357,14 @@ const MapVisualization = () => {
                   <p class="font-semibold text-base">${profile.full_name}</p>
                   <p class="text-xs font-medium" style="color: ${labelColor}">${connectionLabel}</p>
                   ${profile.location ? `<p class="text-xs text-gray-500 mt-1">${profile.location}</p>` : ''}
-                  <button onclick="window.dispatchEvent(new CustomEvent('navigateToMoments', { detail: '${profile.id}' }))" class="mt-2 w-full text-xs bg-primary text-white px-3 py-1.5 rounded-md hover:opacity-90 transition-opacity" style="background-color: #8B5CF6;">
-                    Ver Momentos
-                  </button>
+                  <div class="flex gap-2 mt-2">
+                    <button onclick="window.dispatchEvent(new CustomEvent('navigateToMemories', { detail: '${profile.id}' }))" class="flex-1 text-xs bg-primary text-white px-2 py-1.5 rounded-md hover:opacity-90 transition-opacity" style="background-color: #8B5CF6;">
+                      Memórias
+                    </button>
+                    <button onclick="window.dispatchEvent(new CustomEvent('navigateToTimeline', { detail: '${profile.id}' }))" class="flex-1 text-xs bg-secondary text-white px-2 py-1.5 rounded-md hover:opacity-90 transition-opacity" style="background-color: #10b981;">
+                      Timeline
+                    </button>
+                  </div>
                 </div>`
               )
             )
