@@ -30,7 +30,8 @@ import {
   EyeOff,
   Clock,
   MessageSquare,
-  Library
+  Library,
+  Play
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -77,13 +78,13 @@ interface Connection {
 }
 
 const streamingServices = [
-  { id: "netflix", name: "Netflix", color: "#E50914" },
-  { id: "prime", name: "Prime Video", color: "#00A8E1" },
-  { id: "disney", name: "Disney+", color: "#113CCF" },
-  { id: "hbo", name: "Max", color: "#5822B4" },
-  { id: "spotify", name: "Spotify", color: "#1DB954" },
-  { id: "youtube", name: "YouTube", color: "#FF0000" },
-  { id: "other", name: "Outro", color: "#666666" },
+  { id: "netflix", name: "Netflix", color: "#E50914", url: "https://www.netflix.com/search?q=" },
+  { id: "prime", name: "Prime Video", color: "#00A8E1", url: "https://www.primevideo.com/search?phrase=" },
+  { id: "disney", name: "Disney+", color: "#113CCF", url: "https://www.disneyplus.com/search?q=" },
+  { id: "hbo", name: "Max", color: "#5822B4", url: "https://play.max.com/search?q=" },
+  { id: "spotify", name: "Spotify", color: "#1DB954", url: "https://open.spotify.com/search/" },
+  { id: "youtube", name: "YouTube", color: "#FF0000", url: "https://www.youtube.com/results?search_query=" },
+  { id: "other", name: "Outro", color: "#666666", url: "https://www.google.com/search?q=" },
 ];
 
 const StreamingHistory = () => {
@@ -403,6 +404,14 @@ const StreamingHistory = () => {
     return service?.name || serviceId;
   };
 
+  const handleWatch = (item: StreamingItem) => {
+    const service = streamingServices.find(s => s.id === item.streaming_service);
+    const searchUrl = service?.url 
+      ? service.url + encodeURIComponent(item.title)
+      : `https://www.google.com/search?q=${encodeURIComponent(item.title + " assistir online")}`;
+    window.open(searchUrl, "_blank");
+  };
+
   const renderHistoryCard = (item: StreamingItem, isTreeView: boolean = false) => (
     <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow">
       <div className="flex">
@@ -465,41 +474,53 @@ const StreamingHistory = () => {
               </div>
             )}
             
-            {!isTreeView && (
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => handleToggleShare(item)}
-                  title={item.share_with_tree ? "Parar de compartilhar" : "Compartilhar com árvore"}
-                >
-                  {item.share_with_tree ? (
-                    <Eye className="h-4 w-4 text-primary" />
-                  ) : (
-                    <EyeOff className="h-4 w-4" />
-                  )}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => handleRecommend(item)}
-                  title="Recomendar"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-destructive"
-                  onClick={() => handleDeleteItem(item.id)}
-                  title="Remover"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
+            <div className="flex items-center gap-1">
+              <Button
+                variant="default"
+                size="sm"
+                className="h-8 gap-1"
+                onClick={() => handleWatch(item)}
+                title="Assistir"
+              >
+                <Play className="h-4 w-4" />
+                Assistir
+              </Button>
+              {!isTreeView && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => handleToggleShare(item)}
+                    title={item.share_with_tree ? "Parar de compartilhar" : "Compartilhar com árvore"}
+                  >
+                    {item.share_with_tree ? (
+                      <Eye className="h-4 w-4 text-primary" />
+                    ) : (
+                      <EyeOff className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => handleRecommend(item)}
+                    title="Recomendar"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive"
+                    onClick={() => handleDeleteItem(item.id)}
+                    title="Remover"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
