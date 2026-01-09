@@ -398,11 +398,11 @@ export function TreeVisualization() {
 
       // Posicionar sobrinhos à ESQUERDA dos filhos com espaçamento adequado
       let startX: number;
-      const safeGap = nodeWidth + nodeSpacing * 2; // Espaço seguro para evitar sobreposição
+      const safeGap = nodeSpacing * 1.5; // Espaço reduzido para aproximar os cards
       
       if (childrenGen.length > 0) {
         const minChildX = Math.min(...childrenGen.map(c => c.x || centerX));
-        // Sobrinhos começam à esquerda do primeiro filho com gap seguro
+        // Sobrinhos começam à esquerda do primeiro filho com gap reduzido
         startX = minChildX - nephewsWidth - safeGap;
         
         // Garantir que não fique muito à esquerda (fora do viewport)
