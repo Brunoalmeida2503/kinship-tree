@@ -40,7 +40,7 @@ const MapVisualization = () => {
 
     const handleNavigateToTimeline = (e: CustomEvent) => {
       const userId = e.detail;
-      navigate('/feed', { state: { filterUserId: userId } });
+      navigate('/', { state: { filterUserId: userId } });
     };
 
     window.addEventListener('navigateToMemories', handleNavigateToMemories as EventListener);
