@@ -25,6 +25,7 @@ import GroupTimeline from "./pages/GroupTimeline";
 import GroupMemories from "./pages/GroupMemories";
 import Groups from "./pages/Groups";
 import Suggestions from "./pages/Suggestions";
+import Echos from "./pages/Echos";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,7 @@ const AppContent = () => {
                       <div className="flex-1 overflow-auto">
                         <Routes>
                           <Route path="/" element={<Feed />} />
+                          <Route path="/echos" element={<Echos />} />
                           <Route path="/tree" element={<Dashboard />} />
                           <Route path="/profile" element={<Profile />} />
                           <Route path="/missions" element={<Missions />} />
