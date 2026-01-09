@@ -299,12 +299,12 @@ export function TreeVisualization() {
     generations: Map<number, TreeNode[]>,
     root: TreeNode
   ) => {
-    const nodeWidth = 100;
-    const nodeSpacing = 30;
-    const spouseSpacing = 15;
-    const verticalSpacing = 120;
-    const baseY = 250; // Y do usuário (geração 0)
-    const centerX = 600;
+    const nodeWidth = 140;
+    const nodeSpacing = 60;
+    const spouseSpacing = 20;
+    const verticalSpacing = 160;
+    const baseY = 300;
+    const centerX = 700;
 
     // Processar cada geração
     generations.forEach((nodes, generation) => {
@@ -326,7 +326,7 @@ export function TreeVisualization() {
         }
         totalWidth += nodeSpacing;
       });
-      totalWidth -= nodeSpacing; // Remover último espaçamento
+      totalWidth -= nodeSpacing;
 
       // Posicionar nós da esquerda para direita
       let currentX = centerX - (totalWidth / 2);
@@ -350,6 +350,32 @@ export function TreeVisualization() {
         currentX += nodeSpacing;
       });
     });
+  };
+
+  // Função para obter cor da geração
+  const getGenerationColor = (generation: number, isRoot?: boolean) => {
+    if (isRoot) return { bg: 'hsl(var(--primary))', border: 'hsl(var(--primary))', text: 'hsl(var(--primary-foreground))' };
+    
+    const colors: Record<number, { bg: string; border: string; text: string }> = {
+      [-2]: { bg: 'hsl(45 93% 47%)', border: 'hsl(45 93% 40%)', text: 'hsl(0 0% 100%)' }, // Avós - Dourado
+      [-1]: { bg: 'hsl(142 71% 45%)', border: 'hsl(142 71% 35%)', text: 'hsl(0 0% 100%)' }, // Pais - Verde
+      [0]: { bg: 'hsl(221 83% 53%)', border: 'hsl(221 83% 43%)', text: 'hsl(0 0% 100%)' }, // Irmãos - Azul
+      [1]: { bg: 'hsl(280 67% 54%)', border: 'hsl(280 67% 44%)', text: 'hsl(0 0% 100%)' }, // Filhos - Roxo
+      [2]: { bg: 'hsl(330 80% 55%)', border: 'hsl(330 80% 45%)', text: 'hsl(0 0% 100%)' }, // Netos - Rosa
+    };
+    return colors[generation] || { bg: 'hsl(var(--muted))', border: 'hsl(var(--border))', text: 'hsl(var(--foreground))' };
+  };
+
+  // Obter label da geração
+  const getGenerationLabel = (generation: number) => {
+    const labels: Record<number, string> = {
+      [-2]: 'Avós',
+      [-1]: 'Pais/Tios',
+      [0]: 'Você & Irmãos',
+      [1]: 'Filhos/Sobrinhos',
+      [2]: 'Netos',
+    };
+    return labels[generation] || '';
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -420,60 +446,86 @@ export function TreeVisualization() {
       seen.add(root.spouse.id);
     }
 
-    const svgWidth = 1200;
-    const svgHeight = 600;
+    const svgWidth = 1400;
+    const svgHeight = 800;
     const parentNodes = (generations.get(-1) || []).filter(
       (n) => n.relationship === 'pai' || n.relationship === 'mae'
     );
 
+    // Gerações ativas para legenda
+    const activeGenerations: number[] = [];
+    generations.forEach((nodes, gen) => {
+      if (nodes.length > 0) activeGenerations.push(gen);
+    });
+    activeGenerations.sort((a, b) => a - b);
+
     return (
-      <div ref={containerRef} className="w-full bg-muted/20 rounded-lg">
-        <div className="flex items-center justify-between gap-2 p-2 sm:p-3 border-b border-border">
-          <div className="flex items-center gap-1 sm:gap-2">
+      <div ref={containerRef} className="w-full bg-gradient-to-b from-muted/10 to-muted/30 rounded-xl border border-border/50">
+        {/* Controles de navegação */}
+        <div className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b border-border/50 bg-background/50 backdrop-blur-sm rounded-t-xl">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              size={isMobile ? "icon" : "sm"}
+              size="sm"
               onClick={handleZoomOut}
               title="Reduzir zoom"
-              className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
+              className="h-9 w-9 rounded-full"
             >
-              <ZoomOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <ZoomOut className="h-4 w-4" />
             </Button>
+            <div className="px-3 py-1 bg-muted rounded-full text-sm font-medium">
+              {Math.round(zoom * 100)}%
+            </div>
             <Button
               variant="outline"
-              size={isMobile ? "icon" : "sm"}
+              size="sm"
               onClick={handleZoomIn}
               title="Aumentar zoom"
-              className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
+              className="h-9 w-9 rounded-full"
             >
-              <ZoomIn className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <ZoomIn className="h-4 w-4" />
             </Button>
+            <div className="w-px h-6 bg-border mx-2 hidden sm:block" />
             <Button
               variant="outline"
-              size={isMobile ? "icon" : "sm"}
+              size="sm"
               onClick={handleFitToScreen}
               title="Ajustar à tela"
-              className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
+              className="h-9 w-9 rounded-full hidden sm:flex"
             >
-              <Maximize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <Maximize2 className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"
-              size={isMobile ? "icon" : "sm"}
+              size="sm"
               onClick={handleResetView}
-              title="Resetar"
-              className="h-8 w-8 sm:h-9 sm:w-auto sm:px-3"
+              title="Resetar visualização"
+              className="h-9 w-9 rounded-full hidden sm:flex"
             >
-              <Move className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <Move className="h-4 w-4" />
             </Button>
           </div>
-          <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">
-            Arraste para navegar • Role para zoom
-          </p>
+          
+          {/* Legenda de cores */}
+          <div className="hidden md:flex items-center gap-3">
+            {activeGenerations.map(gen => {
+              const colors = getGenerationColor(gen, gen === 0);
+              return (
+                <div key={gen} className="flex items-center gap-1.5">
+                  <div 
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: colors.bg }}
+                  />
+                  <span className="text-xs text-muted-foreground">{getGenerationLabel(gen)}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
-        <ScrollArea className="w-full h-[400px] sm:h-[500px] md:h-[600px]">
+
+        <ScrollArea className="w-full h-[500px] sm:h-[550px] md:h-[650px]">
           <div 
-            className="w-full p-2 sm:p-4 md:p-8 cursor-grab active:cursor-grabbing touch-pan-y"
+            className="w-full p-4 sm:p-6 md:p-8 cursor-grab active:cursor-grabbing touch-pan-y select-none"
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -489,11 +541,8 @@ export function TreeVisualization() {
             onTouchEnd={handleMouseUp}
             onWheel={(e) => {
               e.preventDefault();
-              if (e.deltaY < 0) {
-                handleZoomIn();
-              } else {
-                handleZoomOut();
-              }
+              if (e.deltaY < 0) handleZoomIn();
+              else handleZoomOut();
             }}
           >
             <svg 
@@ -501,166 +550,298 @@ export function TreeVisualization() {
               height="auto"
               viewBox={`0 0 ${svgWidth} ${svgHeight}`}
               preserveAspectRatio="xMidYMid meet"
-              className="mx-auto pointer-events-none select-none"
+              className="mx-auto pointer-events-none"
               style={{ 
                 transform: `scale(${zoom}) translate(${panOffset.x / zoom}px, ${panOffset.y / zoom}px)`, 
                 transformOrigin: 'center', 
-                transition: isPanning ? 'none' : 'transform 0.2s ease-out',
+                transition: isPanning ? 'none' : 'transform 0.3s ease-out',
                 minWidth: `${svgWidth * zoom}px`,
                 minHeight: `${svgHeight * zoom}px`
               }}
             >
-            {/* Conexões entre gerações */}
-            {parentNodes.length > 0 && (
-              <>
-                {/* Linha horizontal dos pais (somente pai/mãe) */}
-                <line
-                  x1={Math.min(...parentNodes.map(n => n.x!))}
-                  y1={parentNodes[0].y! + 30}
-                  x2={Math.max(...parentNodes.map(n => n.x!))}
-                  y2={parentNodes[0].y! + 30}
-                  stroke="hsl(var(--primary))"
-                  strokeWidth="2"
-                  opacity="0.3"
-                />
-                {/* Linha vertical central dos pais para geração 0 */}
-                <line
-                  x1={(Math.min(...parentNodes.map(n => n.x!)) + Math.max(...parentNodes.map(n => n.x!))) / 2}
-                  y1={parentNodes[0].y! + 30}
-                  x2={(Math.min(...parentNodes.map(n => n.x!)) + Math.max(...parentNodes.map(n => n.x!))) / 2}
-                  y2={(root.spouse ? Math.min(root.y!, root.spouse.y!) : root.y!) - 30}
-                  stroke="hsl(var(--primary))"
-                  strokeWidth="2"
-                  opacity="0.3"
-                />
-              </>
-            )}
+              {/* Definições de gradientes e filtros */}
+              <defs>
+                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="4" stdDeviation="6" floodOpacity="0.15"/>
+                </filter>
+                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="3" result="blur"/>
+                  <feMerge>
+                    <feMergeNode in="blur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+                <linearGradient id="lineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.6"/>
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.3"/>
+                </linearGradient>
+                <marker id="heartMarker" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6">
+                  <circle cx="5" cy="5" r="3" fill="hsl(var(--destructive))"/>
+                </marker>
+              </defs>
 
-            {/* Conexões dos irmãos à linha horizontal dos pais */}
-            {generations.get(0)!.filter(n => !n.isRoot).map(sibling => {
-              const siblingCenterX = sibling.spouse 
-                ? (sibling.x! + sibling.spouse.x!) / 2 
-                : sibling.x!;
-              const parentY = parentNodes.length > 0
-                ? parentNodes[0].y! + 30
-                : sibling.y! - 60;
-              
-              return (
-                <line
-                  key={`sibling-${sibling.id}`}
-                  x1={siblingCenterX}
-                  y1={parentY}
-                  x2={siblingCenterX}
-                  y2={sibling.y! - 30}
-                  stroke="hsl(var(--primary))"
-                  strokeWidth="2"
-                  opacity="0.3"
-                />
-              );
-            })}
+              {/* Linhas de fundo para as gerações */}
+              {activeGenerations.map(gen => {
+                const nodes = generations.get(gen) || [];
+                if (nodes.length === 0) return null;
+                const y = nodes[0].y!;
+                return (
+                  <g key={`gen-bg-${gen}`}>
+                    <line
+                      x1="50"
+                      y1={y}
+                      x2={svgWidth - 50}
+                      y2={y}
+                      stroke="hsl(var(--border))"
+                      strokeWidth="1"
+                      strokeDasharray="8,8"
+                      opacity="0.3"
+                    />
+                    <text
+                      x="30"
+                      y={y + 5}
+                      fill="hsl(var(--muted-foreground))"
+                      fontSize="11"
+                      fontWeight="500"
+                      textAnchor="start"
+                      opacity="0.6"
+                    >
+                      {getGenerationLabel(gen)}
+                    </text>
+                  </g>
+                );
+              })}
 
-            {/* Linha horizontal para filhos */}
-            {root.children.length > 0 && (
-              <>
-                {/* Linha vertical do casal (ou só do root) até a linha dos filhos */}
-                <line
-                  x1={root.spouse ? (root.x! + root.spouse.x!) / 2 : root.x!}
-                  y1={root.y! + 30}
-                  x2={root.spouse ? (root.x! + root.spouse.x!) / 2 : root.x!}
-                  y2={root.y! + 60}
-                  stroke="hsl(var(--primary))"
-                  strokeWidth="2"
-                  opacity="0.3"
-                />
-                
-                {/* Linha horizontal dos filhos */}
-                <line
-                  x1={Math.min(...root.children.map(c => c.x!))}
-                  y1={root.y! + 60}
-                  x2={Math.max(...root.children.map(c => c.x!))}
-                  y2={root.y! + 60}
-                  stroke="hsl(var(--primary))"
-                  strokeWidth="2"
-                  opacity="0.3"
-                />
-                
-                {/* Linhas verticais conectando cada filho */}
-                {root.children.map(child => (
-                  <line
-                    key={`child-${child.id}`}
-                    x1={child.x}
-                    y1={root.y! + 60}
-                    x2={child.x}
-                    y2={child.y! - 30}
-                    stroke="hsl(var(--primary))"
-                    strokeWidth="2"
-                    opacity="0.3"
+              {/* Conexões entre pais e filhos - Linhas curvas elegantes */}
+              {parentNodes.length > 0 && (
+                <g>
+                  {/* Linha horizontal conectando pais */}
+                  <path
+                    d={`M ${Math.min(...parentNodes.map(n => n.x!))} ${parentNodes[0].y! + 45}
+                        L ${Math.max(...parentNodes.map(n => n.x!))} ${parentNodes[0].y! + 45}`}
+                    stroke="url(#lineGradient)"
+                    strokeWidth="3"
+                    fill="none"
+                    strokeLinecap="round"
                   />
-                ))}
-              </>
-            )}
-
-            {/* Conexões de cônjuges */}
-            {allNodes.filter(n => n.spouse && n.x && n.spouse.x && n.id < n.spouse!.id).map(node => (
-              <line
-                key={`spouse-${node.id}`}
-                x1={node.x}
-                y1={node.y}
-                x2={node.spouse!.x}
-                y2={node.spouse!.y}
-                stroke="hsl(var(--primary))"
-                strokeWidth="3"
-                opacity="0.8"
-                strokeDasharray="5,5"
-              />
-            ))}
-
-            {/* Renderizar nós */}
-            {allNodes.map(node => {
-              const nodeWidth = isMobile ? 100 : 120;
-              const nodeHeight = isMobile ? 50 : 60;
-              const avatarSize = isMobile ? 28 : 36;
-              const textWidth = isMobile ? 58 : 70;
-              
-              return (
-                <g key={node.id} transform={`translate(${(node.x || 0) - nodeWidth/2}, ${(node.y || 0) - nodeHeight/2})`}>
-                  <rect
-                    width={nodeWidth}
-                    height={nodeHeight}
-                    rx={isMobile ? "6" : "8"}
-                    fill="hsl(var(--card))"
-                    stroke="hsl(var(--border))"
-                    strokeWidth="1.5"
-                    className="transition-all hover:stroke-primary"
+                  {/* Linha vertical do centro dos pais até a geração 0 */}
+                  <path
+                    d={`M ${(Math.min(...parentNodes.map(n => n.x!)) + Math.max(...parentNodes.map(n => n.x!))) / 2} ${parentNodes[0].y! + 45}
+                        C ${(Math.min(...parentNodes.map(n => n.x!)) + Math.max(...parentNodes.map(n => n.x!))) / 2} ${parentNodes[0].y! + 80}
+                          ${(root.spouse ? (root.x! + root.spouse.x!) / 2 : root.x!)} ${root.y! - 80}
+                          ${(root.spouse ? (root.x! + root.spouse.x!) / 2 : root.x!)} ${root.y! - 45}`}
+                    stroke="url(#lineGradient)"
+                    strokeWidth="3"
+                    fill="none"
+                    strokeLinecap="round"
                   />
-                  <foreignObject x="6" y={isMobile ? "4" : "6"} width={avatarSize} height={avatarSize}>
-                    <Avatar className={`${isMobile ? 'w-7 h-7' : 'w-9 h-9'} border border-primary/50`}>
-                      <AvatarImage src={node.avatar_url} alt={node.name} />
-                      <AvatarFallback className="bg-primary/20 text-xs">
-                        <User className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} text-primary`} />
-                      </AvatarFallback>
-                    </Avatar>
-                  </foreignObject>
-                  <foreignObject x={isMobile ? "37" : "45"} y={isMobile ? "6" : "8"} width={textWidth} height={nodeHeight - 12}>
-                    <div className={isMobile ? "text-[10px]" : "text-xs"}>
-                      <p className="font-semibold text-foreground truncate leading-tight">
-                        {isMobile && node.name.length > 12 ? node.name.substring(0, 10) + '...' : node.name}
-                      </p>
-                      {node.relationship !== 'root' && (
-                        <p className={`${isMobile ? 'text-[8px]' : 'text-[10px]'} text-muted-foreground capitalize mt-0.5`}>
-                          {node.relationship}
-                        </p>
-                      )}
-                    </div>
-                  </foreignObject>
                 </g>
-              );
-            })}
+              )}
+
+              {/* Conexões dos irmãos */}
+              {generations.get(0)!.filter(n => !n.isRoot && (n.relationship === 'irmao' || n.relationship === 'irma')).map(sibling => {
+                const siblingCenterX = sibling.spouse 
+                  ? (sibling.x! + sibling.spouse.x!) / 2 
+                  : sibling.x!;
+                const parentY = parentNodes.length > 0
+                  ? parentNodes[0].y! + 45
+                  : sibling.y! - 80;
+                
+                return (
+                  <path
+                    key={`sibling-${sibling.id}`}
+                    d={`M ${siblingCenterX} ${parentY}
+                        L ${siblingCenterX} ${sibling.y! - 45}`}
+                    stroke="url(#lineGradient)"
+                    strokeWidth="2.5"
+                    fill="none"
+                    strokeLinecap="round"
+                  />
+                );
+              })}
+
+              {/* Linha horizontal para filhos */}
+              {root.children.length > 0 && (
+                <g>
+                  {/* Linha vertical do casal até a linha dos filhos */}
+                  <path
+                    d={`M ${root.spouse ? (root.x! + root.spouse.x!) / 2 : root.x!} ${root.y! + 45}
+                        L ${root.spouse ? (root.x! + root.spouse.x!) / 2 : root.x!} ${root.y! + 80}`}
+                    stroke="url(#lineGradient)"
+                    strokeWidth="3"
+                    fill="none"
+                    strokeLinecap="round"
+                  />
+                  
+                  {/* Linha horizontal dos filhos */}
+                  <path
+                    d={`M ${Math.min(...root.children.map(c => c.x!))} ${root.y! + 80}
+                        L ${Math.max(...root.children.map(c => c.x!))} ${root.y! + 80}`}
+                    stroke="url(#lineGradient)"
+                    strokeWidth="3"
+                    fill="none"
+                    strokeLinecap="round"
+                  />
+                  
+                  {/* Linhas verticais conectando cada filho */}
+                  {root.children.map(child => (
+                    <path
+                      key={`child-${child.id}`}
+                      d={`M ${child.x} ${root.y! + 80}
+                          L ${child.x} ${child.y! - 45}`}
+                      stroke="url(#lineGradient)"
+                      strokeWidth="2.5"
+                      fill="none"
+                      strokeLinecap="round"
+                    />
+                  ))}
+                </g>
+              )}
+
+              {/* Conexões de cônjuges - linha com coração */}
+              {allNodes.filter(n => n.spouse && n.x && n.spouse.x && n.id < n.spouse!.id).map(node => (
+                <g key={`spouse-${node.id}`}>
+                  <line
+                    x1={node.x! + 40}
+                    y1={node.y}
+                    x2={node.spouse!.x! - 40}
+                    y2={node.spouse!.y}
+                    stroke="hsl(var(--destructive))"
+                    strokeWidth="2"
+                    opacity="0.6"
+                  />
+                  {/* Coração no meio */}
+                  <text
+                    x={(node.x! + node.spouse!.x!) / 2}
+                    y={node.y! + 5}
+                    fontSize="14"
+                    textAnchor="middle"
+                  >
+                    ❤️
+                  </text>
+                </g>
+              ))}
+
+              {/* Renderizar nós */}
+              {allNodes.map(node => {
+                const nodeWidth = isMobile ? 120 : 140;
+                const nodeHeight = isMobile ? 70 : 85;
+                const avatarSize = isMobile ? 36 : 45;
+                const colors = getGenerationColor(node.generation || 0, node.isRoot);
+                
+                return (
+                  <g 
+                    key={node.id} 
+                    transform={`translate(${(node.x || 0) - nodeWidth/2}, ${(node.y || 0) - nodeHeight/2})`}
+                    filter="url(#shadow)"
+                    className="transition-transform duration-200 hover:scale-105"
+                    style={{ transformOrigin: 'center' }}
+                  >
+                    {/* Fundo do card */}
+                    <rect
+                      width={nodeWidth}
+                      height={nodeHeight}
+                      rx="12"
+                      fill="hsl(var(--card))"
+                      stroke={colors.border}
+                      strokeWidth={node.isRoot ? "3" : "2"}
+                    />
+                    
+                    {/* Barra de cor da geração */}
+                    <rect
+                      x="0"
+                      y="0"
+                      width={nodeWidth}
+                      height="6"
+                      rx="12"
+                      ry="0"
+                      fill={colors.bg}
+                      clipPath="inset(0 0 calc(100% - 12px) 0 round 12px)"
+                    />
+                    <rect
+                      x="0"
+                      y="0"
+                      width={nodeWidth}
+                      height="6"
+                      fill={colors.bg}
+                    />
+                    <rect
+                      x="0"
+                      y="0"
+                      width="12"
+                      height="6"
+                      fill={colors.bg}
+                      rx="12"
+                      ry="12"
+                    />
+                    <rect
+                      x={nodeWidth - 12}
+                      y="0"
+                      width="12"
+                      height="6"
+                      fill={colors.bg}
+                      rx="12"
+                      ry="12"
+                    />
+                    
+                    {/* Avatar */}
+                    <foreignObject x="10" y="14" width={avatarSize} height={avatarSize}>
+                      <Avatar className={`${isMobile ? 'w-9 h-9' : 'w-11 h-11'} border-2`} style={{ borderColor: colors.bg }}>
+                        <AvatarImage src={node.avatar_url} alt={node.name} />
+                        <AvatarFallback style={{ backgroundColor: colors.bg, color: colors.text }}>
+                          <User className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+                        </AvatarFallback>
+                      </Avatar>
+                    </foreignObject>
+                    
+                    {/* Textos */}
+                    <foreignObject x={isMobile ? "52" : "60"} y="14" width={nodeWidth - (isMobile ? 60 : 70)} height={nodeHeight - 20}>
+                      <div className="h-full flex flex-col justify-center">
+                        <p className={`${isMobile ? 'text-xs' : 'text-sm'} font-semibold text-foreground truncate leading-tight`}>
+                          {node.isRoot ? 'Você' : (isMobile && node.name.length > 10 ? node.name.substring(0, 8) + '...' : node.name)}
+                        </p>
+                        {node.relationship !== 'root' && (
+                          <p 
+                            className={`${isMobile ? 'text-[9px]' : 'text-xs'} font-medium capitalize mt-1 px-2 py-0.5 rounded-full inline-block w-fit`}
+                            style={{ backgroundColor: `${colors.bg}20`, color: colors.bg }}
+                          >
+                            {node.relationship}
+                          </p>
+                        )}
+                        {node.isRoot && (
+                          <p 
+                            className={`${isMobile ? 'text-[9px]' : 'text-xs'} font-medium mt-1 px-2 py-0.5 rounded-full inline-block w-fit`}
+                            style={{ backgroundColor: `hsl(var(--primary) / 0.2)`, color: 'hsl(var(--primary))' }}
+                          >
+                            Principal
+                          </p>
+                        )}
+                      </div>
+                    </foreignObject>
+                  </g>
+                );
+              })}
             </svg>
           </div>
           <ScrollBar orientation="horizontal" />
           <ScrollBar orientation="vertical" />
         </ScrollArea>
+
+        {/* Legenda mobile */}
+        <div className="flex md:hidden items-center justify-center gap-2 p-3 border-t border-border/50 flex-wrap">
+          {activeGenerations.map(gen => {
+            const colors = getGenerationColor(gen, gen === 0);
+            return (
+              <div key={gen} className="flex items-center gap-1">
+                <div 
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ backgroundColor: colors.bg }}
+                />
+                <span className="text-[10px] text-muted-foreground">{getGenerationLabel(gen)}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   };
