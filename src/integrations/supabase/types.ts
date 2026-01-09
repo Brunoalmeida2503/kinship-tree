@@ -996,6 +996,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          aura_voice: string | null
           avatar_url: string | null
           bio: string | null
           birth_date: string | null
@@ -1014,6 +1015,7 @@ export type Database = {
           world_enabled: boolean | null
         }
         Insert: {
+          aura_voice?: string | null
           avatar_url?: string | null
           bio?: string | null
           birth_date?: string | null
@@ -1032,6 +1034,7 @@ export type Database = {
           world_enabled?: boolean | null
         }
         Update: {
+          aura_voice?: string | null
           avatar_url?: string | null
           bio?: string | null
           birth_date?: string | null

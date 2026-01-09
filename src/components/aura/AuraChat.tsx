@@ -41,6 +41,7 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
   const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [userVoice, setUserVoice] = useState('sarah');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -50,6 +51,7 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
   useEffect(() => {
     if (open) {
       loadHistory();
+      loadUserVoice();
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [open]);
@@ -134,6 +136,24 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
     }
   };
 
+  const loadUserVoice = async () => {
+    if (!user) return;
+    
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('aura_voice')
+        .eq('id', user.id)
+        .single();
+      
+      if (data?.aura_voice) {
+        setUserVoice(data.aura_voice);
+      }
+    } catch (error) {
+      console.error('Error loading user voice:', error);
+    }
+  };
+
   const speakText = async (text: string, messageId: string) => {
     try {
       // Stop any currently playing audio
@@ -155,7 +175,7 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${session.data.session?.access_token}`,
           },
-          body: JSON.stringify({ text }),
+          body: JSON.stringify({ text, voice: userVoice }),
         }
       );
 
