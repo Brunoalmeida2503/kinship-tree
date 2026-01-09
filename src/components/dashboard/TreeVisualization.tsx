@@ -396,12 +396,20 @@ export function TreeVisualization() {
       });
       nephewsWidth -= nodeSpacing;
 
-      // Posicionar sobrinhos à ESQUERDA dos filhos
+      // Posicionar sobrinhos à ESQUERDA dos filhos com espaçamento adequado
       let startX: number;
+      const safeGap = nodeWidth + nodeSpacing * 2; // Espaço seguro para evitar sobreposição
+      
       if (childrenGen.length > 0) {
         const minChildX = Math.min(...childrenGen.map(c => c.x || centerX));
-        // Sobrinhos começam à esquerda do primeiro filho
-        startX = minChildX - nephewsWidth - nodeSpacing;
+        // Sobrinhos começam à esquerda do primeiro filho com gap seguro
+        startX = minChildX - nephewsWidth - safeGap;
+        
+        // Garantir que não fique muito à esquerda (fora do viewport)
+        const minAllowedX = 100;
+        if (startX < minAllowedX) {
+          startX = minAllowedX;
+        }
       } else {
         // Se não há filhos, centralizar sobrinhos próximos ao root
         startX = (root.x || centerX) - nephewsWidth / 2;
