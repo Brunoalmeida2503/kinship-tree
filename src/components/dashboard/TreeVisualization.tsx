@@ -1016,33 +1016,42 @@ export function TreeVisualization() {
                 return null;
               })()}
 
-              {/* ============ CONEXÕES TIOS → SOBRINHOS ============ */}
+              {/* ============ CONEXÕES VOCÊ/IRMÃOS → SOBRINHOS ============ */}
               {(() => {
-                const uncles = (generations.get(-1) || []).filter(
-                  (n) => n.relationship === 'tio' || n.relationship === 'tia'
-                );
                 const nephews = generations.get(3) || [];
+                if (nephews.length === 0) return null;
 
-                if (uncles.length === 0 || nephews.length === 0) return null;
-
-                const validUncles = uncles.filter((u) => u.x !== undefined && u.y !== undefined);
                 const validNephews = nephews.filter((n) => n.x !== undefined && n.y !== undefined);
-
-                if (validUncles.length === 0 || validNephews.length === 0) return null;
+                if (validNephews.length === 0) return null;
 
                 const nephewColor = getGenerationColor(3).bg;
 
-                // Caso simples (ex.: Bruno -> Ananda): 1 tio/tia e 1 sobrinho/sobrinha
-                if (validUncles.length === 1 && validNephews.length === 1) {
-                  const uncle = validUncles[0];
+                // O "tio" pode ser:
+                // 1. O próprio usuário (root) - se ele tem sobrinhos diretos
+                // 2. Ou um nó separado com relationship 'tio'/'tia'
+                const unclesFromGen = (generations.get(-1) || []).filter(
+                  (n) => n.relationship === 'tio' || n.relationship === 'tia'
+                );
+                const validUncles = unclesFromGen.filter((u) => u.x !== undefined && u.y !== undefined);
+
+                // Se não há tios separados, a linha sai do root (você é o tio)
+                const sourceNode = validUncles.length > 0 ? validUncles[0] : root;
+                const sourceX = sourceNode.x!;
+                const sourceY = sourceNode.y!;
+
+                const nephewY = validNephews[0].y!;
+                const nephewCenterX = validNephews.reduce((sum, n) => sum + n.x!, 0) / validNephews.length;
+                const midY = (sourceY + 43 + nephewY - 43) / 2;
+
+                // Caso simples: 1 sobrinho
+                if (validNephews.length === 1) {
                   const nephew = validNephews[0];
-                  const midY = (uncle.y! + 43 + (nephew.y! - 43)) / 2;
 
                   return (
                     <g>
                       <path
-                        d={`M ${uncle.x} ${uncle.y! + 48}
-                            Q ${uncle.x} ${midY}
+                        d={`M ${sourceX} ${sourceY + 48}
+                            Q ${sourceX} ${midY}
                               ${nephew.x} ${nephew.y! - 43}`}
                         stroke={nephewColor}
                         strokeWidth="4"
@@ -1062,18 +1071,12 @@ export function TreeVisualization() {
                   );
                 }
 
-                // Caso geral: conectar centro dos tios ao "barramento" dos sobrinhos
-                const unclesCenterX = validUncles.reduce((sum, n) => sum + n.x!, 0) / validUncles.length;
-                const unclesY = validUncles[0].y!;
-                const nephewY = validNephews[0].y!;
-                const nephewCenterX = validNephews.reduce((sum, n) => sum + n.x!, 0) / validNephews.length;
-                const midY = (unclesY + 43 + nephewY - 43) / 2;
-
+                // Caso geral: múltiplos sobrinhos
                 return (
                   <g>
                     <path
-                      d={`M ${unclesCenterX} ${unclesY + 48}
-                          Q ${unclesCenterX} ${midY}
+                      d={`M ${sourceX} ${sourceY + 48}
+                          Q ${sourceX} ${midY}
                             ${nephewCenterX} ${nephewY - 55}`}
                       stroke={nephewColor}
                       strokeWidth="4"
