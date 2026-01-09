@@ -1824,16 +1824,88 @@ export function TreeVisualization() {
   };
 
   const renderMapView = () => {
+    const familyCount = allConnections.filter(c => c.connection_type === 'family').length;
+    const friendCount = allConnections.filter(c => c.connection_type !== 'family').length;
+    
     return (
-      <div className="w-full h-[500px] rounded-lg overflow-hidden border border-border">
-        <div ref={mapContainer} className="w-full h-full" />
-        {(!allConnections || allConnections.length === 0) && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80">
-            <div className="text-center">
-              <MapIcon className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">
-                Nenhuma conexão com localização cadastrada
+      <div className="w-full space-y-4">
+        {/* Legenda */}
+        <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-muted/30 rounded-xl border border-border/50">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 ring-2 ring-white shadow-sm" />
+              <span className="text-sm font-medium">Você</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-green-500 to-green-600 ring-2 ring-white shadow-sm" />
+              <span className="text-sm text-muted-foreground">Família ({familyCount})</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 ring-2 ring-white shadow-sm" />
+              <span className="text-sm text-muted-foreground">Amigos ({friendCount})</span>
+            </div>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Clique nos marcadores para ver detalhes
+          </div>
+        </div>
+        
+        {/* Mapa */}
+        <div className="relative w-full h-[600px] rounded-xl overflow-hidden border-2 border-border/50 shadow-lg">
+          <div ref={mapContainer} className="w-full h-full" />
+          
+          {/* Overlay de loading ou vazio */}
+          {(!allConnections || allConnections.length === 0) && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/90 backdrop-blur-sm">
+              <div className="text-center p-8">
+                <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
+                  <MapIcon className="h-10 w-10 text-muted-foreground" />
+                </div>
+                <p className="text-lg font-medium text-foreground mb-2">
+                  Nenhuma conexão no mapa
+                </p>
+                <p className="text-sm text-muted-foreground max-w-xs">
+                  Adicione conexões com localização cadastrada para visualizar no mapa
+                </p>
+              </div>
+            </div>
+          )}
+          
+          {/* Controles customizados */}
+          <div className="absolute bottom-4 left-4 bg-background/90 backdrop-blur-sm rounded-lg p-3 shadow-lg border border-border/50">
+            <div className="flex items-center gap-3 text-xs">
+              <div className="flex items-center gap-1.5">
+                <div className="w-8 h-1 rounded-full bg-green-500" />
+                <span className="text-muted-foreground">Família</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-8 h-1 rounded-full bg-blue-500" />
+                <span className="text-muted-foreground">Amigos</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Estatísticas */}
+        {allConnections.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="p-4 bg-gradient-to-br from-violet-500/10 to-purple-500/10 rounded-xl border border-violet-500/20">
+              <p className="text-2xl font-bold text-violet-600">{allConnections.length}</p>
+              <p className="text-xs text-muted-foreground">Total de conexões</p>
+            </div>
+            <div className="p-4 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl border border-green-500/20">
+              <p className="text-2xl font-bold text-green-600">{familyCount}</p>
+              <p className="text-xs text-muted-foreground">Familiares</p>
+            </div>
+            <div className="p-4 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-xl border border-blue-500/20">
+              <p className="text-2xl font-bold text-blue-600">{friendCount}</p>
+              <p className="text-xs text-muted-foreground">Amigos</p>
+            </div>
+            <div className="p-4 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-xl border border-amber-500/20">
+              <p className="text-2xl font-bold text-amber-600">
+                {allConnections.filter(c => c.receiver?.latitude || c.requester?.latitude).length}
               </p>
+              <p className="text-xs text-muted-foreground">Com localização</p>
             </div>
           </div>
         )}
