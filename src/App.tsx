@@ -28,6 +28,7 @@ import Groups from "./pages/Groups";
 import Suggestions from "./pages/Suggestions";
 import Echos from "./pages/Echos";
 import World from "./pages/World";
+import StreamingHistory from "./pages/StreamingHistory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -72,6 +73,7 @@ const AppContent = () => {
               <Route path="/group/:groupId/memories" element={<GroupMemories />} />
                           <Route path="/suggestions" element={<Suggestions />} />
                           <Route path="/world" element={<World />} />
+                          <Route path="/world/streaming" element={<StreamingHistory />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>
                       </div>

@@ -1057,6 +1057,104 @@ export type Database = {
         }
         Relationships: []
       }
+      streaming_history: {
+        Row: {
+          backdrop_url: string | null
+          created_at: string
+          id: string
+          is_recommendation: boolean
+          media_type: string
+          notes: string | null
+          poster_url: string | null
+          rating: number | null
+          share_with_tree: boolean
+          streaming_service: string | null
+          title: string
+          tmdb_id: string | null
+          trakt_id: string | null
+          updated_at: string
+          user_id: string
+          watched_at: string
+          year: number | null
+        }
+        Insert: {
+          backdrop_url?: string | null
+          created_at?: string
+          id?: string
+          is_recommendation?: boolean
+          media_type?: string
+          notes?: string | null
+          poster_url?: string | null
+          rating?: number | null
+          share_with_tree?: boolean
+          streaming_service?: string | null
+          title: string
+          tmdb_id?: string | null
+          trakt_id?: string | null
+          updated_at?: string
+          user_id: string
+          watched_at?: string
+          year?: number | null
+        }
+        Update: {
+          backdrop_url?: string | null
+          created_at?: string
+          id?: string
+          is_recommendation?: boolean
+          media_type?: string
+          notes?: string | null
+          poster_url?: string | null
+          rating?: number | null
+          share_with_tree?: boolean
+          streaming_service?: string | null
+          title?: string
+          tmdb_id?: string | null
+          trakt_id?: string | null
+          updated_at?: string
+          user_id?: string
+          watched_at?: string
+          year?: number | null
+        }
+        Relationships: []
+      }
+      streaming_recommendations: {
+        Row: {
+          created_at: string
+          from_user_id: string
+          history_item_id: string
+          id: string
+          message: string | null
+          seen: boolean
+          to_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_user_id: string
+          history_item_id: string
+          id?: string
+          message?: string | null
+          seen?: boolean
+          to_user_id: string
+        }
+        Update: {
+          created_at?: string
+          from_user_id?: string
+          history_item_id?: string
+          id?: string
+          message?: string | null
+          seen?: boolean
+          to_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "streaming_recommendations_history_item_id_fkey"
+            columns: ["history_item_id"]
+            isOneToOne: false
+            referencedRelation: "streaming_history"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
