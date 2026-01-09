@@ -55,6 +55,7 @@ interface Post {
   created_at: string;
   user_id: string;
   share_with_tree: boolean;
+  allow_reshare: boolean;
   author_name?: string;
   author_avatar?: string | null;
   is_group_post?: boolean;
@@ -79,6 +80,7 @@ const Feed = () => {
   const [posting, setPosting] = useState(false);
   const [mediaFiles, setMediaFiles] = useState<Array<{ file: File; preview: string; type: 'image' | 'video' }>>([]);
   const [shareWithTree, setShareWithTree] = useState(false);
+  const [allowReshare, setAllowReshare] = useState(true);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [userGroups, setUserGroups] = useState<Group[]>([]);
   const [userConnections, setUserConnections] = useState<Array<{ id: string; full_name: string; avatar_url: string | null }>>([]);
@@ -431,6 +433,7 @@ const Feed = () => {
           content: newPost,
           user_id: user.id,
           share_with_tree: shareWithTree,
+          allow_reshare: allowReshare,
         })
         .select()
         .single();
@@ -487,6 +490,7 @@ const Feed = () => {
       setNewPost("");
       setMediaFiles([]);
       setShareWithTree(false);
+      setAllowReshare(true);
       setSelectedGroups([]);
       setSelectedConnections([]);
       toast({
@@ -588,7 +592,7 @@ const Feed = () => {
             />
 
             {/* Sharing Options */}
-            <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
+            <div className="flex flex-wrap items-center gap-4 p-4 bg-muted/50 rounded-lg">
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="share-tree"
@@ -598,6 +602,18 @@ const Feed = () => {
                 <Label htmlFor="share-tree" className="flex items-center gap-2 cursor-pointer">
                   <Users className="h-4 w-4" />
                   Compartilhar com árvore
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="allow-reshare"
+                  checked={allowReshare}
+                  onCheckedChange={(checked) => setAllowReshare(checked as boolean)}
+                />
+                <Label htmlFor="allow-reshare" className="flex items-center gap-2 cursor-pointer">
+                  <Share2 className="h-4 w-4" />
+                  Permitir compartilhamento
                 </Label>
               </div>
 
@@ -752,8 +768,8 @@ const Feed = () => {
                     </div>
                     
                     <div className="flex items-center gap-1">
-                      {/* Share button - visible for all non-group posts */}
-                      {!post.is_group_post && (
+                      {/* Share button - visible for non-group posts when owner or reshare allowed */}
+                      {!post.is_group_post && (post.user_id === user?.id || post.allow_reshare) && (
                         <Button
                           variant="ghost"
                           size="icon"
