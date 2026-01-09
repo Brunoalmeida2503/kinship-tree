@@ -8,6 +8,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Globe, Map, MapPin, Users, Heart } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 type ZoomLevel = 'world' | 'continent' | 'country' | 'state';
 
@@ -24,6 +26,7 @@ const MapVisualization = () => {
   const map = useRef<mapboxgl.Map | null>(null);
   const [currentZoom, setCurrentZoom] = useState<ZoomLevel>('world');
   const [connectionFilter, setConnectionFilter] = useState<'all' | 'family' | 'friend'>('all');
+  const [showLines, setShowLines] = useState(true);
   const { user } = useAuth();
 
   const zoomLevels: Record<ZoomLevel, ZoomConfig> = {
@@ -130,7 +133,7 @@ const MapVisualization = () => {
           }
         });
 
-        if (lineFeatures.length > 0) {
+        if (lineFeatures.length > 0 && showLines) {
           map.current!.addSource('connection-lines', {
             type: 'geojson',
             data: {
@@ -310,7 +313,7 @@ const MapVisualization = () => {
     if (map.current && user) {
       loadConnections();
     }
-  }, [connectionFilter]);
+  }, [connectionFilter, showLines]);
 
   return (
     <>
@@ -342,20 +345,33 @@ const MapVisualization = () => {
             </TabsList>
           </Tabs>
           
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm text-muted-foreground">Nível de Zoom:</span>
-            {(Object.keys(zoomLevels) as ZoomLevel[]).map((level) => (
-              <Button
-                key={level}
-                onClick={() => handleZoomLevel(level)}
-                variant={currentZoom === level ? "default" : "outline"}
-                size="sm"
-                className="gap-2"
-              >
-                {zoomLevels[level].icon}
-                {zoomLevels[level].label}
-              </Button>
-            ))}
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm text-muted-foreground">Nível de Zoom:</span>
+              {(Object.keys(zoomLevels) as ZoomLevel[]).map((level) => (
+                <Button
+                  key={level}
+                  onClick={() => handleZoomLevel(level)}
+                  variant={currentZoom === level ? "default" : "outline"}
+                  size="sm"
+                  className="gap-2"
+                >
+                  {zoomLevels[level].icon}
+                  {zoomLevels[level].label}
+                </Button>
+              ))}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Switch
+                id="show-lines"
+                checked={showLines}
+                onCheckedChange={setShowLines}
+              />
+              <Label htmlFor="show-lines" className="text-sm cursor-pointer">
+                Exibir linhas
+              </Label>
+            </div>
           </div>
           
           <div 
