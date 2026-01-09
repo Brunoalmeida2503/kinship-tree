@@ -316,21 +316,25 @@ export function TreeVisualization() {
     const centerX = 700;
 
     // Mapeamento de geração para posição Y relativa
-    // -2=avós, -1=pais, 0=você, 1=filhos, 2=netos, 3=sobrinhos (ao lado dos filhos, levemente deslocado)
+    // -2=avós, -1=pais, 0=você, 1=filhos, 2=netos, 3=sobrinhos
     const generationYMap: Record<number, number> = {
       [-2]: -2 * verticalSpacing,
       [-1]: -1 * verticalSpacing,
       [0]: 0,
       [1]: 1 * verticalSpacing,
       [2]: 2 * verticalSpacing,
-      [3]: 1 * verticalSpacing + 10, // Sobrinhos na mesma altura dos filhos, levemente abaixo
+      [3]: 1 * verticalSpacing + 10, // Sobrinhos na mesma altura dos filhos
     };
 
-    // Processar cada geração
-    generations.forEach((nodes, generation) => {
+    // Primeiro, processar gerações principais (exceto sobrinhos)
+    const mainGenerations = [-2, -1, 0, 1, 2];
+    
+    mainGenerations.forEach((generation) => {
+      const nodes = generations.get(generation) || [];
+      if (nodes.length === 0) return;
+      
       const y = baseY + (generationYMap[generation] ?? generation * verticalSpacing);
       
-      // Calcular largura total necessária
       let totalWidth = 0;
       const processedNodes = new Set<string>();
       
@@ -348,18 +352,7 @@ export function TreeVisualization() {
       });
       totalWidth -= nodeSpacing;
 
-      // Para sobrinhos, posicionar à direita dos filhos
-      let startX = centerX - (totalWidth / 2);
-      if (generation === 3) {
-        // Calcular onde terminam os filhos para posicionar sobrinhos à direita
-        const childrenGen = generations.get(1) || [];
-        if (childrenGen.length > 0) {
-          const maxChildX = Math.max(...childrenGen.map(c => c.x || 0));
-          startX = maxChildX + nodeWidth + nodeSpacing;
-        }
-      }
-      
-      let currentX = startX;
+      let currentX = centerX - (totalWidth / 2);
       processedNodes.clear();
       
       nodes.forEach(node => {
@@ -380,6 +373,61 @@ export function TreeVisualization() {
         currentX += nodeSpacing;
       });
     });
+
+    // Agora processar sobrinhos (geração 3) - posicionar À ESQUERDA dos filhos
+    const nephews = generations.get(3) || [];
+    if (nephews.length > 0) {
+      const y = baseY + generationYMap[3];
+      const childrenGen = generations.get(1) || [];
+      
+      // Calcular largura dos sobrinhos
+      let nephewsWidth = 0;
+      const processedNephews = new Set<string>();
+      
+      nephews.forEach(node => {
+        if (processedNephews.has(node.id)) return;
+        nephewsWidth += nodeWidth;
+        processedNephews.add(node.id);
+        if (node.spouse && !processedNephews.has(node.spouse.id)) {
+          nephewsWidth += spouseSpacing + nodeWidth;
+          processedNephews.add(node.spouse.id);
+        }
+        nephewsWidth += nodeSpacing;
+      });
+      nephewsWidth -= nodeSpacing;
+
+      // Posicionar sobrinhos à ESQUERDA dos filhos
+      let startX: number;
+      if (childrenGen.length > 0) {
+        const minChildX = Math.min(...childrenGen.map(c => c.x || centerX));
+        // Sobrinhos começam à esquerda do primeiro filho
+        startX = minChildX - nephewsWidth - nodeSpacing;
+      } else {
+        // Se não há filhos, centralizar sobrinhos próximos ao root
+        startX = (root.x || centerX) - nephewsWidth / 2;
+      }
+      
+      let currentX = startX;
+      processedNephews.clear();
+      
+      nephews.forEach(node => {
+        if (processedNephews.has(node.id)) return;
+        
+        node.x = currentX + (nodeWidth / 2);
+        node.y = y;
+        currentX += nodeWidth;
+        processedNephews.add(node.id);
+
+        if (node.spouse && !processedNephews.has(node.spouse.id)) {
+          node.spouse.x = currentX + spouseSpacing + (nodeWidth / 2);
+          node.spouse.y = y;
+          currentX += spouseSpacing + nodeWidth;
+          processedNephews.add(node.spouse.id);
+        }
+        
+        currentX += nodeSpacing;
+      });
+    }
   };
 
   // Função para obter cor da geração
