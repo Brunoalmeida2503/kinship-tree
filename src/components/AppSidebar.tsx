@@ -35,7 +35,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   
   const menuItems = [
-    { title: t('sidebar.moments'), url: "/", icon: Home },
+    { title: t('sidebar.seasons'), url: "/", icon: Home },
     { title: "Echos", url: "/echos", icon: MessageCircle },
     { title: t('sidebar.tree'), url: "/tree", icon: GitBranch },
     { title: t('sidebar.groups'), url: "/groups", icon: Users },
