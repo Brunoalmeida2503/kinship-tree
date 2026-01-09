@@ -27,6 +27,7 @@ import GroupMemories from "./pages/GroupMemories";
 import Groups from "./pages/Groups";
 import Suggestions from "./pages/Suggestions";
 import Echos from "./pages/Echos";
+import World from "./pages/World";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -70,6 +71,7 @@ const AppContent = () => {
               <Route path="/group/:groupId/timeline" element={<GroupTimeline />} />
               <Route path="/group/:groupId/memories" element={<GroupMemories />} />
                           <Route path="/suggestions" element={<Suggestions />} />
+                          <Route path="/world" element={<World />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>
                       </div>

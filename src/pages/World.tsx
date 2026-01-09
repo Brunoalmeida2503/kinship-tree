@@ -1,0 +1,383 @@
+import { useState } from "react";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { 
+  Globe, 
+  Tv, 
+  ShoppingCart, 
+  Truck, 
+  Wallet,
+  ExternalLink,
+  Heart,
+  Search,
+  Plus,
+  X,
+  Maximize2
+} from "lucide-react";
+import { toast } from "sonner";
+
+interface Service {
+  id: string;
+  name: string;
+  icon: string;
+  url: string;
+  category: "streaming" | "shopping" | "delivery" | "finance";
+  color: string;
+  canEmbed: boolean;
+}
+
+interface WishlistItem {
+  id: string;
+  name: string;
+  store: string;
+  url: string;
+  price?: string;
+  addedAt: Date;
+}
+
+const defaultServices: Service[] = [
+  // Streaming
+  { id: "netflix", name: "Netflix", icon: "🎬", url: "https://netflix.com", category: "streaming", color: "#E50914", canEmbed: false },
+  { id: "primevideo", name: "Prime Video", icon: "📺", url: "https://primevideo.com", category: "streaming", color: "#00A8E1", canEmbed: false },
+  { id: "disney", name: "Disney+", icon: "🏰", url: "https://disneyplus.com", category: "streaming", color: "#113CCF", canEmbed: false },
+  { id: "spotify", name: "Spotify", icon: "🎵", url: "https://open.spotify.com", category: "streaming", color: "#1DB954", canEmbed: true },
+  { id: "youtube", name: "YouTube", icon: "▶️", url: "https://youtube.com", category: "streaming", color: "#FF0000", canEmbed: true },
+  { id: "hbomax", name: "Max", icon: "🎭", url: "https://max.com", category: "streaming", color: "#5822B4", canEmbed: false },
+  
+  // Shopping
+  { id: "amazon", name: "Amazon", icon: "📦", url: "https://amazon.com.br", category: "shopping", color: "#FF9900", canEmbed: false },
+  { id: "mercadolivre", name: "Mercado Livre", icon: "🛒", url: "https://mercadolivre.com.br", category: "shopping", color: "#FFE600", canEmbed: false },
+  { id: "shopee", name: "Shopee", icon: "🛍️", url: "https://shopee.com.br", category: "shopping", color: "#EE4D2D", canEmbed: false },
+  { id: "aliexpress", name: "AliExpress", icon: "🌐", url: "https://aliexpress.com", category: "shopping", color: "#E62E04", canEmbed: false },
+  { id: "magalu", name: "Magazine Luiza", icon: "💙", url: "https://magazineluiza.com.br", category: "shopping", color: "#0086FF", canEmbed: false },
+  { id: "americanas", name: "Americanas", icon: "❤️", url: "https://americanas.com.br", category: "shopping", color: "#E60014", canEmbed: false },
+  
+  // Delivery
+  { id: "ifood", name: "iFood", icon: "🍔", url: "https://ifood.com.br", category: "delivery", color: "#EA1D2C", canEmbed: false },
+  { id: "rappi", name: "Rappi", icon: "🛵", url: "https://rappi.com.br", category: "delivery", color: "#FF441F", canEmbed: false },
+  { id: "ubereats", name: "Uber Eats", icon: "🥡", url: "https://ubereats.com", category: "delivery", color: "#06C167", canEmbed: false },
+  { id: "zdelivery", name: "Zé Delivery", icon: "🍺", url: "https://ze.delivery", category: "delivery", color: "#FFD000", canEmbed: false },
+  
+  // Finance
+  { id: "nubank", name: "Nubank", icon: "💜", url: "https://app.nubank.com.br", category: "finance", color: "#820AD1", canEmbed: false },
+  { id: "inter", name: "Inter", icon: "🧡", url: "https://bancointer.com.br", category: "finance", color: "#FF7A00", canEmbed: false },
+  { id: "c6bank", name: "C6 Bank", icon: "⚫", url: "https://c6bank.com.br", category: "finance", color: "#242424", canEmbed: false },
+  { id: "picpay", name: "PicPay", icon: "💚", url: "https://picpay.com", category: "finance", color: "#21C25E", canEmbed: false },
+];
+
+const World = () => {
+  const [activeTab, setActiveTab] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
+  const [newWishlistItem, setNewWishlistItem] = useState({ name: "", store: "", url: "", price: "" });
+  const [showAddWishlist, setShowAddWishlist] = useState(false);
+  const [embedUrl, setEmbedUrl] = useState<string | null>(null);
+  const [embedName, setEmbedName] = useState("");
+
+  const categoryIcons = {
+    streaming: <Tv className="h-4 w-4" />,
+    shopping: <ShoppingCart className="h-4 w-4" />,
+    delivery: <Truck className="h-4 w-4" />,
+    finance: <Wallet className="h-4 w-4" />,
+  };
+
+  const categoryLabels = {
+    streaming: "Streaming",
+    shopping: "Shopping",
+    delivery: "Delivery",
+    finance: "Finanças",
+  };
+
+  const filteredServices = defaultServices.filter((service) => {
+    const matchesCategory = activeTab === "all" || service.category === activeTab;
+    const matchesSearch = service.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  const handleOpenService = (service: Service) => {
+    if (service.canEmbed) {
+      setEmbedUrl(service.url);
+      setEmbedName(service.name);
+    } else {
+      window.open(service.url, "_blank");
+    }
+  };
+
+  const handleOpenExternal = (url: string) => {
+    window.open(url, "_blank");
+  };
+
+  const handleAddToWishlist = () => {
+    if (!newWishlistItem.name || !newWishlistItem.store) {
+      toast.error("Preencha nome e loja do produto");
+      return;
+    }
+
+    const item: WishlistItem = {
+      id: Date.now().toString(),
+      name: newWishlistItem.name,
+      store: newWishlistItem.store,
+      url: newWishlistItem.url,
+      price: newWishlistItem.price,
+      addedAt: new Date(),
+    };
+
+    setWishlist([...wishlist, item]);
+    setNewWishlistItem({ name: "", store: "", url: "", price: "" });
+    setShowAddWishlist(false);
+    toast.success("Produto adicionado à lista de desejos!");
+  };
+
+  const handleRemoveFromWishlist = (id: string) => {
+    setWishlist(wishlist.filter((item) => item.id !== id));
+    toast.success("Produto removido da lista!");
+  };
+
+  return (
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <AppSidebar />
+        <main className="flex-1 p-4 md:p-6 overflow-auto">
+          <div className="flex items-center gap-4 mb-6">
+            <SidebarTrigger />
+            <div className="flex items-center gap-2">
+              <Globe className="h-6 w-6 text-primary" />
+              <h1 className="text-2xl font-bold">World</h1>
+            </div>
+          </div>
+
+          <p className="text-muted-foreground mb-6">
+            Acesse seus serviços favoritos, gerencie sua lista de desejos e explore o mundo conectado.
+          </p>
+
+          {/* Embed Dialog */}
+          {embedUrl && (
+            <Dialog open={!!embedUrl} onOpenChange={() => setEmbedUrl(null)}>
+              <DialogContent className="max-w-6xl h-[80vh]">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center justify-between">
+                    <span>{embedName}</span>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenExternal(embedUrl)}
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Abrir em nova aba
+                      </Button>
+                    </div>
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="flex-1 h-full min-h-[60vh]">
+                  <iframe
+                    src={embedUrl}
+                    className="w-full h-full rounded-lg border"
+                    title={embedName}
+                    allow="autoplay; encrypted-media"
+                    sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                  />
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+              <TabsList className="grid grid-cols-5 w-full md:w-auto">
+                <TabsTrigger value="all" className="gap-2">
+                  <Globe className="h-4 w-4" />
+                  <span className="hidden sm:inline">Todos</span>
+                </TabsTrigger>
+                <TabsTrigger value="streaming" className="gap-2">
+                  <Tv className="h-4 w-4" />
+                  <span className="hidden sm:inline">Streaming</span>
+                </TabsTrigger>
+                <TabsTrigger value="shopping" className="gap-2">
+                  <ShoppingCart className="h-4 w-4" />
+                  <span className="hidden sm:inline">Shopping</span>
+                </TabsTrigger>
+                <TabsTrigger value="delivery" className="gap-2">
+                  <Truck className="h-4 w-4" />
+                  <span className="hidden sm:inline">Delivery</span>
+                </TabsTrigger>
+                <TabsTrigger value="finance" className="gap-2">
+                  <Wallet className="h-4 w-4" />
+                  <span className="hidden sm:inline">Finanças</span>
+                </TabsTrigger>
+              </TabsList>
+
+              <div className="relative w-full md:w-64">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar serviços..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            <TabsContent value={activeTab} className="space-y-6">
+              {/* Services Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {filteredServices.map((service) => (
+                  <Card
+                    key={service.id}
+                    className="cursor-pointer hover:shadow-lg transition-all hover:scale-105 group"
+                    onClick={() => handleOpenService(service)}
+                  >
+                    <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                      <div
+                        className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl shadow-md"
+                        style={{ backgroundColor: service.color + "20" }}
+                      >
+                        {service.icon}
+                      </div>
+                      <span className="font-medium text-sm">{service.name}</span>
+                      <Badge variant="outline" className="text-xs gap-1">
+                        {categoryIcons[service.category]}
+                        {categoryLabels[service.category]}
+                      </Badge>
+                      {service.canEmbed && (
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Badge variant="secondary" className="text-xs gap-1">
+                            <Maximize2 className="h-3 w-3" />
+                            Abrir aqui
+                          </Badge>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {filteredServices.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground">
+                  Nenhum serviço encontrado
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+
+          {/* Wishlist Section */}
+          <Card className="mt-8">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Heart className="h-5 w-5 text-red-500" />
+                  Lista de Desejos
+                </CardTitle>
+                <CardDescription>
+                  Salve produtos de qualquer loja para comprar depois
+                </CardDescription>
+              </div>
+              <Dialog open={showAddWishlist} onOpenChange={setShowAddWishlist}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Adicionar à Lista de Desejos</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 mt-4">
+                    <div>
+                      <label className="text-sm font-medium">Nome do Produto *</label>
+                      <Input
+                        placeholder="Ex: iPhone 15 Pro"
+                        value={newWishlistItem.name}
+                        onChange={(e) => setNewWishlistItem({ ...newWishlistItem, name: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Loja *</label>
+                      <Input
+                        placeholder="Ex: Amazon"
+                        value={newWishlistItem.store}
+                        onChange={(e) => setNewWishlistItem({ ...newWishlistItem, store: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Link do Produto</label>
+                      <Input
+                        placeholder="https://..."
+                        value={newWishlistItem.url}
+                        onChange={(e) => setNewWishlistItem({ ...newWishlistItem, url: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Preço</label>
+                      <Input
+                        placeholder="R$ 0,00"
+                        value={newWishlistItem.price}
+                        onChange={(e) => setNewWishlistItem({ ...newWishlistItem, price: e.target.value })}
+                      />
+                    </div>
+                    <Button onClick={handleAddToWishlist} className="w-full">
+                      Adicionar à Lista
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent>
+              {wishlist.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Heart className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                  <p>Sua lista de desejos está vazia</p>
+                  <p className="text-sm">Adicione produtos que deseja comprar</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {wishlist.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium">{item.name}</p>
+                        <div className="flex gap-2 text-sm text-muted-foreground">
+                          <span>{item.store}</span>
+                          {item.price && <span>• {item.price}</span>}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        {item.url && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenExternal(item.url)}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveFromWishlist(item.id)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    </SidebarProvider>
+  );
+};
+
+export default World;
