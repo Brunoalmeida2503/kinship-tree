@@ -41,7 +41,7 @@ interface WishlistItem {
   brand?: string;
   url?: string;
   price: string;
-  monitorDays?: number;
+  monitorDays: number;
   addedAt: Date;
 }
 
@@ -125,8 +125,8 @@ const World = () => {
   };
 
   const handleAddToWishlist = () => {
-    if (!newWishlistItem.name || !newWishlistItem.price) {
-      toast.error("Preencha nome e preço do produto");
+    if (!newWishlistItem.name || !newWishlistItem.price || !newWishlistItem.monitorDays) {
+      toast.error("Preencha nome, preço e dias para monitorar");
       return;
     }
 
@@ -136,7 +136,7 @@ const World = () => {
       brand: newWishlistItem.brand || undefined,
       url: newWishlistItem.url || undefined,
       price: newWishlistItem.price,
-      monitorDays: newWishlistItem.monitorDays ? parseInt(newWishlistItem.monitorDays) : undefined,
+      monitorDays: parseInt(newWishlistItem.monitorDays),
       addedAt: new Date(),
     };
 
@@ -390,7 +390,7 @@ const World = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Dias para Monitorar (opcional)</label>
+                      <label className="text-sm font-medium">Dias para Monitorar *</label>
                       <Input
                         type="number"
                         placeholder="Ex: 30"
