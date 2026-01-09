@@ -997,6 +997,53 @@ export type Database = {
         }
         Relationships: []
       }
+      price_alerts: {
+        Row: {
+          found_price: number
+          id: string
+          is_below_target: boolean
+          marketplace: string
+          price_difference_percent: number | null
+          product_name: string
+          product_url: string | null
+          searched_at: string
+          seen: boolean
+          wishlist_item_id: string
+        }
+        Insert: {
+          found_price: number
+          id?: string
+          is_below_target: boolean
+          marketplace: string
+          price_difference_percent?: number | null
+          product_name: string
+          product_url?: string | null
+          searched_at?: string
+          seen?: boolean
+          wishlist_item_id: string
+        }
+        Update: {
+          found_price?: number
+          id?: string
+          is_below_target?: boolean
+          marketplace?: string
+          price_difference_percent?: number | null
+          product_name?: string
+          product_url?: string | null
+          searched_at?: string
+          seen?: boolean
+          wishlist_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_alerts_wishlist_item_id_fkey"
+            columns: ["wishlist_item_id"]
+            isOneToOne: false
+            referencedRelation: "wishlist_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           aura_voice: string | null
@@ -1154,6 +1201,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      wishlist_items: {
+        Row: {
+          brand: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          monitor_days: number
+          name: string
+          target_price: number
+          updated_at: string
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          is_active?: boolean
+          monitor_days: number
+          name: string
+          target_price: number
+          updated_at?: string
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          monitor_days?: number
+          name?: string
+          target_price?: number
+          updated_at?: string
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

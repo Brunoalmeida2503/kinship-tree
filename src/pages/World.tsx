@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Globe, 
   Tv, 
@@ -21,9 +22,16 @@ import {
   X,
   Maximize2,
   History,
-  Clock
+  Clock,
+  Bell,
+  TrendingDown,
+  TrendingUp,
+  Loader2,
+  RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Service {
   id: string;
@@ -37,12 +45,28 @@ interface Service {
 
 interface WishlistItem {
   id: string;
+  user_id: string;
   name: string;
   brand?: string;
   url?: string;
-  price: string;
-  monitorDays: number;
-  addedAt: Date;
+  target_price: number;
+  monitor_days: number;
+  is_active: boolean;
+  expires_at: string;
+  created_at: string;
+}
+
+interface PriceAlert {
+  id: string;
+  wishlist_item_id: string;
+  marketplace: string;
+  product_name: string;
+  found_price: number;
+  product_url: string | null;
+  is_below_target: boolean;
+  price_difference_percent: number;
+  searched_at: string;
+  seen: boolean;
 }
 
 const defaultServices: Service[] = [
@@ -77,15 +101,58 @@ const defaultServices: Service[] = [
 
 const World = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
+  const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>([]);
   const [newWishlistItem, setNewWishlistItem] = useState({ name: "", brand: "", url: "", price: "", monitorDays: "" });
   const [showAddWishlist, setShowAddWishlist] = useState(false);
+  const [showAlerts, setShowAlerts] = useState(false);
   const [embedUrl, setEmbedUrl] = useState<string | null>(null);
   const [embedName, setEmbedName] = useState("");
   const [streamingModalOpen, setStreamingModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      fetchWishlist();
+      fetchPriceAlerts();
+    }
+  }, [user]);
+
+  const fetchWishlist = async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("wishlist_items")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching wishlist:", error);
+    } else {
+      setWishlist(data || []);
+    }
+  };
+
+  const fetchPriceAlerts = async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("price_alerts")
+      .select("*, wishlist_items!inner(user_id)")
+      .eq("wishlist_items.user_id", user.id)
+      .order("searched_at", { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.error("Error fetching price alerts:", error);
+    } else {
+      setPriceAlerts(data || []);
+    }
+  };
 
   const categoryIcons = {
     streaming: <Tv className="h-4 w-4" />,
@@ -119,36 +186,96 @@ const World = () => {
     }
   };
 
-  const handleOpenExternal = (url: string) => {
-    window.open(url, "_blank");
+  const handleOpenExternal = (url: string | undefined) => {
+    if (url) {
+      window.open(url, "_blank");
+    }
     setStreamingModalOpen(false);
   };
 
-  const handleAddToWishlist = () => {
+  const handleAddToWishlist = async () => {
+    if (!user) {
+      toast.error("Faça login para adicionar itens");
+      return;
+    }
     if (!newWishlistItem.name || !newWishlistItem.price || !newWishlistItem.monitorDays) {
       toast.error("Preencha nome, preço e dias para monitorar");
       return;
     }
 
-    const item: WishlistItem = {
-      id: Date.now().toString(),
-      name: newWishlistItem.name,
-      brand: newWishlistItem.brand || undefined,
-      url: newWishlistItem.url || undefined,
-      price: newWishlistItem.price,
-      monitorDays: parseInt(newWishlistItem.monitorDays),
-      addedAt: new Date(),
-    };
+    const priceValue = parseFloat(newWishlistItem.price.replace(/[^\d.,]/g, "").replace(",", "."));
+    if (isNaN(priceValue)) {
+      toast.error("Preço inválido");
+      return;
+    }
 
-    setWishlist([...wishlist, item]);
-    setNewWishlistItem({ name: "", brand: "", url: "", price: "", monitorDays: "" });
-    setShowAddWishlist(false);
-    toast.success("Produto adicionado à lista de desejos!");
+    const monitorDays = parseInt(newWishlistItem.monitorDays);
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + monitorDays);
+
+    setLoading(true);
+    const { error } = await supabase.from("wishlist_items").insert({
+      user_id: user.id,
+      name: newWishlistItem.name,
+      brand: newWishlistItem.brand || null,
+      url: newWishlistItem.url || null,
+      target_price: priceValue,
+      monitor_days: monitorDays,
+      expires_at: expiresAt.toISOString(),
+    });
+
+    setLoading(false);
+
+    if (error) {
+      console.error("Error adding to wishlist:", error);
+      toast.error("Erro ao adicionar produto");
+    } else {
+      setNewWishlistItem({ name: "", brand: "", url: "", price: "", monitorDays: "" });
+      setShowAddWishlist(false);
+      fetchWishlist();
+      toast.success("Produto adicionado! O robô irá monitorar os preços.");
+    }
   };
 
-  const handleRemoveFromWishlist = (id: string) => {
-    setWishlist(wishlist.filter((item) => item.id !== id));
-    toast.success("Produto removido da lista!");
+  const handleRemoveFromWishlist = async (id: string) => {
+    const { error } = await supabase.from("wishlist_items").delete().eq("id", id);
+    if (error) {
+      toast.error("Erro ao remover produto");
+    } else {
+      fetchWishlist();
+      toast.success("Produto removido da lista!");
+    }
+  };
+
+  const handleSearchNow = async (itemId: string) => {
+    setSearching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("search-prices", {
+        body: { wishlistItemId: itemId },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success(data.message || "Busca realizada!");
+      fetchPriceAlerts();
+    } catch (error) {
+      console.error("Error searching prices:", error);
+      toast.error("Erro ao buscar preços");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const unseenAlerts = priceAlerts.filter((a) => !a.seen && a.is_below_target).length;
+
+  const getDaysRemaining = (expiresAt: string) => {
+    const now = new Date();
+    const expires = new Date(expiresAt);
+    const diffTime = expires.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
   };
 
   return (
@@ -420,47 +547,140 @@ const World = () => {
                 <div className="text-center py-8 text-muted-foreground">
                   <Heart className="h-12 w-12 mx-auto mb-4 opacity-20" />
                   <p>Sua lista de desejos está vazia</p>
-                  <p className="text-sm">Adicione produtos que deseja comprar</p>
+                  <p className="text-sm">Adicione produtos que deseja monitorar</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {wishlist.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium">{item.name}</p>
-                        <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                          {item.brand && <span>{item.brand}</span>}
-                          <span className="font-medium text-primary">{item.price}</span>
-                          {item.monitorDays && <span>• {item.monitorDays} dias</span>}
+                  {wishlist.map((item) => {
+                    const daysRemaining = getDaysRemaining(item.expires_at);
+                    const itemAlerts = priceAlerts.filter(
+                      (a) => a.wishlist_item_id === item.id && a.is_below_target
+                    );
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{item.name}</p>
+                            {itemAlerts.length > 0 && (
+                              <Badge variant="default" className="bg-green-500">
+                                <TrendingDown className="h-3 w-3 mr-1" />
+                                {itemAlerts.length} ofertas
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                            {item.brand && <span>{item.brand}</span>}
+                            <span className="font-medium text-primary">
+                              R$ {item.target_price.toFixed(2)}
+                            </span>
+                            <span>• {daysRemaining} dias restantes</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex gap-2">
-                        {item.url && (
+                        <div className="flex gap-2">
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleOpenExternal(item.url)}
+                            onClick={() => handleSearchNow(item.id)}
+                            disabled={searching}
+                            title="Buscar agora"
                           >
-                            <ExternalLink className="h-4 w-4" />
+                            {searching ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4" />
+                            )}
                           </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveFromWishlist(item.id)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                          {item.url && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenExternal(item.url)}
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveFromWishlist(item.id)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
           </Card>
+
+          {/* Price Alerts Section */}
+          {priceAlerts.length > 0 && (
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-5 w-5 text-green-500" />
+                  Alertas de Preço
+                  {unseenAlerts > 0 && (
+                    <Badge variant="destructive">{unseenAlerts} novos</Badge>
+                  )}
+                </CardTitle>
+                <CardDescription>
+                  Preços encontrados nos últimos monitoramentos
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-64">
+                  <div className="space-y-2">
+                    {priceAlerts.slice(0, 20).map((alert) => (
+                      <div
+                        key={alert.id}
+                        className={`flex items-center justify-between p-3 rounded-lg ${
+                          alert.is_below_target ? "bg-green-500/10" : "bg-muted/50"
+                        }`}
+                      >
+                        <div className="flex-1">
+                          <p className="font-medium text-sm line-clamp-1">{alert.product_name}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>{alert.marketplace}</span>
+                            <span className={`font-medium ${alert.is_below_target ? "text-green-500" : "text-orange-500"}`}>
+                              R$ {alert.found_price.toFixed(2)}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              {alert.is_below_target ? (
+                                <>
+                                  <TrendingDown className="h-3 w-3 text-green-500" />
+                                  {Math.abs(alert.price_difference_percent).toFixed(0)}% abaixo
+                                </>
+                              ) : (
+                                <>
+                                  <TrendingUp className="h-3 w-3 text-orange-500" />
+                                  {alert.price_difference_percent.toFixed(0)}% acima
+                                </>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                        {alert.product_url && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleOpenExternal(alert.product_url || undefined)}
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          )}
         </main>
       </div>
     </SidebarProvider>
