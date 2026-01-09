@@ -41,6 +41,7 @@ interface WishlistItem {
   brand?: string;
   url?: string;
   price: string;
+  monitorDays?: number;
   addedAt: Date;
 }
 
@@ -79,7 +80,7 @@ const World = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
-  const [newWishlistItem, setNewWishlistItem] = useState({ name: "", brand: "", url: "", price: "" });
+  const [newWishlistItem, setNewWishlistItem] = useState({ name: "", brand: "", url: "", price: "", monitorDays: "" });
   const [showAddWishlist, setShowAddWishlist] = useState(false);
   const [embedUrl, setEmbedUrl] = useState<string | null>(null);
   const [embedName, setEmbedName] = useState("");
@@ -135,11 +136,12 @@ const World = () => {
       brand: newWishlistItem.brand || undefined,
       url: newWishlistItem.url || undefined,
       price: newWishlistItem.price,
+      monitorDays: newWishlistItem.monitorDays ? parseInt(newWishlistItem.monitorDays) : undefined,
       addedAt: new Date(),
     };
 
     setWishlist([...wishlist, item]);
-    setNewWishlistItem({ name: "", brand: "", url: "", price: "" });
+    setNewWishlistItem({ name: "", brand: "", url: "", price: "", monitorDays: "" });
     setShowAddWishlist(false);
     toast.success("Produto adicionado à lista de desejos!");
   };
@@ -388,6 +390,17 @@ const World = () => {
                       />
                     </div>
                     <div>
+                      <label className="text-sm font-medium">Dias para Monitorar (opcional)</label>
+                      <Input
+                        type="number"
+                        placeholder="Ex: 30"
+                        min="1"
+                        max="365"
+                        value={newWishlistItem.monitorDays}
+                        onChange={(e) => setNewWishlistItem({ ...newWishlistItem, monitorDays: e.target.value })}
+                      />
+                    </div>
+                    <div>
                       <label className="text-sm font-medium">Link do Produto (opcional)</label>
                       <Input
                         placeholder="https://..."
@@ -418,9 +431,10 @@ const World = () => {
                     >
                       <div className="flex-1">
                         <p className="font-medium">{item.name}</p>
-                        <div className="flex gap-2 text-sm text-muted-foreground">
+                        <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
                           {item.brand && <span>{item.brand}</span>}
                           <span className="font-medium text-primary">{item.price}</span>
+                          {item.monitorDays && <span>• {item.monitorDays} dias</span>}
                         </div>
                       </div>
                       <div className="flex gap-2">
