@@ -39,10 +39,10 @@ export function AppSidebar() {
     { title: t('sidebar.tree'), url: "/tree", icon: GitBranch },
     { title: t('sidebar.memories'), url: "/memories", icon: Images },
     { title: "Echos", url: "/echos", icon: MessageCircle },
-    { title: "World", url: "/world", icon: Globe },
     { title: "Sugestões", url: "/suggestions", icon: Sparkles },
     { title: t('sidebar.groups'), url: "/groups", icon: Users },
     { title: t('sidebar.missions'), url: "/missions", icon: Target },
+    { title: "World", url: "/world", icon: Globe },
     { title: t('sidebar.profile'), url: "/profile", icon: User },
   ];
   
