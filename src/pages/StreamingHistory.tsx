@@ -29,11 +29,13 @@ import {
   Eye,
   EyeOff,
   Clock,
-  MessageSquare
+  MessageSquare,
+  Library
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import StreamingCatalog, { CatalogItem } from "@/components/streaming/StreamingCatalog";
 
 interface StreamingItem {
   id: string;
@@ -87,7 +89,7 @@ const streamingServices = [
 const StreamingHistory = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState("my-history");
+  const [activeTab, setActiveTab] = useState("catalog");
   const [searchQuery, setSearchQuery] = useState("");
   const [tmdbResults, setTmdbResults] = useState<TMDBResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -295,6 +297,42 @@ const StreamingHistory = () => {
     setTmdbResults([]);
   };
 
+  const handleAddFromCatalog = async (item: CatalogItem, serviceId: string) => {
+    if (!user) return;
+    
+    setSaving(true);
+    try {
+      const newItem = {
+        user_id: user.id,
+        title: item.title,
+        media_type: item.media_type,
+        tmdb_id: item.tmdb_id || null,
+        poster_url: item.poster_url,
+        backdrop_url: null,
+        year: item.year,
+        streaming_service: serviceId,
+        rating: null,
+        notes: null,
+        share_with_tree: false,
+        is_recommendation: false,
+        watched_at: new Date().toISOString(),
+      };
+      
+      const { error } = await supabase.from("streaming_history").insert(newItem);
+      
+      if (error) throw error;
+      
+      toast.success(`"${item.title}" adicionado ao histórico!`);
+      fetchHistory();
+      setActiveTab("my-history");
+    } catch (error) {
+      console.error("Error adding from catalog:", error);
+      toast.error("Erro ao adicionar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDeleteItem = async (id: string) => {
     try {
       const { error } = await supabase.from("streaming_history").delete().eq("id", id);
@@ -491,6 +529,10 @@ const StreamingHistory = () => {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
               <TabsList>
+                <TabsTrigger value="catalog" className="gap-2">
+                  <Library className="h-4 w-4" />
+                  Catálogo
+                </TabsTrigger>
                 <TabsTrigger value="my-history" className="gap-2">
                   <Film className="h-4 w-4" />
                   Meu Histórico
@@ -711,6 +753,10 @@ const StreamingHistory = () => {
                 </DialogContent>
               </Dialog>
             </div>
+
+            <TabsContent value="catalog">
+              <StreamingCatalog onAddToHistory={handleAddFromCatalog} />
+            </TabsContent>
 
             <TabsContent value="my-history">
               {loading ? (
