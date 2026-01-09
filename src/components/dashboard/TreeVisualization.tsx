@@ -1784,6 +1784,7 @@ export function TreeVisualization() {
             const markerEl = document.createElement('div');
             markerEl.className = 'map-marker';
             markerEl.style.cssText = `
+              position: relative;
               background: ${bgGradient};
               width: 48px;
               height: 48px;
@@ -1797,9 +1798,14 @@ export function TreeVisualization() {
               overflow: hidden;
             `;
             
-            // Função para adicionar iniciais como fallback
+            // Função para adicionar iniciais como fallback (mantém o badge, se já existir)
             const addInitialsFallback = () => {
-              markerEl.innerHTML = '';
+              Array.from(markerEl.childNodes).forEach((node) => {
+                const el = node as HTMLElement;
+                if (el?.classList?.contains?.('marker-badge')) return;
+                markerEl.removeChild(node);
+              });
+
               const initialsSpan = document.createElement('span');
               initialsSpan.className = 'marker-initials';
               initialsSpan.style.color = 'white';
@@ -1812,8 +1818,13 @@ export function TreeVisualization() {
               avatarImg.src = otherPerson.avatar_url;
               avatarImg.className = 'marker-avatar';
               avatarImg.alt = otherPerson.full_name;
-              avatarImg.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
-              
+              avatarImg.style.cssText = 'display:block;width:100%;height:100%;border-radius:50%;object-fit:cover;';
+
+              avatarImg.onload = () => {
+                // Debug leve: confirma carregamento
+                console.log(`Avatar carregado: ${otherPerson.full_name}`);
+              };
+
               // Fallback para iniciais se imagem falhar
               avatarImg.onerror = () => {
                 console.log(`Falha ao carregar avatar de ${otherPerson.full_name}:`, otherPerson.avatar_url);
