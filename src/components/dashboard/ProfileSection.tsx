@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Camera } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Camera, Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/contexts/ThemeContext';
 import { fetchCountries, fetchStates, fetchCities, fetchCoordinates, Country, State, City } from '@/services/geoService';
@@ -39,7 +40,8 @@ export function ProfileSection() {
     language: 'pt-BR',
     country: '',
     state: '',
-    city: ''
+    city: '',
+    world_enabled: false
   });
 
   const [countries, setCountries] = useState<Country[]>([]);
@@ -97,7 +99,8 @@ export function ProfileSection() {
         language: userLanguage,
         country: data.country || '',
         state: data.state || '',
-        city: data.city || ''
+        city: data.city || '',
+        world_enabled: data.world_enabled || false
       };
       
       setProfile(profileData);
@@ -227,7 +230,8 @@ export function ProfileSection() {
       language: profile.language,
       country: profile.country || null,
       state: profile.state || null,
-      city: profile.city || null
+      city: profile.city || null,
+      world_enabled: profile.world_enabled
     };
 
     const { error } = await supabase
@@ -475,6 +479,23 @@ export function ProfileSection() {
                 <SelectItem value="echo">Verde Claro</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="flex items-center gap-3">
+              <Globe className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <Label htmlFor="world_enabled" className="font-medium">Habilitar World</Label>
+                <p className="text-sm text-muted-foreground">
+                  Acesse serviços externos como streaming, shopping e mais
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="world_enabled"
+              checked={profile.world_enabled}
+              onCheckedChange={(checked) => setProfile({ ...profile, world_enabled: checked })}
+            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
