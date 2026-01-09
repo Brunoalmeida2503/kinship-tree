@@ -87,7 +87,7 @@ const Echos = () => {
             .from('profiles')
             .select('id, full_name, avatar_url')
             .eq('id', newMsg.sender_id)
-            .single();
+            .maybeSingle();
           
           setMessages(prev => [...prev, { ...newMsg, sender: senderProfile || undefined }]);
         }
@@ -261,9 +261,18 @@ const Echos = () => {
     if (!user) return;
 
     try {
+      // Garantir que o profile do usuário atual existe (FK em conversations/conversation_participants)
+      await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          full_name: (user.user_metadata as any)?.full_name || 'Usuário',
+          avatar_url: (user.user_metadata as any)?.avatar_url || null,
+        });
+
       // Check if conversation already exists
-      const existingConv = conversations.find(conv => 
-        conv.participants.some(p => p.id === targetUser.id)
+      const existingConv = conversations.find((conv) =>
+        conv.participants.some((p) => p.id === targetUser.id)
       );
 
       if (existingConv) {
@@ -276,31 +285,33 @@ const Echos = () => {
         .from('conversations')
         .insert({ created_by: user.id })
         .select()
-        .single();
+        .maybeSingle();
 
       if (convError) throw convError;
+      if (!newConv) throw new Error('Conversa não foi criada');
 
       // Add participants
       const { error: partError } = await supabase
         .from('conversation_participants')
         .insert([
           { conversation_id: newConv.id, user_id: user.id },
-          { conversation_id: newConv.id, user_id: targetUser.id }
+          { conversation_id: newConv.id, user_id: targetUser.id },
         ]);
 
       if (partError) throw partError;
 
       const newConversation: Conversation = {
         ...newConv,
-        participants: [targetUser]
+        participants: [targetUser],
       };
 
-      setConversations(prev => [newConversation, ...prev]);
+      setConversations((prev) => [newConversation, ...prev]);
       selectConversation(newConversation);
       toast.success('Conversa iniciada!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating conversation:', error);
-      toast.error('Erro ao iniciar conversa');
+      const msg = error?.message || 'Erro ao iniciar conversa';
+      toast.error(msg);
     }
   };
 
