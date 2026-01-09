@@ -1797,18 +1797,32 @@ export function TreeVisualization() {
               overflow: hidden;
             `;
             
-            if (otherPerson.avatar_url) {
-              const avatarImg = document.createElement('img');
-              avatarImg.src = otherPerson.avatar_url;
-              avatarImg.className = 'marker-avatar';
-              avatarImg.alt = otherPerson.full_name;
-              markerEl.appendChild(avatarImg);
-            } else {
+            // Função para adicionar iniciais como fallback
+            const addInitialsFallback = () => {
+              markerEl.innerHTML = '';
               const initialsSpan = document.createElement('span');
               initialsSpan.className = 'marker-initials';
               initialsSpan.style.color = 'white';
               initialsSpan.textContent = getInitials(otherPerson.full_name || '?');
               markerEl.appendChild(initialsSpan);
+            };
+
+            if (otherPerson.avatar_url) {
+              const avatarImg = document.createElement('img');
+              avatarImg.src = otherPerson.avatar_url;
+              avatarImg.className = 'marker-avatar';
+              avatarImg.alt = otherPerson.full_name;
+              avatarImg.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
+              
+              // Fallback para iniciais se imagem falhar
+              avatarImg.onerror = () => {
+                console.log(`Falha ao carregar avatar de ${otherPerson.full_name}:`, otherPerson.avatar_url);
+                addInitialsFallback();
+              };
+              
+              markerEl.appendChild(avatarImg);
+            } else {
+              addInitialsFallback();
             }
             
             // Badge com emoji de relacionamento
