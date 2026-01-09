@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Send, Loader2, Sparkles, Trash2, Mic, Square, X } from 'lucide-react';
+import { Send, Loader2, Sparkles, Trash2, Mic, Square, X, Volume2, VolumeX } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -37,9 +37,13 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
+  const [autoSpeak, setAutoSpeak] = useState(true);
   const [showWelcome, setShowWelcome] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   
   const { isRecording, recordingTime, startRecording, stopRecording, cancelRecording } = useAudioRecorder();
 
@@ -57,6 +61,16 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
   useEffect(() => {
     setShowWelcome(messages.length === 0);
   }, [messages]);
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -118,6 +132,71 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
       console.error('Error clearing history:', error);
       toast.error('Erro ao limpar histórico');
     }
+  };
+
+  const speakText = async (text: string, messageId: string) => {
+    try {
+      // Stop any currently playing audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+
+      setIsSpeaking(true);
+      setPlayingMessageId(messageId);
+
+      const session = await supabase.auth.getSession();
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/aura-speak`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.data.session?.access_token}`,
+          },
+          body: JSON.stringify({ text }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('TTS failed');
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+      
+      audio.onended = () => {
+        setIsSpeaking(false);
+        setPlayingMessageId(null);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      audio.onerror = () => {
+        setIsSpeaking(false);
+        setPlayingMessageId(null);
+        URL.revokeObjectURL(audioUrl);
+      };
+
+      await audio.play();
+    } catch (error) {
+      console.error('Error speaking:', error);
+      setIsSpeaking(false);
+      setPlayingMessageId(null);
+      toast.error('Erro ao reproduzir áudio');
+    }
+  };
+
+  const stopSpeaking = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    setIsSpeaking(false);
+    setPlayingMessageId(null);
   };
 
   const transcribeAudio = async (audioBlob: Blob): Promise<string | null> => {
@@ -222,14 +301,22 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
         return;
       }
 
+      const assistantMessageId = Date.now().toString() + '-assistant';
       const assistantMessage: Message = {
-        id: Date.now().toString() + '-assistant',
+        id: assistantMessageId,
         role: 'assistant',
         content: data.response,
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+
+      // Auto-speak the response if enabled
+      if (autoSpeak) {
+        setTimeout(() => {
+          speakText(data.response, assistantMessageId);
+        }, 300);
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Erro ao enviar mensagem. Tente novamente.');
@@ -261,7 +348,10 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
                   <AvatarImage src={auraAvatar} alt="AURA" />
                   <AvatarFallback className="bg-gradient-to-br from-primary to-primary/60">AU</AvatarFallback>
                 </Avatar>
-                <span className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-background animate-pulse" />
+                <span className={cn(
+                  "absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background",
+                  isSpeaking ? "bg-primary animate-pulse" : "bg-green-500 animate-pulse"
+                )} />
               </div>
               <div>
                 <DialogTitle className="text-xl flex items-center gap-2">
@@ -281,6 +371,11 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
                       <Loader2 className="h-3 w-3 animate-spin" />
                       <span className="ml-1">Transcrevendo...</span>
                     </>
+                  ) : isSpeaking ? (
+                    <>
+                      <Volume2 className="h-3 w-3 animate-pulse" />
+                      <span className="ml-1">Falando...</span>
+                    </>
                   ) : (
                     'Online • Pronta para ajudar'
                   )}
@@ -288,6 +383,18 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setAutoSpeak(!autoSpeak)}
+                className={cn(
+                  "h-8 w-8",
+                  autoSpeak ? "text-primary" : "text-muted-foreground"
+                )}
+                title={autoSpeak ? "Desativar resposta por voz" : "Ativar resposta por voz"}
+              >
+                {autoSpeak ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              </Button>
               {messages.length > 0 && (
                 <Button
                   variant="ghost"
@@ -325,7 +432,7 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
                   </p>
                   <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
                     <Mic className="h-4 w-4" />
-                    Você também pode enviar mensagens de voz!
+                    Envie áudio e eu respondo com voz!
                   </p>
                 </div>
                 
@@ -380,12 +487,29 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
                       )}
                     >
                       <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                      <p className={cn(
-                        "text-[10px] mt-1 opacity-60",
-                        msg.role === 'user' ? 'text-right' : 'text-left'
+                      <div className={cn(
+                        "flex items-center gap-2 mt-1",
+                        msg.role === 'user' ? 'justify-end' : 'justify-between'
                       )}>
-                        {msg.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                        <p className="text-[10px] opacity-60">
+                          {msg.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                        {msg.role === 'assistant' && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => playingMessageId === msg.id ? stopSpeaking() : speakText(msg.content, msg.id)}
+                            className="h-6 w-6 opacity-60 hover:opacity-100"
+                            title={playingMessageId === msg.id ? "Parar" : "Ouvir"}
+                          >
+                            {playingMessageId === msg.id ? (
+                              <Square className="h-3 w-3" />
+                            ) : (
+                              <Volume2 className="h-3 w-3" />
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -470,7 +594,7 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
             </div>
           )}
           <p className="text-[10px] text-muted-foreground text-center mt-2">
-            AURA pode cometer erros. Verifique informações importantes.
+            {autoSpeak ? '🔊 Resposta por voz ativada' : '🔇 Resposta por voz desativada'} • AURA pode cometer erros
           </p>
         </div>
       </DialogContent>
