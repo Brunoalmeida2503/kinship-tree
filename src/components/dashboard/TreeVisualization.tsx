@@ -1773,7 +1773,7 @@ export function TreeVisualization() {
             : 'linear-gradient(145deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%)';
 
           // Criar marcador com avatar e animação
-          setTimeout(async () => {
+          setTimeout(() => {
             const markerContainer = document.createElement('div');
             markerContainer.className = 'marker-container';
             markerContainer.style.width = '52px';
@@ -1813,39 +1813,22 @@ export function TreeVisualization() {
               markerEl.appendChild(initialsSpan);
             };
 
-            if (otherPerson.avatar_url) {
-              let resolvedAvatarUrl = otherPerson.avatar_url;
-
-              // Se for URL do storage, tentar gerar URL assinada (mais confiável quando o bucket não está público)
-              const publicPrefix = '/storage/v1/object/public/avatars/';
-              const idx = resolvedAvatarUrl.indexOf(publicPrefix);
-              if (idx !== -1) {
-                const objectPath = resolvedAvatarUrl.substring(idx + publicPrefix.length);
-                try {
-                  const { data, error } = await supabase.storage
-                    .from('avatars')
-                    .createSignedUrl(objectPath, 60 * 60);
-                  if (!error && data?.signedUrl) {
-                    resolvedAvatarUrl = data.signedUrl;
-                  }
-                } catch (e) {
-                  // ignora e usa URL original
-                }
-              }
-
+            const avatarUrl = otherPerson.avatar_url;
+            
+            if (avatarUrl && avatarUrl.trim() !== '') {
               const avatarImg = document.createElement('img');
-              avatarImg.src = resolvedAvatarUrl;
-              avatarImg.crossOrigin = 'anonymous';
+              avatarImg.src = avatarUrl;
               avatarImg.className = 'marker-avatar';
-              avatarImg.alt = otherPerson.full_name;
-              avatarImg.style.cssText = 'display:block;width:100%;height:100%;border-radius:50%;object-fit:cover;';
+              avatarImg.alt = otherPerson.full_name || '';
+              avatarImg.referrerPolicy = 'no-referrer';
+              avatarImg.style.cssText = 'display:block;width:100%;height:100%;border-radius:50%;object-fit:cover;background:#e5e7eb;';
 
               avatarImg.onload = () => {
-                console.log(`Avatar carregado: ${otherPerson.full_name}`);
+                console.log(`✓ Avatar carregado: ${otherPerson.full_name}`);
               };
 
               avatarImg.onerror = () => {
-                console.log(`Falha ao carregar avatar de ${otherPerson.full_name}:`, resolvedAvatarUrl);
+                console.warn(`✗ Falha avatar ${otherPerson.full_name}:`, avatarUrl);
                 addInitialsFallback();
               };
               
