@@ -1773,7 +1773,7 @@ export function TreeVisualization() {
             : 'linear-gradient(145deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%)';
 
           // Criar marcador com avatar e animação
-          setTimeout(() => {
+          setTimeout(async () => {
             const markerContainer = document.createElement('div');
             markerContainer.className = 'marker-container';
             markerContainer.style.width = '52px';
@@ -1814,20 +1814,38 @@ export function TreeVisualization() {
             };
 
             if (otherPerson.avatar_url) {
+              let resolvedAvatarUrl = otherPerson.avatar_url;
+
+              // Se for URL do storage, tentar gerar URL assinada (mais confiável quando o bucket não está público)
+              const publicPrefix = '/storage/v1/object/public/avatars/';
+              const idx = resolvedAvatarUrl.indexOf(publicPrefix);
+              if (idx !== -1) {
+                const objectPath = resolvedAvatarUrl.substring(idx + publicPrefix.length);
+                try {
+                  const { data, error } = await supabase.storage
+                    .from('avatars')
+                    .createSignedUrl(objectPath, 60 * 60);
+                  if (!error && data?.signedUrl) {
+                    resolvedAvatarUrl = data.signedUrl;
+                  }
+                } catch (e) {
+                  // ignora e usa URL original
+                }
+              }
+
               const avatarImg = document.createElement('img');
-              avatarImg.src = otherPerson.avatar_url;
+              avatarImg.src = resolvedAvatarUrl;
+              avatarImg.crossOrigin = 'anonymous';
               avatarImg.className = 'marker-avatar';
               avatarImg.alt = otherPerson.full_name;
               avatarImg.style.cssText = 'display:block;width:100%;height:100%;border-radius:50%;object-fit:cover;';
 
               avatarImg.onload = () => {
-                // Debug leve: confirma carregamento
                 console.log(`Avatar carregado: ${otherPerson.full_name}`);
               };
 
-              // Fallback para iniciais se imagem falhar
               avatarImg.onerror = () => {
-                console.log(`Falha ao carregar avatar de ${otherPerson.full_name}:`, otherPerson.avatar_url);
+                console.log(`Falha ao carregar avatar de ${otherPerson.full_name}:`, resolvedAvatarUrl);
                 addInitialsFallback();
               };
               
