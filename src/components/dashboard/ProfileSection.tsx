@@ -514,13 +514,13 @@ export function ProfileSection() {
                 <SelectValue placeholder="Selecione uma voz" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="sarah">Sarah (Padrão)</SelectItem>
-                <SelectItem value="laura">Laura (Suave)</SelectItem>
-                <SelectItem value="jessica">Jessica (Jovem)</SelectItem>
-                <SelectItem value="lily">Lily (Doce)</SelectItem>
-                <SelectItem value="alice">Alice (Clara)</SelectItem>
-                <SelectItem value="matilda">Matilda (Elegante)</SelectItem>
-                <SelectItem value="river">River (Neutra)</SelectItem>
+                <SelectItem value="sarah">Aura (Padrão)</SelectItem>
+                <SelectItem value="laura">Aura (Suave)</SelectItem>
+                <SelectItem value="jessica">Aura (Jovem)</SelectItem>
+                <SelectItem value="lily">Aura (Doce)</SelectItem>
+                <SelectItem value="alice">Aura (Clara)</SelectItem>
+                <SelectItem value="matilda">Aura (Elegante)</SelectItem>
+                <SelectItem value="river">Aura (Neutra)</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
