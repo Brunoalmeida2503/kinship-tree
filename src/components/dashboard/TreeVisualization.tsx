@@ -1545,7 +1545,7 @@ export function TreeVisualization() {
     // Buscar perfil do usuário atual
     const { data: userProfile } = await supabase
       .from('profiles')
-      .select('latitude, longitude')
+      .select('latitude, longitude, avatar_url, full_name')
       .eq('id', user.id)
       .single();
 
@@ -1573,19 +1573,27 @@ export function TreeVisualization() {
       styleSheet.textContent = `
         @keyframes pulse-ring {
           0% { transform: scale(1); opacity: 1; }
-          100% { transform: scale(1.8); opacity: 0; }
+          100% { transform: scale(2); opacity: 0; }
         }
         @keyframes marker-bounce {
           0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-5px); }
+          50% { transform: translateY(-8px); }
+        }
+        @keyframes marker-glow {
+          0%, 100% { box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4); }
+          50% { box-shadow: 0 4px 30px rgba(139, 92, 246, 0.6); }
         }
         .map-marker {
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          animation: marker-bounce 0.5s ease-out;
+          animation: marker-bounce 0.6s ease-out;
         }
         .map-marker:hover {
-          transform: scale(1.15);
-          box-shadow: 0 8px 25px rgba(0,0,0,0.35);
+          transform: scale(1.2) translateY(-4px);
+          box-shadow: 0 12px 35px rgba(0,0,0,0.4) !important;
+          z-index: 100;
+        }
+        .map-marker-user:hover {
+          animation: marker-glow 1s ease-in-out infinite;
         }
         .pulse-ring {
           position: absolute;
@@ -1594,11 +1602,48 @@ export function TreeVisualization() {
           border-radius: 50%;
           animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
+        .pulse-ring-double {
+          animation-delay: 1s;
+        }
         .marker-container {
           position: relative;
           display: flex;
           align-items: center;
           justify-content: center;
+        }
+        .marker-avatar {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          object-fit: cover;
+        }
+        .marker-initials {
+          font-weight: 700;
+          font-size: 16px;
+          text-transform: uppercase;
+          letter-spacing: -0.5px;
+        }
+        .marker-badge {
+          position: absolute;
+          bottom: -4px;
+          right: -4px;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          border: 2px solid white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 10px;
+        }
+        .mapboxgl-popup-content {
+          border-radius: 12px !important;
+          padding: 0 !important;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.15) !important;
+          border: 1px solid rgba(0,0,0,0.05) !important;
+        }
+        .mapboxgl-popup-tip {
+          border-top-color: white !important;
         }
       `;
       document.head.appendChild(styleSheet);
@@ -1615,48 +1660,92 @@ export function TreeVisualization() {
 
         const bounds = new mapboxgl.LngLatBounds();
 
-        // Criar marcador do usuário com animação de pulso
+        // Helper para obter iniciais
+        const getInitials = (name: string) => {
+          const parts = name.trim().split(' ');
+          if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+          return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+        };
+
+        // Criar marcador do usuário com avatar e animação de pulso
         const userMarkerContainer = document.createElement('div');
         userMarkerContainer.className = 'marker-container';
-        userMarkerContainer.style.width = '52px';
-        userMarkerContainer.style.height = '52px';
+        userMarkerContainer.style.width = '64px';
+        userMarkerContainer.style.height = '64px';
 
-        const userPulse = document.createElement('div');
-        userPulse.className = 'pulse-ring';
-        userPulse.style.backgroundColor = 'rgba(139, 92, 246, 0.4)';
-        userMarkerContainer.appendChild(userPulse);
+        // Duplo pulso para destaque
+        const userPulse1 = document.createElement('div');
+        userPulse1.className = 'pulse-ring';
+        userPulse1.style.backgroundColor = 'rgba(139, 92, 246, 0.35)';
+        userMarkerContainer.appendChild(userPulse1);
+
+        const userPulse2 = document.createElement('div');
+        userPulse2.className = 'pulse-ring pulse-ring-double';
+        userPulse2.style.backgroundColor = 'rgba(139, 92, 246, 0.25)';
+        userMarkerContainer.appendChild(userPulse2);
 
         const userMarker = document.createElement('div');
-        userMarker.className = 'map-marker';
+        userMarker.className = 'map-marker map-marker-user';
         userMarker.style.cssText = `
           position: absolute;
-          background: linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%);
-          width: 48px;
-          height: 48px;
+          background: linear-gradient(145deg, #8B5CF6 0%, #6D28D9 50%, #5B21B6 100%);
+          width: 56px;
+          height: 56px;
           border-radius: 50%;
           border: 4px solid white;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: white;
-          font-weight: bold;
-          font-size: 18px;
-          box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+          box-shadow: 0 6px 25px rgba(139, 92, 246, 0.5), inset 0 2px 10px rgba(255,255,255,0.2);
           cursor: pointer;
+          overflow: hidden;
         `;
-        userMarker.textContent = '★';
+        
+        if (userProfile.avatar_url) {
+          const avatarImg = document.createElement('img');
+          avatarImg.src = userProfile.avatar_url;
+          avatarImg.className = 'marker-avatar';
+          avatarImg.alt = 'Você';
+          userMarker.appendChild(avatarImg);
+        } else {
+          const initialsSpan = document.createElement('span');
+          initialsSpan.className = 'marker-initials';
+          initialsSpan.style.color = 'white';
+          initialsSpan.style.fontSize = '20px';
+          initialsSpan.textContent = userProfile.full_name ? getInitials(userProfile.full_name) : '★';
+          userMarker.appendChild(initialsSpan);
+        }
+        
+        // Badge de coroa para o usuário
+        const userBadge = document.createElement('div');
+        userBadge.className = 'marker-badge';
+        userBadge.style.cssText = 'background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white;';
+        userBadge.textContent = '👑';
+        userMarker.appendChild(userBadge);
+        
         userMarkerContainer.appendChild(userMarker);
 
         new mapboxgl.Marker(userMarkerContainer)
           .setLngLat([userProfile.longitude, userProfile.latitude])
           .setPopup(
             new mapboxgl.Popup({ 
-              offset: 25,
+              offset: 30,
               className: 'rounded-lg shadow-xl'
             }).setHTML(
-              `<div class="p-3">
-                <p class="font-bold text-base">Você</p>
-                <p class="text-sm text-gray-500">Centro da sua rede familiar</p>
+              `<div style="padding: 16px; min-width: 180px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                  ${userProfile.avatar_url 
+                    ? `<img src="${userProfile.avatar_url}" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid #8B5CF6;" />`
+                    : `<div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #8B5CF6, #6D28D9); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px;">${getInitials(userProfile.full_name || 'V')}</div>`
+                  }
+                  <div>
+                    <p style="font-weight: 700; font-size: 16px; margin: 0; color: #1f2937;">Você</p>
+                    <p style="font-size: 12px; color: #6b7280; margin: 0;">Centro da rede</p>
+                  </div>
+                </div>
+                <div style="background: linear-gradient(135deg, #f3e8ff, #ede9fe); padding: 8px 12px; border-radius: 8px; text-align: center;">
+                  <span style="font-size: 11px; color: #7c3aed; font-weight: 500;">📍 Sua localização</span>
+                </div>
               </div>`
             )
           )
@@ -1667,54 +1756,95 @@ export function TreeVisualization() {
         // Processar cada conexão com animação sequencial
         allConnections.forEach((conn, index) => {
           const otherPerson = conn.requester_id === user.id ? conn.receiver : conn.requester;
+          const relationship = conn.requester_id === user.id 
+            ? conn.relationship_from_requester 
+            : conn.relationship_from_receiver;
           
           if (!otherPerson?.latitude || !otherPerson?.longitude) {
             return;
           }
 
           const isFamilyConnection = conn.connection_type === 'family';
-          const markerGradient = isFamilyConnection 
-            ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' 
-            : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
-          const lineColor = isFamilyConnection ? '#22c55e' : '#3b82f6';
-          const glowColor = isFamilyConnection ? 'rgba(34, 197, 94, 0.4)' : 'rgba(59, 130, 246, 0.4)';
+          const primaryColor = isFamilyConnection ? '#22c55e' : '#3b82f6';
+          const secondaryColor = isFamilyConnection ? '#16a34a' : '#2563eb';
+          const glowColor = isFamilyConnection ? 'rgba(34, 197, 94, 0.45)' : 'rgba(59, 130, 246, 0.45)';
+          const bgGradient = isFamilyConnection 
+            ? 'linear-gradient(145deg, #22c55e 0%, #16a34a 50%, #15803d 100%)'
+            : 'linear-gradient(145deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%)';
 
-          // Criar marcador com animação de entrada atrasada
+          // Criar marcador com avatar e animação
           setTimeout(() => {
             const markerContainer = document.createElement('div');
             markerContainer.className = 'marker-container';
-            markerContainer.style.width = '44px';
-            markerContainer.style.height = '44px';
+            markerContainer.style.width = '52px';
+            markerContainer.style.height = '52px';
             markerContainer.style.opacity = '0';
-            markerContainer.style.transition = 'opacity 0.5s ease-out';
+            markerContainer.style.transition = 'opacity 0.5s ease-out, transform 0.3s ease-out';
 
             const markerEl = document.createElement('div');
             markerEl.className = 'map-marker';
             markerEl.style.cssText = `
-              background: ${markerGradient};
-              width: 40px;
-              height: 40px;
+              background: ${bgGradient};
+              width: 48px;
+              height: 48px;
               border-radius: 50%;
               border: 3px solid white;
               display: flex;
               align-items: center;
               justify-content: center;
-              color: white;
-              font-weight: bold;
-              font-size: 14px;
-              box-shadow: 0 4px 12px ${glowColor};
+              box-shadow: 0 4px 16px ${glowColor}, inset 0 2px 8px rgba(255,255,255,0.15);
               cursor: pointer;
+              overflow: hidden;
             `;
-            markerEl.textContent = (index + 1).toString();
+            
+            if (otherPerson.avatar_url) {
+              const avatarImg = document.createElement('img');
+              avatarImg.src = otherPerson.avatar_url;
+              avatarImg.className = 'marker-avatar';
+              avatarImg.alt = otherPerson.full_name;
+              markerEl.appendChild(avatarImg);
+            } else {
+              const initialsSpan = document.createElement('span');
+              initialsSpan.className = 'marker-initials';
+              initialsSpan.style.color = 'white';
+              initialsSpan.textContent = getInitials(otherPerson.full_name || '?');
+              markerEl.appendChild(initialsSpan);
+            }
+            
+            // Badge com emoji de relacionamento
+            const badge = document.createElement('div');
+            badge.className = 'marker-badge';
+            badge.style.cssText = `background: ${primaryColor}; color: white; font-size: 9px;`;
+            badge.textContent = isFamilyConnection ? '👨‍👩‍👧' : '👥';
+            markerEl.appendChild(badge);
+            
             markerContainer.appendChild(markerEl);
 
             const popup = new mapboxgl.Popup({ 
-              offset: 25,
+              offset: 28,
               className: 'rounded-lg shadow-xl'
             }).setHTML(
-              `<div class="p-3">
-                <p class="font-bold text-base">${otherPerson.full_name}</p>
-                <p class="text-sm" style="color: ${lineColor}">${isFamilyConnection ? '👨‍👩‍👧‍👦 Família' : '👥 Amigo'}</p>
+              `<div style="padding: 16px; min-width: 200px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                  ${otherPerson.avatar_url 
+                    ? `<img src="${otherPerson.avatar_url}" style="width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 3px solid ${primaryColor};" />`
+                    : `<div style="width: 52px; height: 52px; border-radius: 50%; background: ${bgGradient}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px; border: 3px solid white;">${getInitials(otherPerson.full_name || '?')}</div>`
+                  }
+                  <div>
+                    <p style="font-weight: 700; font-size: 15px; margin: 0 0 2px 0; color: #1f2937;">${otherPerson.full_name}</p>
+                    <p style="font-size: 12px; margin: 0; color: ${primaryColor}; font-weight: 500;">${relationship || (isFamilyConnection ? 'Família' : 'Amigo')}</p>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <div style="flex: 1; background: ${isFamilyConnection ? '#dcfce7' : '#dbeafe'}; padding: 8px; border-radius: 8px; text-align: center;">
+                    <span style="font-size: 16px;">${isFamilyConnection ? '👨‍👩‍👧‍👦' : '👥'}</span>
+                    <p style="font-size: 10px; color: ${secondaryColor}; margin: 4px 0 0 0; font-weight: 500;">${isFamilyConnection ? 'Família' : 'Amigo'}</p>
+                  </div>
+                  <div style="flex: 1; background: #f3f4f6; padding: 8px; border-radius: 8px; text-align: center;">
+                    <span style="font-size: 16px;">📍</span>
+                    <p style="font-size: 10px; color: #6b7280; margin: 4px 0 0 0; font-weight: 500;">Localização</p>
+                  </div>
+                </div>
               </div>`
             );
 
@@ -1760,7 +1890,7 @@ export function TreeVisualization() {
                   'line-cap': 'round',
                 },
                 paint: {
-                  'line-color': lineColor,
+                  'line-color': primaryColor,
                   'line-width': 8,
                   'line-opacity': 0.2,
                   'line-blur': 3,
@@ -1777,7 +1907,7 @@ export function TreeVisualization() {
                   'line-cap': 'round',
                 },
                 paint: {
-                  'line-color': lineColor,
+                  'line-color': primaryColor,
                   'line-width': 3,
                   'line-opacity': 0.85,
                 },
