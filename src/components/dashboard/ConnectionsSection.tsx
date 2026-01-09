@@ -29,6 +29,10 @@ const relationshipTypes = [
   { value: 'primo', label: 'Primo' },
   { value: 'prima', label: 'Prima' },
   { value: 'conjuge', label: 'Cônjuge' },
+  { value: 'sogro', label: 'Sogro' },
+  { value: 'sogra', label: 'Sogra' },
+  { value: 'cunhado', label: 'Cunhado' },
+  { value: 'cunhada', label: 'Cunhada' },
   { value: 'ancestral', label: 'Ancestral' },
   { value: 'outro', label: 'Outro' }
 ];
@@ -58,6 +62,10 @@ const reverseRelationshipMap: Record<string, string[]> = {
   'primo': ['primo', 'prima'],
   'prima': ['primo', 'prima'],
   'conjuge': ['conjuge'],
+  'sogro': ['nora', 'genro'],
+  'sogra': ['nora', 'genro'],
+  'cunhado': ['cunhado', 'cunhada'],
+  'cunhada': ['cunhado', 'cunhada'],
   'amigo': ['amigo', 'amiga'],
   'amiga': ['amigo', 'amiga'],
   'colega': ['colega']
@@ -254,6 +262,13 @@ export function ConnectionsSection() {
       'tia': {
         'filho': { myRel: 'primo', theirRel: 'primo' },
         'filha': { myRel: 'prima', theirRel: 'primo' }
+      },
+      // Se X é meu cônjuge e Y é pai/mãe de X, então Y é meu sogro/sogra
+      'conjuge': {
+        'pai': { myRel: 'sogro', theirRel: 'genro' },
+        'mae': { myRel: 'sogra', theirRel: 'nora' },
+        'irmao': { myRel: 'cunhado', theirRel: 'cunhado' },
+        'irma': { myRel: 'cunhada', theirRel: 'cunhado' }
       }
     };
 
