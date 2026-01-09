@@ -38,9 +38,9 @@ interface Service {
 interface WishlistItem {
   id: string;
   name: string;
-  store: string;
-  url: string;
-  price?: string;
+  brand?: string;
+  url?: string;
+  price: string;
   addedAt: Date;
 }
 
@@ -79,7 +79,7 @@ const World = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
-  const [newWishlistItem, setNewWishlistItem] = useState({ name: "", store: "", url: "", price: "" });
+  const [newWishlistItem, setNewWishlistItem] = useState({ name: "", brand: "", url: "", price: "" });
   const [showAddWishlist, setShowAddWishlist] = useState(false);
   const [embedUrl, setEmbedUrl] = useState<string | null>(null);
   const [embedName, setEmbedName] = useState("");
@@ -124,22 +124,22 @@ const World = () => {
   };
 
   const handleAddToWishlist = () => {
-    if (!newWishlistItem.name || !newWishlistItem.store) {
-      toast.error("Preencha nome e loja do produto");
+    if (!newWishlistItem.name || !newWishlistItem.price) {
+      toast.error("Preencha nome e preço do produto");
       return;
     }
 
     const item: WishlistItem = {
       id: Date.now().toString(),
       name: newWishlistItem.name,
-      store: newWishlistItem.store,
-      url: newWishlistItem.url,
+      brand: newWishlistItem.brand || undefined,
+      url: newWishlistItem.url || undefined,
       price: newWishlistItem.price,
       addedAt: new Date(),
     };
 
     setWishlist([...wishlist, item]);
-    setNewWishlistItem({ name: "", store: "", url: "", price: "" });
+    setNewWishlistItem({ name: "", brand: "", url: "", price: "" });
     setShowAddWishlist(false);
     toast.success("Produto adicionado à lista de desejos!");
   };
@@ -372,27 +372,27 @@ const World = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Loja *</label>
+                      <label className="text-sm font-medium">Marca (opcional)</label>
                       <Input
-                        placeholder="Ex: Amazon"
-                        value={newWishlistItem.store}
-                        onChange={(e) => setNewWishlistItem({ ...newWishlistItem, store: e.target.value })}
+                        placeholder="Ex: Apple"
+                        value={newWishlistItem.brand}
+                        onChange={(e) => setNewWishlistItem({ ...newWishlistItem, brand: e.target.value })}
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Link do Produto</label>
-                      <Input
-                        placeholder="https://..."
-                        value={newWishlistItem.url}
-                        onChange={(e) => setNewWishlistItem({ ...newWishlistItem, url: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Preço</label>
+                      <label className="text-sm font-medium">Preço que Desejo Pagar *</label>
                       <Input
                         placeholder="R$ 0,00"
                         value={newWishlistItem.price}
                         onChange={(e) => setNewWishlistItem({ ...newWishlistItem, price: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Link do Produto (opcional)</label>
+                      <Input
+                        placeholder="https://..."
+                        value={newWishlistItem.url}
+                        onChange={(e) => setNewWishlistItem({ ...newWishlistItem, url: e.target.value })}
                       />
                     </div>
                     <Button onClick={handleAddToWishlist} className="w-full">
@@ -419,8 +419,8 @@ const World = () => {
                       <div className="flex-1">
                         <p className="font-medium">{item.name}</p>
                         <div className="flex gap-2 text-sm text-muted-foreground">
-                          <span>{item.store}</span>
-                          {item.price && <span>• {item.price}</span>}
+                          {item.brand && <span>{item.brand}</span>}
+                          <span className="font-medium text-primary">{item.price}</span>
                         </div>
                       </div>
                       <div className="flex gap-2">
