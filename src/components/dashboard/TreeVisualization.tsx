@@ -815,96 +815,97 @@ export function TreeVisualization() {
               )}
 
               {/* ============ CONEXÕES VOCÊ → FILHOS ============ */}
-              {root.children.length > 0 && (
-                <g>
-                  {/* Ponto de origem (você ou casal) */}
-                  {(() => {
-                    const originX = root.spouse ? (root.x! + root.spouse.x!) / 2 : root.x!;
-                    const originY = root.y! + 43;
-                    const childrenY = root.children[0].y!;
-                    const midY = (originY + childrenY - 43) / 2;
-                    const childrenCenterX = root.children.length > 1
-                      ? (Math.min(...root.children.map(c => c.x!)) + Math.max(...root.children.map(c => c.x!))) / 2
-                      : root.children[0].x!;
+              {(() => {
+                // Buscar filhos da geração 1 que são realmente filhos
+                const childrenFromGen = (generations.get(1) || []).filter(
+                  n => n.relationship === 'filho' || n.relationship === 'filha'
+                );
+                
+                if (childrenFromGen.length === 0) return null;
+                
+                // Verificar se todos têm posições válidas
+                const validChildren = childrenFromGen.filter(c => c.x !== undefined && c.y !== undefined);
+                if (validChildren.length === 0) return null;
+                
+                const originX = root.spouse && root.spouse.x ? (root.x! + root.spouse.x) / 2 : root.x!;
+                const originY = root.y! + 43;
+                const childrenY = validChildren[0].y!;
+                const midY = (originY + childrenY - 43) / 2;
+                const childrenCenterX = validChildren.length > 1
+                  ? (Math.min(...validChildren.map(c => c.x!)) + Math.max(...validChildren.map(c => c.x!))) / 2
+                  : validChildren[0].x!;
+                
+                return (
+                  <g>
+                    {/* Linha vertical do você/casal até ponto de distribuição */}
+                    <line
+                      x1={originX}
+                      y1={originY}
+                      x2={originX}
+                      y2={midY}
+                      stroke="hsl(280 67% 54%)"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                    />
                     
-                    return (
-                      <g>
-                        {/* Linha vertical do você/casal */}
+                    {/* Conexão do centro para a linha dos filhos */}
+                    <path
+                      d={`M ${originX} ${midY}
+                          L ${childrenCenterX} ${midY}`}
+                      stroke="hsl(280 67% 54%)"
+                      strokeWidth="4"
+                      fill="none"
+                      strokeLinecap="round"
+                    />
+                    
+                    {/* Círculo de distribuição */}
+                    <circle
+                      cx={childrenCenterX}
+                      cy={midY}
+                      r="6"
+                      fill="hsl(280 67% 54%)"
+                      stroke="white"
+                      strokeWidth="2"
+                    />
+                    
+                    {/* Linha horizontal para os filhos se tiver mais de um */}
+                    {validChildren.length > 1 && (
+                      <path
+                        d={`M ${Math.min(...validChildren.map(c => c.x!))} ${midY}
+                            L ${Math.max(...validChildren.map(c => c.x!))} ${midY}`}
+                        stroke="hsl(280 67% 54%)"
+                        strokeWidth="4"
+                        fill="none"
+                        strokeLinecap="round"
+                        opacity="0.8"
+                      />
+                    )}
+                    
+                    {/* Conectores verticais para cada filho */}
+                    {validChildren.map(child => (
+                      <g key={`child-connect-${child.id}`}>
                         <line
-                          x1={originX}
-                          y1={originY}
-                          x2={originX}
-                          y2={midY}
-                          stroke="url(#childLine)"
-                          strokeWidth="4"
+                          x1={child.x}
+                          y1={midY}
+                          x2={child.x}
+                          y2={child.y! - 43}
+                          stroke="hsl(280 67% 54%)"
+                          strokeWidth="3"
                           strokeLinecap="round"
                         />
-                        
-                        {/* Linha horizontal se tiver múltiplos filhos */}
-                        {root.children.length > 1 && (
-                          <>
-                            {/* Conexão do centro para a linha dos filhos */}
-                            <path
-                              d={`M ${originX} ${midY}
-                                  Q ${originX} ${midY + 15}
-                                    ${childrenCenterX} ${midY + 15}
-                                  L ${childrenCenterX} ${midY + 20}`}
-                              stroke="url(#childLine)"
-                              strokeWidth="4"
-                              fill="none"
-                              strokeLinecap="round"
-                            />
-                            
-                            {/* Círculo de distribuição */}
-                            <circle
-                              cx={childrenCenterX}
-                              cy={midY + 20}
-                              r="6"
-                              fill="hsl(280 67% 54%)"
-                              stroke="white"
-                              strokeWidth="2"
-                            />
-                            
-                            {/* Linha horizontal para os filhos */}
-                            <path
-                              d={`M ${Math.min(...root.children.map(c => c.x!))} ${midY + 20}
-                                  L ${Math.max(...root.children.map(c => c.x!))} ${midY + 20}`}
-                              stroke="hsl(280 67% 54%)"
-                              strokeWidth="4"
-                              fill="none"
-                              strokeLinecap="round"
-                              opacity="0.8"
-                            />
-                          </>
-                        )}
-                        
-                        {/* Conectores verticais para cada filho */}
-                        {root.children.map(child => (
-                          <g key={`child-connect-${child.id}`}>
-                            <line
-                              x1={child.x}
-                              y1={root.children.length > 1 ? midY + 20 : midY}
-                              x2={child.x}
-                              y2={child.y! - 43}
-                              stroke="hsl(280 67% 54%)"
-                              strokeWidth="3"
-                              strokeLinecap="round"
-                            />
-                            <circle
-                              cx={child.x}
-                              cy={child.y! - 43}
-                              r="4"
-                              fill="hsl(280 67% 54%)"
-                              stroke="white"
-                              strokeWidth="1.5"
-                            />
-                          </g>
-                        ))}
+                        <circle
+                          cx={child.x}
+                          cy={child.y! - 43}
+                          r="4"
+                          fill="hsl(280 67% 54%)"
+                          stroke="white"
+                          strokeWidth="1.5"
+                        />
                       </g>
-                    );
-                  })()}
-                </g>
-              )}
+                    ))}
+                  </g>
+                );
+              })()}
 
               {/* ============ CONEXÕES FILHOS → NETOS ============ */}
               {(() => {
