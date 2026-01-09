@@ -641,36 +641,45 @@ const Feed = () => {
                       </div>
                     </div>
                     
-                    {!post.is_group_post && post.user_id === user?.id && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => setPostToShare(post.id)}
-                          >
-                            <Share2 className="h-4 w-4 mr-2" />
-                            Compartilhar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setPostToEdit(post)}
-                          >
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => setPostToDelete(post.id)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {/* Share button - visible for all non-group posts */}
+                      {!post.is_group_post && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setPostToShare(post.id)}
+                          title="Compartilhar"
+                        >
+                          <Share2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                      
+                      {/* Options menu - only for post owner */}
+                      {!post.is_group_post && post.user_id === user?.id && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => setPostToEdit(post)}
+                            >
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => setPostToDelete(post.id)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
