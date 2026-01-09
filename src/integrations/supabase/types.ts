@@ -1099,6 +1099,10 @@ export type Database = {
         | "prima"
         | "conjuge"
         | "outro"
+        | "sogro"
+        | "sogra"
+        | "cunhado"
+        | "cunhada"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1246,6 +1250,10 @@ export const Constants = {
         "prima",
         "conjuge",
         "outro",
+        "sogro",
+        "sogra",
+        "cunhado",
+        "cunhada",
       ],
     },
   },
