@@ -79,6 +79,8 @@ const World = () => {
   const [showAddWishlist, setShowAddWishlist] = useState(false);
   const [embedUrl, setEmbedUrl] = useState<string | null>(null);
   const [embedName, setEmbedName] = useState("");
+  const [streamingModalOpen, setStreamingModalOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
 
   const categoryIcons = {
     streaming: <Tv className="h-4 w-4" />,
@@ -101,7 +103,10 @@ const World = () => {
   });
 
   const handleOpenService = (service: Service) => {
-    if (service.canEmbed) {
+    if (service.category === "streaming") {
+      setSelectedService(service);
+      setStreamingModalOpen(true);
+    } else if (service.canEmbed) {
       setEmbedUrl(service.url);
       setEmbedName(service.name);
     } else {
@@ -111,6 +116,7 @@ const World = () => {
 
   const handleOpenExternal = (url: string) => {
     window.open(url, "_blank");
+    setStreamingModalOpen(false);
   };
 
   const handleAddToWishlist = () => {
@@ -156,7 +162,46 @@ const World = () => {
             Acesse seus serviços favoritos, gerencie sua lista de desejos e explore o mundo conectado.
           </p>
 
-          {/* Embed Dialog */}
+          {/* Streaming Modal */}
+          <Dialog open={streamingModalOpen} onOpenChange={setStreamingModalOpen}>
+            <DialogContent className="max-w-4xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-3">
+                  {selectedService && (
+                    <>
+                      <div
+                        className="w-10 h-10 rounded-lg flex items-center justify-center text-xl"
+                        style={{ backgroundColor: selectedService.color + "20" }}
+                      >
+                        {selectedService.icon}
+                      </div>
+                      <span>{selectedService.name}</span>
+                    </>
+                  )}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="py-6">
+                <p className="text-muted-foreground mb-6">
+                  Este serviço de streaming não pode ser exibido diretamente aqui devido a restrições de segurança.
+                </p>
+                <div className="flex flex-col gap-4">
+                  <Button 
+                    size="lg" 
+                    className="w-full"
+                    onClick={() => selectedService && handleOpenExternal(selectedService.url)}
+                  >
+                    <ExternalLink className="h-5 w-5 mr-2" />
+                    Abrir {selectedService?.name} em nova aba
+                  </Button>
+                  <p className="text-xs text-center text-muted-foreground">
+                    Você será redirecionado para o site oficial do serviço
+                  </p>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Embed Dialog for embeddable services */}
           {embedUrl && (
             <Dialog open={!!embedUrl} onOpenChange={() => setEmbedUrl(null)}>
               <DialogContent className="max-w-6xl h-[80vh]">
