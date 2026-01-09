@@ -362,7 +362,7 @@ const MapVisualization = () => {
                       Memórias
                     </button>
                     <button onclick="window.dispatchEvent(new CustomEvent('navigateToTimeline', { detail: '${profile.id}' }))" class="flex-1 text-xs bg-secondary text-white px-2 py-1.5 rounded-md hover:opacity-90 transition-opacity" style="background-color: #10b981;">
-                      Timeline
+                      Seasons
                     </button>
                   </div>
                 </div>`
