@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Send, Loader2, Sparkles, X, Trash2 } from 'lucide-react';
+import { Send, Loader2, Sparkles, Trash2, Mic, Square, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import auraAvatar from '@/assets/aura.png';
 import { cn } from '@/lib/utils';
+import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 
 interface Message {
   id: string;
@@ -35,9 +36,12 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  const { isRecording, recordingTime, startRecording, stopRecording, cancelRecording } = useAudioRecorder();
 
   useEffect(() => {
     if (open) {
@@ -56,6 +60,12 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const loadHistory = async () => {
@@ -108,6 +118,62 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
       console.error('Error clearing history:', error);
       toast.error('Erro ao limpar histórico');
     }
+  };
+
+  const transcribeAudio = async (audioBlob: Blob): Promise<string | null> => {
+    try {
+      setIsTranscribing(true);
+      
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'recording.webm');
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/aura-transcribe`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Transcription failed');
+      }
+
+      const data = await response.json();
+      return data.text;
+    } catch (error) {
+      console.error('Error transcribing audio:', error);
+      toast.error('Erro ao transcrever áudio');
+      return null;
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
+  const handleStartRecording = async () => {
+    try {
+      await startRecording();
+    } catch (error) {
+      toast.error('Erro ao acessar microfone. Verifique as permissões.');
+    }
+  };
+
+  const handleStopRecording = async () => {
+    const audioBlob = await stopRecording();
+    if (audioBlob) {
+      const transcribedText = await transcribeAudio(audioBlob);
+      if (transcribedText) {
+        sendMessage(transcribedText);
+      }
+    }
+  };
+
+  const handleCancelRecording = () => {
+    cancelRecording();
+    toast.info('Gravação cancelada');
   };
 
   const sendMessage = async (messageText?: string) => {
@@ -210,6 +276,11 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
                       <span className="inline-block w-1.5 h-1.5 bg-primary rounded-full animate-bounce" />
                       <span className="ml-1">Pensando...</span>
                     </>
+                  ) : isTranscribing ? (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <span className="ml-1">Transcrevendo...</span>
+                    </>
                   ) : (
                     'Online • Pronta para ajudar'
                   )}
@@ -251,6 +322,10 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
                   <p className="text-muted-foreground max-w-md leading-relaxed">
                     Sua assistente pessoal na Tree. Posso ajudar com dúvidas, 
                     buscar pessoas, apoiar em atividades e muito mais!
+                  </p>
+                  <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
+                    <Mic className="h-4 w-4" />
+                    Você também pode enviar mensagens de voz!
                   </p>
                 </div>
                 
@@ -335,29 +410,65 @@ export function AuraChat({ open, onOpenChange }: AuraChatProps) {
 
         {/* Input área */}
         <div className="p-4 sm:p-6 pt-4 border-t bg-background/80 backdrop-blur-sm">
-          <div className="flex gap-2">
-            <Input
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Digite sua mensagem..."
-              disabled={isLoading}
-              className="flex-1 rounded-full px-4 border-primary/20 focus-visible:ring-primary/30"
-            />
-            <Button
-              onClick={() => sendMessage()}
-              disabled={!input.trim() || isLoading}
-              size="icon"
-              className="rounded-full h-10 w-10 shrink-0"
-            >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
+          {isRecording ? (
+            <div className="flex items-center gap-3">
+              <div className="flex-1 flex items-center gap-3 bg-destructive/10 rounded-full px-4 py-2">
+                <span className="h-3 w-3 bg-destructive rounded-full animate-pulse" />
+                <span className="text-sm font-medium text-destructive">
+                  Gravando... {formatTime(recordingTime)}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleCancelRecording}
+                className="rounded-full h-10 w-10 text-muted-foreground hover:text-destructive"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+              <Button
+                onClick={handleStopRecording}
+                size="icon"
+                className="rounded-full h-10 w-10 bg-destructive hover:bg-destructive/90"
+              >
+                <Square className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Input
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Digite ou envie um áudio..."
+                disabled={isLoading || isTranscribing}
+                className="flex-1 rounded-full px-4 border-primary/20 focus-visible:ring-primary/30"
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleStartRecording}
+                disabled={isLoading || isTranscribing}
+                className="rounded-full h-10 w-10 shrink-0 hover:bg-primary/10 hover:border-primary/30"
+                title="Enviar mensagem de voz"
+              >
+                <Mic className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={() => sendMessage()}
+                disabled={!input.trim() || isLoading || isTranscribing}
+                size="icon"
+                className="rounded-full h-10 w-10 shrink-0"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          )}
           <p className="text-[10px] text-muted-foreground text-center mt-2">
             AURA pode cometer erros. Verifique informações importantes.
           </p>
