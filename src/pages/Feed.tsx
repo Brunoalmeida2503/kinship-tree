@@ -81,6 +81,8 @@ const Feed = () => {
   const [shareWithTree, setShareWithTree] = useState(false);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [userGroups, setUserGroups] = useState<Group[]>([]);
+  const [userConnections, setUserConnections] = useState<Array<{ id: string; full_name: string; avatar_url: string | null }>>([]);
+  const [selectedConnections, setSelectedConnections] = useState<string[]>([]);
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
   const [postToEdit, setPostToEdit] = useState<Post | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -100,6 +102,7 @@ const Feed = () => {
     }
     
     fetchUserGroups();
+    fetchUserConnections();
   }, [user, navigate, location]);
 
   useEffect(() => {
@@ -136,6 +139,40 @@ const Feed = () => {
       setUserGroups(groups || []);
     } catch (error) {
       console.error("Error fetching groups:", error);
+    }
+  };
+
+  const fetchUserConnections = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: connections, error: connectionsError } = await supabase
+        .from("connections")
+        .select("requester_id, receiver_id")
+        .eq("status", "accepted");
+
+      if (connectionsError) throw connectionsError;
+
+      const connectedUserIds = new Set<string>();
+      connections?.forEach((conn) => {
+        if (conn.requester_id === user.id) {
+          connectedUserIds.add(conn.receiver_id);
+        } else if (conn.receiver_id === user.id) {
+          connectedUserIds.add(conn.requester_id);
+        }
+      });
+
+      if (connectedUserIds.size > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url")
+          .in("id", Array.from(connectedUserIds));
+
+        if (profilesError) throw profilesError;
+        setUserConnections(profilesData || []);
+      }
+    } catch (error) {
+      console.error("Error fetching connections:", error);
     }
   };
 
@@ -431,10 +468,26 @@ const Feed = () => {
         if (groupsError) throw groupsError;
       }
 
+      // Insert post_shares for selected connections
+      if (selectedConnections.length > 0 && postData) {
+        const postShareInserts = selectedConnections.map(userId => ({
+          post_id: postData.id,
+          shared_by: user.id,
+          shared_with_user_id: userId,
+        }));
+
+        const { error: sharesError } = await supabase
+          .from("post_shares")
+          .insert(postShareInserts);
+
+        if (sharesError) throw sharesError;
+      }
+
       setNewPost("");
       setMediaFiles([]);
       setShareWithTree(false);
       setSelectedGroups([]);
+      setSelectedConnections([]);
       toast({
         title: "Post criado!",
         description: "Seu post foi publicado com sucesso",
@@ -547,6 +600,46 @@ const Feed = () => {
                 </Label>
               </div>
 
+              {userConnections.length > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Pessoas ({selectedConnections.length})
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Compartilhar com pessoas</h4>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {userConnections.map((connection) => (
+                          <div key={connection.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`conn-${connection.id}`}
+                              checked={selectedConnections.includes(connection.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedConnections([...selectedConnections, connection.id]);
+                                } else {
+                                  setSelectedConnections(selectedConnections.filter(id => id !== connection.id));
+                                }
+                              }}
+                            />
+                            <Label htmlFor={`conn-${connection.id}`} className="flex items-center gap-2 cursor-pointer">
+                              <Avatar className="h-6 w-6">
+                                <AvatarImage src={connection.avatar_url || undefined} />
+                                <AvatarFallback>{connection.full_name.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm">{connection.full_name}</span>
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+
               {userGroups.length > 0 && (
                 <Popover>
                   <PopoverTrigger asChild>
@@ -558,7 +651,7 @@ const Feed = () => {
                   <PopoverContent className="w-80">
                     <div className="space-y-4">
                       <h4 className="font-medium">Compartilhar com grupos</h4>
-                      <div className="space-y-2">
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
                         {userGroups.map((group) => (
                           <div key={group.id} className="flex items-center space-x-2">
                             <Checkbox
