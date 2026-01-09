@@ -205,6 +205,7 @@ export function TreeVisualization() {
     generations.set(0, [root]); // Usuário e irmãos
     generations.set(1, []); // Filhos
     generations.set(2, []); // Netos
+    generations.set(3, []); // Sobrinhos (linha separada)
 
     // Mapear cônjuges
     const spouseMap = new Map<string, string>();
@@ -243,9 +244,9 @@ export function TreeVisualization() {
         // Filho pertence ao root
         root.children.push(node);
       } else if (rel === 'sobrinho' || rel === 'sobrinha') {
-        // Sobrinhos são da geração 1 (filhos dos irmãos)
-        node.generation = 1;
-        generations.get(1)!.push(node);
+        // Sobrinhos têm linha separada (geração 3)
+        node.generation = 3;
+        generations.get(3)!.push(node);
       } else if (rel === 'neto' || rel === 'neta') {
         node.generation = 2;
         generations.get(2)!.push(node);
@@ -306,9 +307,20 @@ export function TreeVisualization() {
     const baseY = 300;
     const centerX = 700;
 
+    // Mapeamento de geração para posição Y relativa
+    // -2=avós, -1=pais, 0=você, 1=filhos, 2=netos, 3=sobrinhos (ao lado dos filhos, levemente deslocado)
+    const generationYMap: Record<number, number> = {
+      [-2]: -2 * verticalSpacing,
+      [-1]: -1 * verticalSpacing,
+      [0]: 0,
+      [1]: 1 * verticalSpacing,
+      [2]: 2 * verticalSpacing,
+      [3]: 1 * verticalSpacing + 10, // Sobrinhos na mesma altura dos filhos, levemente abaixo
+    };
+
     // Processar cada geração
     generations.forEach((nodes, generation) => {
-      const y = baseY + (generation * verticalSpacing);
+      const y = baseY + (generationYMap[generation] ?? generation * verticalSpacing);
       
       // Calcular largura total necessária
       let totalWidth = 0;
@@ -328,8 +340,18 @@ export function TreeVisualization() {
       });
       totalWidth -= nodeSpacing;
 
-      // Posicionar nós da esquerda para direita
-      let currentX = centerX - (totalWidth / 2);
+      // Para sobrinhos, posicionar à direita dos filhos
+      let startX = centerX - (totalWidth / 2);
+      if (generation === 3) {
+        // Calcular onde terminam os filhos para posicionar sobrinhos à direita
+        const childrenGen = generations.get(1) || [];
+        if (childrenGen.length > 0) {
+          const maxChildX = Math.max(...childrenGen.map(c => c.x || 0));
+          startX = maxChildX + nodeWidth + nodeSpacing;
+        }
+      }
+      
+      let currentX = startX;
       processedNodes.clear();
       
       nodes.forEach(node => {
@@ -362,6 +384,7 @@ export function TreeVisualization() {
       [0]: { bg: 'hsl(221 83% 53%)', border: 'hsl(221 83% 43%)', text: 'hsl(0 0% 100%)' }, // Irmãos - Azul
       [1]: { bg: 'hsl(280 67% 54%)', border: 'hsl(280 67% 44%)', text: 'hsl(0 0% 100%)' }, // Filhos - Roxo
       [2]: { bg: 'hsl(330 80% 55%)', border: 'hsl(330 80% 45%)', text: 'hsl(0 0% 100%)' }, // Netos - Rosa
+      [3]: { bg: 'hsl(200 75% 50%)', border: 'hsl(200 75% 40%)', text: 'hsl(0 0% 100%)' }, // Sobrinhos - Azul claro
     };
     return colors[generation] || { bg: 'hsl(var(--muted))', border: 'hsl(var(--border))', text: 'hsl(var(--foreground))' };
   };
@@ -372,8 +395,9 @@ export function TreeVisualization() {
       [-2]: 'Avós',
       [-1]: 'Pais/Tios',
       [0]: 'Você & Irmãos',
-      [1]: 'Filhos/Sobrinhos',
+      [1]: 'Filhos',
       [2]: 'Netos',
+      [3]: 'Sobrinhos',
     };
     return labels[generation] || '';
   };
