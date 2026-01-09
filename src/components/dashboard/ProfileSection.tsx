@@ -514,18 +514,13 @@ export function ProfileSection() {
                 <SelectValue placeholder="Selecione uma voz" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="sarah">Sarah (Feminina - Padrão)</SelectItem>
-                <SelectItem value="laura">Laura (Feminina - Suave)</SelectItem>
-                <SelectItem value="jessica">Jessica (Feminina - Jovem)</SelectItem>
-                <SelectItem value="lily">Lily (Feminina - Doce)</SelectItem>
-                <SelectItem value="alice">Alice (Feminina - Clara)</SelectItem>
-                <SelectItem value="matilda">Matilda (Feminina - Elegante)</SelectItem>
-                <SelectItem value="river">River (Não-binária)</SelectItem>
-                <SelectItem value="charlie">Charlie (Masculina - Amigável)</SelectItem>
-                <SelectItem value="george">George (Masculina - Profissional)</SelectItem>
-                <SelectItem value="liam">Liam (Masculina - Jovem)</SelectItem>
-                <SelectItem value="brian">Brian (Masculina - Narrativa)</SelectItem>
-                <SelectItem value="daniel">Daniel (Masculina - Britânico)</SelectItem>
+                <SelectItem value="sarah">Sarah (Padrão)</SelectItem>
+                <SelectItem value="laura">Laura (Suave)</SelectItem>
+                <SelectItem value="jessica">Jessica (Jovem)</SelectItem>
+                <SelectItem value="lily">Lily (Doce)</SelectItem>
+                <SelectItem value="alice">Alice (Clara)</SelectItem>
+                <SelectItem value="matilda">Matilda (Elegante)</SelectItem>
+                <SelectItem value="river">River (Neutra)</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
