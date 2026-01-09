@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Camera, Globe } from 'lucide-react';
+import { Camera, Globe, Volume2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/contexts/ThemeContext';
 import { fetchCountries, fetchStates, fetchCities, fetchCoordinates, Country, State, City } from '@/services/geoService';
@@ -41,7 +41,8 @@ export function ProfileSection() {
     country: '',
     state: '',
     city: '',
-    world_enabled: false
+    world_enabled: false,
+    aura_voice: 'sarah'
   });
 
   const [countries, setCountries] = useState<Country[]>([]);
@@ -100,7 +101,8 @@ export function ProfileSection() {
         country: data.country || '',
         state: data.state || '',
         city: data.city || '',
-        world_enabled: data.world_enabled || false
+        world_enabled: data.world_enabled || false,
+        aura_voice: data.aura_voice || 'sarah'
       };
       
       setProfile(profileData);
@@ -231,7 +233,8 @@ export function ProfileSection() {
       country: profile.country || null,
       state: profile.state || null,
       city: profile.city || null,
-      world_enabled: profile.world_enabled
+      world_enabled: profile.world_enabled,
+      aura_voice: profile.aura_voice
     };
 
     const { error } = await supabase
@@ -496,6 +499,38 @@ export function ProfileSection() {
               checked={profile.world_enabled}
               onCheckedChange={(checked) => setProfile({ ...profile, world_enabled: checked })}
             />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Volume2 className="h-4 w-4 text-muted-foreground" />
+              <Label htmlFor="aura_voice">Voz da AURA</Label>
+            </div>
+            <Select
+              value={profile.aura_voice}
+              onValueChange={(value) => setProfile({ ...profile, aura_voice: value })}
+            >
+              <SelectTrigger id="aura_voice">
+                <SelectValue placeholder="Selecione uma voz" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sarah">Sarah (Feminina - Padrão)</SelectItem>
+                <SelectItem value="laura">Laura (Feminina - Suave)</SelectItem>
+                <SelectItem value="jessica">Jessica (Feminina - Jovem)</SelectItem>
+                <SelectItem value="lily">Lily (Feminina - Doce)</SelectItem>
+                <SelectItem value="alice">Alice (Feminina - Clara)</SelectItem>
+                <SelectItem value="matilda">Matilda (Feminina - Elegante)</SelectItem>
+                <SelectItem value="river">River (Não-binária)</SelectItem>
+                <SelectItem value="charlie">Charlie (Masculina - Amigável)</SelectItem>
+                <SelectItem value="george">George (Masculina - Profissional)</SelectItem>
+                <SelectItem value="liam">Liam (Masculina - Jovem)</SelectItem>
+                <SelectItem value="brian">Brian (Masculina - Narrativa)</SelectItem>
+                <SelectItem value="daniel">Daniel (Masculina - Britânico)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Escolha a voz que a AURA usará para responder por áudio
+            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
