@@ -274,7 +274,7 @@ const Echos = () => {
       // Create new conversation
       const { data: newConv, error: convError } = await supabase
         .from('conversations')
-        .insert({})
+        .insert({ created_by: user.id })
         .select()
         .single();
 
