@@ -5,22 +5,44 @@ import { AuraChat } from './AuraChat';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import auraAvatar from '@/assets/aura.png';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export function AuraButton() {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
-  const [hasInteracted, setHasInteracted] = useState(false);
+  const [hasInteractedToday, setHasInteractedToday] = useState(true); // Default true to avoid flash
 
   useEffect(() => {
-    // Mostrar tooltip após 3 segundos se o usuário não interagiu
+    const checkTodayInteractions = async () => {
+      if (!user) return;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const { count } = await supabase
+        .from('aura_conversations')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', today.toISOString());
+
+      setHasInteractedToday((count ?? 0) > 0);
+    };
+
+    checkTodayInteractions();
+  }, [user]);
+
+  useEffect(() => {
+    // Mostrar tooltip após 3 segundos se não houve interação hoje
+    if (hasInteractedToday) return;
+
     const timer = setTimeout(() => {
-      if (!hasInteracted) {
-        setShowTooltip(true);
-      }
+      setShowTooltip(true);
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [hasInteracted]);
+  }, [hasInteractedToday]);
 
   useEffect(() => {
     // Esconder tooltip após 5 segundos
@@ -33,7 +55,7 @@ export function AuraButton() {
   }, [showTooltip]);
 
   const handleClick = () => {
-    setHasInteracted(true);
+    setHasInteractedToday(true);
     setShowTooltip(false);
     setOpen(true);
   };
