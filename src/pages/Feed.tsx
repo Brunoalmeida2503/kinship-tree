@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Users, UserPlus, Trash2, Pencil, MoreVertical, Share2 } from "lucide-react";
+import { Loader2, Send, Users, UserPlus, Trash2, Pencil, MoreVertical, Share2, Search } from "lucide-react";
 import { postSchema } from "@/lib/validation";
 import { z } from "zod";
 import { Input } from "@/components/ui/input";
@@ -83,6 +83,7 @@ const Feed = () => {
   const [userGroups, setUserGroups] = useState<Group[]>([]);
   const [userConnections, setUserConnections] = useState<Array<{ id: string; full_name: string; avatar_url: string | null }>>([]);
   const [selectedConnections, setSelectedConnections] = useState<string[]>([]);
+  const [connectionSearchTerm, setConnectionSearchTerm] = useState('');
   const [postToDelete, setPostToDelete] = useState<string | null>(null);
   const [postToEdit, setPostToEdit] = useState<Post | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -611,8 +612,19 @@ const Feed = () => {
                   <PopoverContent className="w-80">
                     <div className="space-y-4">
                       <h4 className="font-medium">Compartilhar com pessoas</h4>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Buscar familiares e amigos..."
+                          value={connectionSearchTerm}
+                          onChange={(e) => setConnectionSearchTerm(e.target.value)}
+                          className="pl-9"
+                        />
+                      </div>
                       <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {userConnections.map((connection) => (
+                        {userConnections
+                          .filter(conn => conn.full_name.toLowerCase().includes(connectionSearchTerm.toLowerCase()))
+                          .map((connection) => (
                           <div key={connection.id} className="flex items-center space-x-2">
                             <Checkbox
                               id={`conn-${connection.id}`}
@@ -634,6 +646,11 @@ const Feed = () => {
                             </Label>
                           </div>
                         ))}
+                        {userConnections.filter(conn => conn.full_name.toLowerCase().includes(connectionSearchTerm.toLowerCase())).length === 0 && (
+                          <p className="text-sm text-muted-foreground text-center py-2">
+                            Nenhum resultado encontrado
+                          </p>
+                        )}
                       </div>
                     </div>
                   </PopoverContent>
