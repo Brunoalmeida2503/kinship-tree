@@ -963,6 +963,7 @@ export type Database = {
       }
       posts: {
         Row: {
+          allow_reshare: boolean
           content: string
           created_at: string | null
           id: string
@@ -973,6 +974,7 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          allow_reshare?: boolean
           content: string
           created_at?: string | null
           id?: string
@@ -983,6 +985,7 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          allow_reshare?: boolean
           content?: string
           created_at?: string | null
           id?: string
