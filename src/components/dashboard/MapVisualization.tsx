@@ -160,83 +160,185 @@ const MapVisualization = () => {
         }
       }
 
-      // Adicionar marcador do usuário atual se tiver localização (marcador 0)
-      if (currentUserProfile?.latitude && currentUserProfile?.longitude) {
-        const userEl = document.createElement("div");
-        userEl.className = "tree-marker";
-        userEl.style.backgroundColor = "#10b981";
-        userEl.style.width = "42px";
-        userEl.style.height = "42px";
-        userEl.style.borderRadius = "50%";
-        userEl.style.border = "4px solid white";
-        userEl.style.cursor = "pointer";
-        userEl.style.display = "flex";
-        userEl.style.alignItems = "center";
-        userEl.style.justifyContent = "center";
-        userEl.style.color = "white";
-        userEl.style.fontWeight = "bold";
-        userEl.style.fontSize = "16px";
-        userEl.style.boxShadow = "0 3px 10px rgba(0,0,0,0.4)";
-        userEl.style.zIndex = "100";
-        userEl.textContent = "0";
+      // Helper para criar marcador com avatar
+      const createMarkerElement = (
+        profile: { full_name: string; avatar_url: string | null },
+        color: string,
+        size: number,
+        isCurrentUser: boolean
+      ) => {
+        const container = document.createElement('div');
+        container.className = 'marker-container';
+        container.style.cssText = `
+          position: relative;
+          width: ${size}px;
+          height: ${size + 8}px;
+          cursor: pointer;
+          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+          transition: transform 0.2s ease;
+        `;
 
-        new mapboxgl.Marker(userEl)
+        // Efeito hover
+        container.onmouseenter = () => {
+          container.style.transform = 'scale(1.15)';
+        };
+        container.onmouseleave = () => {
+          container.style.transform = 'scale(1)';
+        };
+
+        // Pin shape container
+        const pin = document.createElement('div');
+        pin.style.cssText = `
+          width: ${size}px;
+          height: ${size}px;
+          border-radius: 50%;
+          background: linear-gradient(145deg, ${color} 0%, ${adjustColor(color, -20)} 100%);
+          border: 3px solid white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          overflow: hidden;
+          ${isCurrentUser ? 'animation: pulse 2s infinite;' : ''}
+        `;
+
+        // Adicionar iniciais como fallback
+        const addInitials = () => {
+          const names = profile.full_name.split(' ');
+          const initials = names.length >= 2 
+            ? (names[0][0] + names[names.length - 1][0]).toUpperCase()
+            : names[0].substring(0, 2).toUpperCase();
+          
+          const initialsSpan = document.createElement('span');
+          initialsSpan.textContent = initials;
+          initialsSpan.style.cssText = `
+            color: white;
+            font-weight: bold;
+            font-size: ${size * 0.35}px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+          `;
+          pin.appendChild(initialsSpan);
+        };
+
+        if (profile.avatar_url && profile.avatar_url.trim() !== '') {
+          const img = document.createElement('img');
+          img.src = profile.avatar_url;
+          img.alt = profile.full_name;
+          img.referrerPolicy = 'no-referrer';
+          img.style.cssText = `
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+          `;
+          img.onerror = () => {
+            img.remove();
+            addInitials();
+          };
+          pin.appendChild(img);
+        } else {
+          addInitials();
+        }
+
+        // Pointer (triângulo abaixo do círculo)
+        const pointer = document.createElement('div');
+        pointer.style.cssText = `
+          position: absolute;
+          bottom: 0;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 0;
+          height: 0;
+          border-left: 8px solid transparent;
+          border-right: 8px solid transparent;
+          border-top: 10px solid ${color};
+        `;
+
+        // Badge para usuário atual
+        if (isCurrentUser) {
+          const badge = document.createElement('div');
+          badge.style.cssText = `
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 16px;
+            height: 16px;
+            background: #10b981;
+            border: 2px solid white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+          `;
+          badge.innerHTML = `<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>`;
+          container.appendChild(badge);
+        }
+
+        container.appendChild(pin);
+        container.appendChild(pointer);
+
+        return container;
+      };
+
+      // Helper para ajustar cor (escurecer/clarear)
+      const adjustColor = (hex: string, amount: number) => {
+        const num = parseInt(hex.replace('#', ''), 16);
+        const r = Math.min(255, Math.max(0, (num >> 16) + amount));
+        const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amount));
+        const b = Math.min(255, Math.max(0, (num & 0x0000FF) + amount));
+        return `#${(1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)}`;
+      };
+
+      // Adicionar marcador do usuário atual
+      if (currentUserProfile?.latitude && currentUserProfile?.longitude) {
+        const userEl = createMarkerElement(
+          currentUserProfile,
+          '#10b981',
+          48,
+          true
+        );
+
+        new mapboxgl.Marker({ element: userEl, anchor: 'bottom' })
           .setLngLat([currentUserProfile.longitude, currentUserProfile.latitude])
           .setPopup(
             new mapboxgl.Popup({ offset: 25 }).setHTML(
-              `<div class="p-2">
-                <p class="font-semibold">${currentUserProfile.full_name}</p>
-                <p class="text-xs text-muted-foreground">Você</p>
+              `<div class="p-3">
+                <p class="font-semibold text-base">${currentUserProfile.full_name}</p>
+                <p class="text-xs text-emerald-600 font-medium">Você</p>
+                ${currentUserProfile.location ? `<p class="text-xs text-gray-500 mt-1">${currentUserProfile.location}</p>` : ''}
               </div>`
             )
           )
           .addTo(map.current!);
       }
 
-      // Adicionar marcadores numerados para cada usuário conectado
-      let markerIndex = 1;
+      // Adicionar marcadores para conexões
       profiles?.forEach(profile => {
-        // Pular o usuário atual
         if (profile.id === user.id) return;
 
         if (profile.latitude && profile.longitude) {
-          // Determinar cor baseada no tipo de conexão
           const connection = connections?.find(
             c => c.requester_id === profile.id || c.receiver_id === profile.id
           );
           const markerColor = connection?.connection_type === 'family' ? '#8B5CF6' : '#f59e0b';
+          const connectionLabel = connection?.connection_type === 'family' ? 'Família' : 'Amigo';
+          const labelColor = connection?.connection_type === 'family' ? '#8B5CF6' : '#f59e0b';
 
-          const el = document.createElement("div");
-          el.className = "tree-marker";
-          el.style.backgroundColor = markerColor;
-          el.style.width = "36px";
-          el.style.height = "36px";
-          el.style.borderRadius = "50%";
-          el.style.border = "3px solid white";
-          el.style.cursor = "pointer";
-          el.style.display = "flex";
-          el.style.alignItems = "center";
-          el.style.justifyContent = "center";
-          el.style.color = "white";
-          el.style.fontWeight = "bold";
-          el.style.fontSize = "14px";
-          el.style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)";
-          el.textContent = markerIndex.toString();
+          const el = createMarkerElement(profile, markerColor, 42, false);
 
-          new mapboxgl.Marker(el)
+          new mapboxgl.Marker({ element: el, anchor: 'bottom' })
             .setLngLat([profile.longitude, profile.latitude])
             .setPopup(
               new mapboxgl.Popup({ offset: 25 }).setHTML(
-                `<div class="p-2">
-                  <p class="font-semibold">${profile.full_name}</p>
-                  <p class="text-xs text-muted-foreground">${profile.location || 'Sem localização'}</p>
-                  <p class="text-xs text-muted-foreground mt-1">${connection?.connection_type === 'family' ? 'Família' : 'Amigo'}</p>
+                `<div class="p-3">
+                  <p class="font-semibold text-base">${profile.full_name}</p>
+                  <p class="text-xs font-medium" style="color: ${labelColor}">${connectionLabel}</p>
+                  ${profile.location ? `<p class="text-xs text-gray-500 mt-1">${profile.location}</p>` : ''}
                 </div>`
               )
             )
             .addTo(map.current!);
-
-          markerIndex++;
         }
       });
 
@@ -379,12 +481,19 @@ const MapVisualization = () => {
             className="w-full h-[600px] rounded-lg shadow-lg overflow-hidden border border-border"
           />
           
-          <div className="flex items-start gap-2 text-sm text-muted-foreground">
-            <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-            <p>
-              Os marcadores numerados mostram suas conexões. 0 = você, números seguintes = suas conexões.
-              Use os botões de zoom para alternar entre diferentes níveis de visualização.
-            </p>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-emerald-500 border border-white shadow" />
+              <span>Você</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-violet-500 border border-white shadow" />
+              <span>Família</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-amber-500 border border-white shadow" />
+              <span>Amigos</span>
+            </div>
           </div>
         </div>
       </Card>
