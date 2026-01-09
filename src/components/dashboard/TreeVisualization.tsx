@@ -572,11 +572,31 @@ export function TreeVisualization() {
                   </feMerge>
                 </filter>
                 <linearGradient id="lineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.6"/>
-                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.3"/>
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.8"/>
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.5"/>
+                </linearGradient>
+                <linearGradient id="verticalLine" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="hsl(142 71% 45%)" stopOpacity="0.9"/>
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.7"/>
+                </linearGradient>
+                <linearGradient id="siblingLine" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="hsl(221 83% 53%)" stopOpacity="0.7"/>
+                  <stop offset="50%" stopColor="hsl(221 83% 53%)" stopOpacity="0.9"/>
+                  <stop offset="100%" stopColor="hsl(221 83% 53%)" stopOpacity="0.7"/>
+                </linearGradient>
+                <linearGradient id="childLine" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.8"/>
+                  <stop offset="100%" stopColor="hsl(280 67% 54%)" stopOpacity="0.7"/>
+                </linearGradient>
+                <linearGradient id="grandparentLine" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="hsl(45 93% 47%)" stopOpacity="0.8"/>
+                  <stop offset="100%" stopColor="hsl(142 71% 45%)" stopOpacity="0.7"/>
                 </linearGradient>
                 <marker id="heartMarker" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6">
                   <circle cx="5" cy="5" r="3" fill="hsl(var(--destructive))"/>
+                </marker>
+                <marker id="circleMarker" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4">
+                  <circle cx="5" cy="5" r="4" fill="hsl(var(--primary))" stroke="white" strokeWidth="1"/>
                 </marker>
               </defs>
 
@@ -612,115 +632,389 @@ export function TreeVisualization() {
                 );
               })}
 
-              {/* Conexões entre pais e filhos - Linhas curvas elegantes */}
+              {/* ============ CONEXÕES AVÓS → PAIS ============ */}
+              {(() => {
+                const grandparents = generations.get(-2) || [];
+                const parentsGen = (generations.get(-1) || []).filter(
+                  n => n.relationship === 'pai' || n.relationship === 'mae'
+                );
+                
+                if (grandparents.length > 0 && parentsGen.length > 0) {
+                  const gpY = grandparents[0].y!;
+                  const parentY = parentsGen[0].y!;
+                  const gpCenterX = grandparents.reduce((sum, n) => sum + (n.x || 0), 0) / grandparents.length;
+                  const parentCenterX = parentsGen.reduce((sum, n) => sum + (n.x || 0), 0) / parentsGen.length;
+                  
+                  return (
+                    <g>
+                      {/* Linha horizontal conectando avós */}
+                      {grandparents.length > 1 && (
+                        <path
+                          d={`M ${Math.min(...grandparents.map(n => n.x!))} ${gpY + 48}
+                              L ${Math.max(...grandparents.map(n => n.x!))} ${gpY + 48}`}
+                          stroke="url(#grandparentLine)"
+                          strokeWidth="4"
+                          fill="none"
+                          strokeLinecap="round"
+                        />
+                      )}
+                      
+                      {/* Linha vertical dos avós até linha dos pais */}
+                      <path
+                        d={`M ${gpCenterX} ${gpY + 48}
+                            Q ${gpCenterX} ${(gpY + parentY) / 2}
+                              ${parentCenterX} ${parentY - 48}`}
+                        stroke="url(#grandparentLine)"
+                        strokeWidth="4"
+                        fill="none"
+                        strokeLinecap="round"
+                        markerEnd="url(#circleMarker)"
+                      />
+                      
+                      {/* Pequenos conectores para cada avô */}
+                      {grandparents.map(gp => (
+                        <line
+                          key={`gp-connect-${gp.id}`}
+                          x1={gp.x}
+                          y1={gp.y! + 43}
+                          x2={gp.x}
+                          y2={gpY + 48}
+                          stroke="hsl(45 93% 47%)"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                        />
+                      ))}
+                    </g>
+                  );
+                }
+                return null;
+              })()}
+
+              {/* ============ CONEXÕES PAIS → VOCÊ/IRMÃOS ============ */}
               {parentNodes.length > 0 && (
                 <g>
                   {/* Linha horizontal conectando pais */}
-                  <path
-                    d={`M ${Math.min(...parentNodes.map(n => n.x!))} ${parentNodes[0].y! + 45}
-                        L ${Math.max(...parentNodes.map(n => n.x!))} ${parentNodes[0].y! + 45}`}
-                    stroke="url(#lineGradient)"
-                    strokeWidth="3"
-                    fill="none"
-                    strokeLinecap="round"
-                  />
-                  {/* Linha vertical do centro dos pais até a geração 0 */}
-                  <path
-                    d={`M ${(Math.min(...parentNodes.map(n => n.x!)) + Math.max(...parentNodes.map(n => n.x!))) / 2} ${parentNodes[0].y! + 45}
-                        C ${(Math.min(...parentNodes.map(n => n.x!)) + Math.max(...parentNodes.map(n => n.x!))) / 2} ${parentNodes[0].y! + 80}
-                          ${(root.spouse ? (root.x! + root.spouse.x!) / 2 : root.x!)} ${root.y! - 80}
-                          ${(root.spouse ? (root.x! + root.spouse.x!) / 2 : root.x!)} ${root.y! - 45}`}
-                    stroke="url(#lineGradient)"
-                    strokeWidth="3"
-                    fill="none"
-                    strokeLinecap="round"
-                  />
-                </g>
-              )}
-
-              {/* Conexões dos irmãos */}
-              {generations.get(0)!.filter(n => !n.isRoot && (n.relationship === 'irmao' || n.relationship === 'irma')).map(sibling => {
-                const siblingCenterX = sibling.spouse 
-                  ? (sibling.x! + sibling.spouse.x!) / 2 
-                  : sibling.x!;
-                const parentY = parentNodes.length > 0
-                  ? parentNodes[0].y! + 45
-                  : sibling.y! - 80;
-                
-                return (
-                  <path
-                    key={`sibling-${sibling.id}`}
-                    d={`M ${siblingCenterX} ${parentY}
-                        L ${siblingCenterX} ${sibling.y! - 45}`}
-                    stroke="url(#lineGradient)"
-                    strokeWidth="2.5"
-                    fill="none"
-                    strokeLinecap="round"
-                  />
-                );
-              })}
-
-              {/* Linha horizontal para filhos */}
-              {root.children.length > 0 && (
-                <g>
-                  {/* Linha vertical do casal até a linha dos filhos */}
-                  <path
-                    d={`M ${root.spouse ? (root.x! + root.spouse.x!) / 2 : root.x!} ${root.y! + 45}
-                        L ${root.spouse ? (root.x! + root.spouse.x!) / 2 : root.x!} ${root.y! + 80}`}
-                    stroke="url(#lineGradient)"
-                    strokeWidth="3"
-                    fill="none"
-                    strokeLinecap="round"
-                  />
+                  {parentNodes.length > 1 && (
+                    <>
+                      <path
+                        d={`M ${Math.min(...parentNodes.map(n => n.x!))} ${parentNodes[0].y! + 48}
+                            L ${Math.max(...parentNodes.map(n => n.x!))} ${parentNodes[0].y! + 48}`}
+                        stroke="hsl(142 71% 45%)"
+                        strokeWidth="4"
+                        fill="none"
+                        strokeLinecap="round"
+                      />
+                      {/* Coração entre os pais */}
+                      <text
+                        x={(Math.min(...parentNodes.map(n => n.x!)) + Math.max(...parentNodes.map(n => n.x!))) / 2}
+                        y={parentNodes[0].y! + 54}
+                        fontSize="12"
+                        textAnchor="middle"
+                      >
+                        ❤️
+                      </text>
+                    </>
+                  )}
                   
-                  {/* Linha horizontal dos filhos */}
-                  <path
-                    d={`M ${Math.min(...root.children.map(c => c.x!))} ${root.y! + 80}
-                        L ${Math.max(...root.children.map(c => c.x!))} ${root.y! + 80}`}
-                    stroke="url(#lineGradient)"
-                    strokeWidth="3"
-                    fill="none"
-                    strokeLinecap="round"
-                  />
-                  
-                  {/* Linhas verticais conectando cada filho */}
-                  {root.children.map(child => (
-                    <path
-                      key={`child-${child.id}`}
-                      d={`M ${child.x} ${root.y! + 80}
-                          L ${child.x} ${child.y! - 45}`}
-                      stroke="url(#lineGradient)"
-                      strokeWidth="2.5"
-                      fill="none"
+                  {/* Conectores de cada pai para a linha horizontal */}
+                  {parentNodes.map(parent => (
+                    <line
+                      key={`parent-connect-${parent.id}`}
+                      x1={parent.x}
+                      y1={parent.y! + 43}
+                      x2={parent.x}
+                      y2={parentNodes[0].y! + 48}
+                      stroke="hsl(142 71% 45%)"
+                      strokeWidth="3"
                       strokeLinecap="round"
                     />
                   ))}
+                  
+                  {/* Ponto central entre os pais */}
+                  {(() => {
+                    const parentCenterX = parentNodes.length > 1 
+                      ? (Math.min(...parentNodes.map(n => n.x!)) + Math.max(...parentNodes.map(n => n.x!))) / 2
+                      : parentNodes[0].x!;
+                    const gen0Nodes = generations.get(0) || [];
+                    const siblings = gen0Nodes.filter(n => n.relationship === 'irmao' || n.relationship === 'irma');
+                    const allGen0 = [root, ...siblings].filter(n => n.x);
+                    
+                    if (allGen0.length === 0) return null;
+                    
+                    const gen0CenterX = allGen0.length > 1
+                      ? (Math.min(...allGen0.map(n => n.x!)) + Math.max(...allGen0.map(n => n.x!))) / 2
+                      : root.x!;
+                    const parentY = parentNodes[0].y!;
+                    const gen0Y = root.y!;
+                    const midY = (parentY + 48 + gen0Y - 48) / 2;
+                    
+                    return (
+                      <g>
+                        {/* Linha vertical principal do centro dos pais */}
+                        <path
+                          d={`M ${parentCenterX} ${parentY + 48}
+                              L ${parentCenterX} ${midY}
+                              Q ${parentCenterX} ${midY + 20}
+                                ${gen0CenterX} ${midY + 20}
+                              L ${gen0CenterX} ${gen0Y - 55}`}
+                          stroke="url(#verticalLine)"
+                          strokeWidth="4"
+                          fill="none"
+                          strokeLinecap="round"
+                        />
+                        
+                        {/* Círculo no ponto de distribuição */}
+                        <circle
+                          cx={gen0CenterX}
+                          cy={gen0Y - 55}
+                          r="6"
+                          fill="hsl(var(--primary))"
+                          stroke="white"
+                          strokeWidth="2"
+                        />
+                        
+                        {/* Linha horizontal para distribuir entre você e irmãos */}
+                        {allGen0.length > 1 && (
+                          <path
+                            d={`M ${Math.min(...allGen0.map(n => n.x!))} ${gen0Y - 55}
+                                L ${Math.max(...allGen0.map(n => n.x!))} ${gen0Y - 55}`}
+                            stroke="url(#siblingLine)"
+                            strokeWidth="4"
+                            fill="none"
+                            strokeLinecap="round"
+                          />
+                        )}
+                        
+                        {/* Conectores verticais para cada pessoa da geração 0 */}
+                        {allGen0.map((person, i) => (
+                          <g key={`gen0-connect-${person.id}`}>
+                            <line
+                              x1={person.x}
+                              y1={gen0Y - 55}
+                              x2={person.x}
+                              y2={person.y! - 43}
+                              stroke={person.isRoot ? "hsl(var(--primary))" : "hsl(221 83% 53%)"}
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                            />
+                            {/* Pequeno círculo em cada conexão */}
+                            <circle
+                              cx={person.x}
+                              cy={person.y! - 43}
+                              r="4"
+                              fill={person.isRoot ? "hsl(var(--primary))" : "hsl(221 83% 53%)"}
+                              stroke="white"
+                              strokeWidth="1.5"
+                            />
+                          </g>
+                        ))}
+                      </g>
+                    );
+                  })()}
                 </g>
               )}
 
-              {/* Conexões de cônjuges - linha com coração */}
-              {allNodes.filter(n => n.spouse && n.x && n.spouse.x && n.id < n.spouse!.id).map(node => (
-                <g key={`spouse-${node.id}`}>
-                  <line
-                    x1={node.x! + 40}
-                    y1={node.y}
-                    x2={node.spouse!.x! - 40}
-                    y2={node.spouse!.y}
-                    stroke="hsl(var(--destructive))"
-                    strokeWidth="2"
-                    opacity="0.6"
-                  />
-                  {/* Coração no meio */}
-                  <text
-                    x={(node.x! + node.spouse!.x!) / 2}
-                    y={node.y! + 5}
-                    fontSize="14"
-                    textAnchor="middle"
-                  >
-                    ❤️
-                  </text>
+              {/* ============ CONEXÕES VOCÊ → FILHOS ============ */}
+              {root.children.length > 0 && (
+                <g>
+                  {/* Ponto de origem (você ou casal) */}
+                  {(() => {
+                    const originX = root.spouse ? (root.x! + root.spouse.x!) / 2 : root.x!;
+                    const originY = root.y! + 43;
+                    const childrenY = root.children[0].y!;
+                    const midY = (originY + childrenY - 43) / 2;
+                    const childrenCenterX = root.children.length > 1
+                      ? (Math.min(...root.children.map(c => c.x!)) + Math.max(...root.children.map(c => c.x!))) / 2
+                      : root.children[0].x!;
+                    
+                    return (
+                      <g>
+                        {/* Linha vertical do você/casal */}
+                        <line
+                          x1={originX}
+                          y1={originY}
+                          x2={originX}
+                          y2={midY}
+                          stroke="url(#childLine)"
+                          strokeWidth="4"
+                          strokeLinecap="round"
+                        />
+                        
+                        {/* Linha horizontal se tiver múltiplos filhos */}
+                        {root.children.length > 1 && (
+                          <>
+                            {/* Conexão do centro para a linha dos filhos */}
+                            <path
+                              d={`M ${originX} ${midY}
+                                  Q ${originX} ${midY + 15}
+                                    ${childrenCenterX} ${midY + 15}
+                                  L ${childrenCenterX} ${midY + 20}`}
+                              stroke="url(#childLine)"
+                              strokeWidth="4"
+                              fill="none"
+                              strokeLinecap="round"
+                            />
+                            
+                            {/* Círculo de distribuição */}
+                            <circle
+                              cx={childrenCenterX}
+                              cy={midY + 20}
+                              r="6"
+                              fill="hsl(280 67% 54%)"
+                              stroke="white"
+                              strokeWidth="2"
+                            />
+                            
+                            {/* Linha horizontal para os filhos */}
+                            <path
+                              d={`M ${Math.min(...root.children.map(c => c.x!))} ${midY + 20}
+                                  L ${Math.max(...root.children.map(c => c.x!))} ${midY + 20}`}
+                              stroke="hsl(280 67% 54%)"
+                              strokeWidth="4"
+                              fill="none"
+                              strokeLinecap="round"
+                              opacity="0.8"
+                            />
+                          </>
+                        )}
+                        
+                        {/* Conectores verticais para cada filho */}
+                        {root.children.map(child => (
+                          <g key={`child-connect-${child.id}`}>
+                            <line
+                              x1={child.x}
+                              y1={root.children.length > 1 ? midY + 20 : midY}
+                              x2={child.x}
+                              y2={child.y! - 43}
+                              stroke="hsl(280 67% 54%)"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                            />
+                            <circle
+                              cx={child.x}
+                              cy={child.y! - 43}
+                              r="4"
+                              fill="hsl(280 67% 54%)"
+                              stroke="white"
+                              strokeWidth="1.5"
+                            />
+                          </g>
+                        ))}
+                      </g>
+                    );
+                  })()}
                 </g>
-              ))}
+              )}
+
+              {/* ============ CONEXÕES FILHOS → NETOS ============ */}
+              {(() => {
+                const childrenGen = generations.get(1) || [];
+                const grandchildrenGen = generations.get(2) || [];
+                
+                if (childrenGen.length > 0 && grandchildrenGen.length > 0) {
+                  const childY = childrenGen[0].y!;
+                  const grandchildY = grandchildrenGen[0].y!;
+                  const childCenterX = childrenGen.reduce((sum, n) => sum + (n.x || 0), 0) / childrenGen.length;
+                  const grandchildCenterX = grandchildrenGen.reduce((sum, n) => sum + (n.x || 0), 0) / grandchildrenGen.length;
+                  const midY = (childY + 43 + grandchildY - 43) / 2;
+                  
+                  return (
+                    <g>
+                      {/* Linha vertical dos filhos */}
+                      <path
+                        d={`M ${childCenterX} ${childY + 48}
+                            Q ${childCenterX} ${midY}
+                              ${grandchildCenterX} ${grandchildY - 55}`}
+                        stroke="hsl(330 80% 55%)"
+                        strokeWidth="4"
+                        fill="none"
+                        strokeLinecap="round"
+                        opacity="0.8"
+                      />
+                      
+                      {/* Círculo de distribuição */}
+                      <circle
+                        cx={grandchildCenterX}
+                        cy={grandchildY - 55}
+                        r="6"
+                        fill="hsl(330 80% 55%)"
+                        stroke="white"
+                        strokeWidth="2"
+                      />
+                      
+                      {/* Linha horizontal para netos */}
+                      {grandchildrenGen.length > 1 && (
+                        <path
+                          d={`M ${Math.min(...grandchildrenGen.map(n => n.x!))} ${grandchildY - 55}
+                              L ${Math.max(...grandchildrenGen.map(n => n.x!))} ${grandchildY - 55}`}
+                          stroke="hsl(330 80% 55%)"
+                          strokeWidth="4"
+                          fill="none"
+                          strokeLinecap="round"
+                          opacity="0.7"
+                        />
+                      )}
+                      
+                      {/* Conectores para cada neto */}
+                      {grandchildrenGen.map(grandchild => (
+                        <g key={`grandchild-connect-${grandchild.id}`}>
+                          <line
+                            x1={grandchild.x}
+                            y1={grandchildY - 55}
+                            x2={grandchild.x}
+                            y2={grandchild.y! - 43}
+                            stroke="hsl(330 80% 55%)"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                          />
+                          <circle
+                            cx={grandchild.x}
+                            cy={grandchild.y! - 43}
+                            r="4"
+                            fill="hsl(330 80% 55%)"
+                            stroke="white"
+                            strokeWidth="1.5"
+                          />
+                        </g>
+                      ))}
+                    </g>
+                  );
+                }
+                return null;
+              })()}
+
+              {/* ============ CONEXÕES DE CÔNJUGES ============ */}
+              {allNodes.filter(n => n.spouse && n.x && n.spouse.x && n.id < n.spouse!.id).map(node => {
+                // Não mostrar conexão cônjuge para pais (já está na linha horizontal)
+                if (node.relationship === 'pai' || node.relationship === 'mae' || 
+                    node.spouse?.relationship === 'pai' || node.spouse?.relationship === 'mae') {
+                  return null;
+                }
+                
+                return (
+                  <g key={`spouse-${node.id}`}>
+                    <line
+                      x1={node.x! + 45}
+                      y1={node.y}
+                      x2={node.spouse!.x! - 45}
+                      y2={node.spouse!.y}
+                      stroke="hsl(var(--destructive))"
+                      strokeWidth="3"
+                      opacity="0.7"
+                      strokeDasharray="6,4"
+                    />
+                    {/* Coração no meio */}
+                    <text
+                      x={(node.x! + node.spouse!.x!) / 2}
+                      y={node.y! + 5}
+                      fontSize="16"
+                      textAnchor="middle"
+                    >
+                      ❤️
+                    </text>
+                  </g>
+                );
+              })}
 
               {/* Renderizar nós */}
               {allNodes.map(node => {
