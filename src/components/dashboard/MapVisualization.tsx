@@ -10,6 +10,7 @@ import { Globe, Map, MapPin, Users, Heart } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { useNavigate } from 'react-router-dom';
 
 type ZoomLevel = 'world' | 'continent' | 'country' | 'state';
 
@@ -28,6 +29,20 @@ const MapVisualization = () => {
   const [connectionFilter, setConnectionFilter] = useState<'all' | 'family' | 'friend'>('all');
   const [showLines, setShowLines] = useState(true);
   const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Listener para navegação a partir do popup
+  useEffect(() => {
+    const handleNavigateToMoments = (e: CustomEvent) => {
+      const userId = e.detail;
+      navigate('/memories', { state: { filterUserId: userId } });
+    };
+
+    window.addEventListener('navigateToMoments', handleNavigateToMoments as EventListener);
+    return () => {
+      window.removeEventListener('navigateToMoments', handleNavigateToMoments as EventListener);
+    };
+  }, [navigate]);
 
   const zoomLevels: Record<ZoomLevel, ZoomConfig> = {
     world: { zoom: 2, label: 'Mundo', icon: <Globe className="w-4 h-4" /> },
@@ -335,6 +350,9 @@ const MapVisualization = () => {
                   <p class="font-semibold text-base">${profile.full_name}</p>
                   <p class="text-xs font-medium" style="color: ${labelColor}">${connectionLabel}</p>
                   ${profile.location ? `<p class="text-xs text-gray-500 mt-1">${profile.location}</p>` : ''}
+                  <button onclick="window.dispatchEvent(new CustomEvent('navigateToMoments', { detail: '${profile.id}' }))" class="mt-2 w-full text-xs bg-primary text-white px-3 py-1.5 rounded-md hover:opacity-90 transition-opacity" style="background-color: #8B5CF6;">
+                    Ver Momentos
+                  </button>
                 </div>`
               )
             )
