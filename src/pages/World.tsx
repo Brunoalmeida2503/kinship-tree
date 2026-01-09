@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +19,9 @@ import {
   Search,
   Plus,
   X,
-  Maximize2
+  Maximize2,
+  History,
+  Clock
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -72,6 +75,7 @@ const defaultServices: Service[] = [
 ];
 
 const World = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
@@ -180,11 +184,12 @@ const World = () => {
                   )}
                 </DialogTitle>
               </DialogHeader>
-              <div className="py-6">
-                <p className="text-muted-foreground mb-6">
+              <div className="py-6 space-y-6">
+                <p className="text-muted-foreground">
                   Este serviço de streaming não pode ser exibido diretamente aqui devido a restrições de segurança.
                 </p>
-                <div className="flex flex-col gap-4">
+                
+                <div className="flex flex-col gap-3">
                   <Button 
                     size="lg" 
                     className="w-full"
@@ -193,8 +198,31 @@ const World = () => {
                     <ExternalLink className="h-5 w-5 mr-2" />
                     Abrir {selectedService?.name} em nova aba
                   </Button>
+                  
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">ou</span>
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    variant="outline"
+                    size="lg" 
+                    className="w-full"
+                    onClick={() => {
+                      setStreamingModalOpen(false);
+                      navigate("/world/streaming");
+                    }}
+                  >
+                    <Clock className="h-5 w-5 mr-2" />
+                    Meu Histórico de Streaming
+                  </Button>
+                  
                   <p className="text-xs text-center text-muted-foreground">
-                    Você será redirecionado para o site oficial do serviço
+                    Registre o que você assistiu e compartilhe com sua família
                   </p>
                 </div>
               </div>
