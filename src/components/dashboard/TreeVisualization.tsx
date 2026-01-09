@@ -1008,6 +1008,88 @@ export function TreeVisualization() {
                 return null;
               })()}
 
+              {/* ============ CONEXÕES IRMÃOS → SOBRINHOS ============ */}
+              {(() => {
+                const gen0Nodes = generations.get(0) || [];
+                const siblings = gen0Nodes.filter(n => n.relationship === 'irmao' || n.relationship === 'irma');
+                const nephews = generations.get(3) || [];
+                
+                if (siblings.length === 0 || nephews.length === 0) return null;
+                
+                const validSiblings = siblings.filter(s => s.x !== undefined && s.y !== undefined);
+                const validNephews = nephews.filter(n => n.x !== undefined && n.y !== undefined);
+                
+                if (validSiblings.length === 0 || validNephews.length === 0) return null;
+                
+                const siblingCenterX = validSiblings.reduce((sum, n) => sum + n.x!, 0) / validSiblings.length;
+                const siblingY = validSiblings[0].y!;
+                const nephewY = validNephews[0].y!;
+                const nephewCenterX = validNephews.reduce((sum, n) => sum + n.x!, 0) / validNephews.length;
+                const midY = (siblingY + 43 + nephewY - 43) / 2;
+                
+                return (
+                  <g>
+                    {/* Linha vertical dos irmãos até ponto de distribuição */}
+                    <path
+                      d={`M ${siblingCenterX} ${siblingY + 48}
+                          Q ${siblingCenterX} ${midY}
+                            ${nephewCenterX} ${nephewY - 55}`}
+                      stroke="hsl(200 75% 50%)"
+                      strokeWidth="4"
+                      fill="none"
+                      strokeLinecap="round"
+                      opacity="0.8"
+                    />
+                    
+                    {/* Círculo de distribuição */}
+                    <circle
+                      cx={nephewCenterX}
+                      cy={nephewY - 55}
+                      r="6"
+                      fill="hsl(200 75% 50%)"
+                      stroke="white"
+                      strokeWidth="2"
+                    />
+                    
+                    {/* Linha horizontal para sobrinhos se tiver mais de um */}
+                    {validNephews.length > 1 && (
+                      <path
+                        d={`M ${Math.min(...validNephews.map(n => n.x!))} ${nephewY - 55}
+                            L ${Math.max(...validNephews.map(n => n.x!))} ${nephewY - 55}`}
+                        stroke="hsl(200 75% 50%)"
+                        strokeWidth="4"
+                        fill="none"
+                        strokeLinecap="round"
+                        opacity="0.7"
+                      />
+                    )}
+                    
+                    {/* Conectores verticais para cada sobrinho */}
+                    {validNephews.map(nephew => (
+                      <g key={`nephew-connect-${nephew.id}`}>
+                        <line
+                          x1={nephew.x}
+                          y1={nephewY - 55}
+                          x2={nephew.x}
+                          y2={nephew.y! - 43}
+                          stroke="hsl(200 75% 50%)"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                        />
+                        <circle
+                          cx={nephew.x}
+                          cy={nephew.y! - 43}
+                          r="4"
+                          fill="hsl(200 75% 50%)"
+                          stroke="white"
+                          strokeWidth="1.5"
+                        />
+                      </g>
+                    ))}
+                  </g>
+                );
+              })()}
+
               {/* ============ CONEXÕES DE CÔNJUGES ============ */}
               {allNodes.filter(n => n.spouse && n.x && n.spouse.x && n.id < n.spouse!.id).map(node => {
                 // Não mostrar conexão cônjuge para pais (já está na linha horizontal)
