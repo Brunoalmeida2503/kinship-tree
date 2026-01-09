@@ -293,6 +293,14 @@ export function TreeVisualization() {
     // Calcular posições
     calculateNodePositions(generations, root);
     
+    // Debug: log das gerações
+    console.log('=== DEBUG ÁRVORE ===');
+    generations.forEach((nodes, gen) => {
+      console.log(`Geração ${gen}:`, nodes.map(n => ({ id: n.id, name: n.name, relationship: n.relationship, x: n.x, y: n.y })));
+    });
+    console.log('Tios/Tias:', (generations.get(-1) || []).filter(n => n.relationship === 'tio' || n.relationship === 'tia').map(n => n.name));
+    console.log('Sobrinhos:', (generations.get(3) || []).map(n => n.name));
+    
     setTreeData({ generations, root });
   };
 
