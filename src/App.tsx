@@ -10,6 +10,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AuraButton } from "@/components/aura/AuraButton";
 import { useLanguageSync } from "@/hooks/useLanguageSync";
+import { useEchosNotifications } from "@/hooks/useEchosNotifications";
 import Index from "./pages/Index";
 import Feed from "./pages/Feed";
 import Auth from "./pages/Auth";
@@ -32,6 +33,7 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   useLanguageSync();
+  useEchosNotifications(); // Notificações de novas mensagens
   
   return (
     <BrowserRouter>
