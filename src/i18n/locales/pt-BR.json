@@ -50,13 +50,13 @@
     "tree": "Árvore",
     "map": "Mapa",
     "connections": "Conexões",
-    "groups": "Grupos"
+    "groups": "Clãs"
   },
   "sidebar": {
     "navigation": "Navegação",
     "seasons": "Seasons",
     "tree": "Árvore",
-    "groups": "Grupos",
+    "groups": "Clãs",
     "missions": "Missões",
     "memories": "Memórias",
     "profile": "Perfil",
@@ -76,7 +76,7 @@
     "userTimeline": "Timeline do Usuário",
     "createPost": "No que você está pensando?",
     "shareWithTree": "Compartilhar com a Árvore",
-    "selectGroups": "Selecionar Grupos",
+    "selectGroups": "Selecionar Clãs",
     "post": "Publicar",
     "posting": "Publicando...",
     "postCreated": "Post criado!",
@@ -95,7 +95,7 @@
     "deleteErrorDescription": "Não foi possível remover o post",
     "loadError": "Erro ao carregar posts",
     "loadErrorDescription": "Não foi possível carregar o feed",
-    "noGroups": "Você ainda não é membro de nenhum grupo",
+    "noGroups": "Você ainda não é membro de nenhum clã",
     "uploadImages": "Carregar imagens ou vídeos"
   },
   "memories": {
@@ -107,12 +107,12 @@
     "calendar": "Calendário"
   },
   "groups": {
-    "title": "Meus Grupos",
-    "description": "Grupos dos quais você faz parte",
-    "loading": "Carregando grupos...",
-    "noGroups": "Você ainda não faz parte de nenhum grupo",
+    "title": "Meus Clãs",
+    "description": "Clãs dos quais você faz parte",
+    "loading": "Carregando clãs...",
+    "noGroups": "Você ainda não faz parte de nenhum clã",
     "members": "membros",
-    "viewGroup": "Ver Grupo"
+    "viewGroup": "Ver Clã"
   },
   "missions": {
     "title": "Seis Graus de Separação",

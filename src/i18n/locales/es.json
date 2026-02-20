@@ -50,13 +50,13 @@
     "tree": "Árbol",
     "map": "Mapa",
     "connections": "Conexiones",
-    "groups": "Grupos"
+    "groups": "Clanes"
   },
   "sidebar": {
     "navigation": "Navegación",
     "seasons": "Seasons",
     "tree": "Árbol",
-    "groups": "Grupos",
+    "groups": "Clanes",
     "missions": "Misiones",
     "memories": "Recuerdos",
     "profile": "Perfil",
@@ -76,7 +76,7 @@
     "userTimeline": "Cronología del Usuario",
     "createPost": "¿Qué estás pensando?",
     "shareWithTree": "Compartir con el Árbol",
-    "selectGroups": "Seleccionar Grupos",
+    "selectGroups": "Seleccionar Clanes",
     "post": "Publicar",
     "posting": "Publicando...",
     "postCreated": "¡Publicación creada!",
@@ -95,7 +95,7 @@
     "deleteErrorDescription": "No se pudo eliminar la publicación",
     "loadError": "Error al cargar publicaciones",
     "loadErrorDescription": "No se pudo cargar el feed",
-    "noGroups": "Aún no eres miembro de ningún grupo",
+    "noGroups": "Aún no eres miembro de ningún clan",
     "uploadImages": "Subir imágenes o videos"
   },
   "memories": {
@@ -107,12 +107,12 @@
     "calendar": "Calendario"
   },
   "groups": {
-    "title": "Mis Grupos",
-    "description": "Grupos de los que formas parte",
-    "loading": "Cargando grupos...",
-    "noGroups": "Aún no formas parte de ningún grupo",
+    "title": "Mis Clanes",
+    "description": "Clanes de los que formas parte",
+    "loading": "Cargando clanes...",
+    "noGroups": "Aún no formas parte de ningún clan",
     "members": "miembros",
-    "viewGroup": "Ver Grupo"
+    "viewGroup": "Ver Clan"
   },
   "missions": {
     "title": "Seis Grados de Separación",

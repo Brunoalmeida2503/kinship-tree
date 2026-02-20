@@ -96,7 +96,7 @@ export function GroupSettings({ group, onUpdate }: GroupSettingsProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Configurações do Grupo</CardTitle>
+        <CardTitle>Configurações do Clã</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex items-center gap-4">
