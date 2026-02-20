@@ -7,12 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Users, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Users, Plus, ArrowRight, Shield } from 'lucide-react';
 
 export function GroupsSection() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [groups, setGroups] = useState<any[]>([]);
   const [newGroup, setNewGroup] = useState({ name: '', description: '' });
   const [loading, setLoading] = useState(false);
@@ -165,19 +169,42 @@ export function GroupsSection() {
           <CardDescription>{groups.length} clãs</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {groups.map((group) => (
-              <div key={group.id} className="p-4 border rounded-lg">
-                <h3 className="font-semibold">{group.name}</h3>
-                {group.description && (
-                  <p className="text-sm text-muted-foreground mt-1">{group.description}</p>
-                )}
+              <div
+                key={group.id}
+                className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group"
+                onClick={() => navigate(`/group/${group.id}`)}
+              >
+                <Avatar className="h-10 w-10 shrink-0">
+                  <AvatarImage src={group.avatar_url || undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                    {group.name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-sm truncate">{group.name}</h3>
+                    {group.is_private && (
+                      <Badge variant="secondary" className="text-xs shrink-0">Privado</Badge>
+                    )}
+                  </div>
+                  {group.description && (
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">{group.description}</p>
+                  )}
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             ))}
             {groups.length === 0 && (
-              <p className="text-muted-foreground text-center py-8">
-                Você ainda não faz parte de nenhum clã. Crie o primeiro!
-              </p>
+              <div className="flex flex-col items-center gap-3 py-10 text-center">
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                  <Shield className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Você ainda não faz parte de nenhum clã. Crie o primeiro!
+                </p>
+              </div>
             )}
           </div>
         </CardContent>
