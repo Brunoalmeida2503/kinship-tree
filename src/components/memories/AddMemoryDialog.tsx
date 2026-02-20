@@ -16,6 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { memorySchema } from '@/lib/validation';
 import { z } from 'zod';
 import { MediaUploader, MediaFile, uploadMediaFiles } from '@/components/feed/MediaUploader';
+import { MemoryParticipantsPicker } from './MemoryParticipantsPicker';
 
 interface AddMemoryDialogProps {
   open: boolean;
@@ -30,6 +31,8 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
   const [isPeriod, setIsPeriod] = useState(false);
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [participantIds, setParticipantIds] = useState<string[]>([]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,6 +102,16 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
         if (mediaError) throw mediaError;
       }
 
+      // Salvar participantes
+      if (participantIds.length > 0) {
+        const participantInserts = participantIds.map((uid) => ({
+          memory_id: memory.id,
+          user_id: uid,
+          added_by: user.id,
+        }));
+        await supabase.from('memory_participants').insert(participantInserts);
+      }
+
       toast.success('Memória criada com sucesso!');
       onOpenChange(false);
       resetForm();
@@ -118,6 +131,7 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
     setEndDate(undefined);
     setIsPeriod(false);
     setMediaFiles([]);
+    setParticipantIds([]);
   };
 
   return (
@@ -227,6 +241,11 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
               maxFiles={10}
             />
           </div>
+
+          <MemoryParticipantsPicker
+            selectedIds={participantIds}
+            onChange={setParticipantIds}
+          />
 
           <div className="flex gap-3 pt-4">
             <Button

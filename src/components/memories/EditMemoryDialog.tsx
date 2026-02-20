@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
 import { MediaUploader, uploadMediaFiles, MediaFile } from '@/components/feed/MediaUploader';
 import { Trash2 } from 'lucide-react';
+import { MemoryParticipantsPicker } from './MemoryParticipantsPicker';
 
 interface EditMemoryDialogProps {
   open: boolean;
@@ -34,6 +35,8 @@ export function EditMemoryDialog({ open, onOpenChange, memoryId, onMemoryUpdated
   const [existingMedia, setExistingMedia] = useState<ExistingMedia[]>([]);
   const [newMediaFiles, setNewMediaFiles] = useState<MediaFile[]>([]);
   const [deletingMedia, setDeletingMedia] = useState<Set<string>>(new Set());
+  const [participantIds, setParticipantIds] = useState<string[]>([]);
+
 
   const form = useForm<z.infer<typeof memorySchema>>({
     resolver: zodResolver(memorySchema),
@@ -57,12 +60,8 @@ export function EditMemoryDialog({ open, onOpenChange, memoryId, onMemoryUpdated
         .from('memories')
         .select(`
           *,
-          memory_media(
-            id,
-            media_url,
-            media_type,
-            display_order
-          )
+          memory_media(id, media_url, media_type, display_order),
+          memory_participants(user_id)
         `)
         .eq('id', memoryId)
         .single();
@@ -77,6 +76,7 @@ export function EditMemoryDialog({ open, onOpenChange, memoryId, onMemoryUpdated
       });
 
       setExistingMedia(memory.memory_media || []);
+      setParticipantIds((memory.memory_participants || []).map((p: any) => p.user_id));
     } catch (error) {
       console.error('Erro ao carregar memória:', error);
       toast.error('Erro ao carregar memória');
@@ -125,6 +125,17 @@ export function EditMemoryDialog({ open, onOpenChange, memoryId, onMemoryUpdated
         .eq('id', memoryId);
 
       if (updateError) throw updateError;
+
+      // Atualizar participantes: apagar todos e re-inserir
+      await supabase.from('memory_participants').delete().eq('memory_id', memoryId);
+      if (participantIds.length > 0) {
+        const participantInserts = participantIds.map((uid) => ({
+          memory_id: memoryId,
+          user_id: uid,
+          added_by: user.id,
+        }));
+        await supabase.from('memory_participants').insert(participantInserts);
+      }
 
       // Upload de novas mídias
       if (newMediaFiles.length > 0) {
@@ -274,6 +285,11 @@ export function EditMemoryDialog({ open, onOpenChange, memoryId, onMemoryUpdated
                 maxFiles={10}
               />
             </div>
+
+            <MemoryParticipantsPicker
+              selectedIds={participantIds}
+              onChange={setParticipantIds}
+            />
 
             <div className="flex gap-3">
               <Button
