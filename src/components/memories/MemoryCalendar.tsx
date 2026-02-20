@@ -3,10 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { format, parseISO, isSameDay, eachDayOfInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { Calendar as CalendarIcon, Play } from 'lucide-react';
+import { Calendar as CalendarIcon, Play, ArrowRight } from 'lucide-react';
 
 interface Memory {
   id: string;
@@ -18,7 +19,17 @@ interface Memory {
   created_at: string;
 }
 
-export function MemoryCalendar() {
+interface MemoryCalendarProps {
+  onNavigateToGallery?: (date: Date) => void;
+}
+
+// Parse YYYY-MM-DD as local date (avoids UTC timezone shift)
+function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+export function MemoryCalendar({ onNavigateToGallery }: MemoryCalendarProps) {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [loading, setLoading] = useState(true);
@@ -44,24 +55,24 @@ export function MemoryCalendar() {
     }
   };
 
+  // Collect ALL dates covered by each memory range (using local date parsing)
+  const datesWithMemories: Date[] = [];
+  memories.forEach((memory) => {
+    const start = parseLocalDate(memory.start_date);
+    const end = memory.end_date ? parseLocalDate(memory.end_date) : start;
+    const days = eachDayOfInterval({ start, end });
+    datesWithMemories.push(...days);
+  });
+
   const memoriesForSelectedDate = memories.filter((memory) => {
     if (!selectedDate) return false;
-    const start = new Date(memory.start_date);
-    const end = memory.end_date ? new Date(memory.end_date) : start;
+    const start = parseLocalDate(memory.start_date);
+    const end = memory.end_date ? parseLocalDate(memory.end_date) : start;
+    // Check if selectedDate falls within [start, end]
     return selectedDate >= start && selectedDate <= end;
   });
 
-  // Destacar datas que têm memórias
-  const datesWithMemories: Date[] = [];
-  memories.forEach((memory) => {
-    const start = new Date(memory.start_date);
-    const end = memory.end_date ? new Date(memory.end_date) : start;
-    const current = new Date(start);
-    while (current <= end) {
-      datesWithMemories.push(new Date(current));
-      current.setDate(current.getDate() + 1);
-    }
-  });
+  const hasMemoriesOnSelected = memoriesForSelectedDate.length > 0;
 
   const isVideo = (url: string | null) => {
     if (!url) return false;
@@ -101,6 +112,7 @@ export function MemoryCalendar() {
                 fontWeight: 'bold',
                 backgroundColor: 'hsl(var(--primary))',
                 color: 'hsl(var(--primary-foreground))',
+                borderRadius: '50%',
               },
             }}
             className="rounded-md border pointer-events-auto"
@@ -110,11 +122,24 @@ export function MemoryCalendar() {
 
       <Card>
         <CardContent className="p-6">
-          <h3 className="text-lg font-semibold mb-4 text-foreground">
-            {selectedDate
-              ? format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
-              : 'Selecione uma data'}
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-foreground">
+              {selectedDate
+                ? format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                : 'Selecione uma data'}
+            </h3>
+            {hasMemoriesOnSelected && onNavigateToGallery && selectedDate && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 text-xs"
+                onClick={() => onNavigateToGallery(selectedDate)}
+              >
+                Ver na galeria
+                <ArrowRight className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
 
           {memoriesForSelectedDate.length === 0 ? (
             <div className="text-center py-12">
@@ -154,10 +179,10 @@ export function MemoryCalendar() {
                       <h4 className="font-semibold text-foreground">
                         {memory.title}
                       </h4>
-                      <Badge variant="secondary">
-                        {memory.end_date 
-                          ? `${format(new Date(memory.start_date), 'dd/MM/yyyy')} - ${format(new Date(memory.end_date), 'dd/MM/yyyy')}`
-                          : format(new Date(memory.start_date), 'dd/MM/yyyy')
+                      <Badge variant="secondary" className="text-xs shrink-0 ml-2">
+                        {memory.end_date
+                          ? `${format(parseLocalDate(memory.start_date), 'dd/MM/yyyy')} – ${format(parseLocalDate(memory.end_date), 'dd/MM/yyyy')}`
+                          : format(parseLocalDate(memory.start_date), 'dd/MM/yyyy')
                         }
                       </Badge>
                     </div>

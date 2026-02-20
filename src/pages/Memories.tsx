@@ -16,6 +16,12 @@ export default function Memories() {
   const { t } = useTranslation();
   const [activeView, setActiveView] = useState<'gallery' | 'calendar'>('gallery');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [galleryFilterDate, setGalleryFilterDate] = useState<Date | undefined>(undefined);
+
+  const handleNavigateToGallery = (date: Date) => {
+    setGalleryFilterDate(date);
+    setActiveView('gallery');
+  };
 
   useEffect(() => {
     if (!loading && !user) {
@@ -64,11 +70,11 @@ export default function Memories() {
           </TabsList>
 
           <TabsContent value="gallery" className="space-y-4">
-            <MemoryGallery />
+            <MemoryGallery filterDate={galleryFilterDate} onClearFilter={() => setGalleryFilterDate(undefined)} />
           </TabsContent>
 
           <TabsContent value="calendar" className="space-y-4">
-            <MemoryCalendar />
+            <MemoryCalendar onNavigateToGallery={handleNavigateToGallery} />
           </TabsContent>
         </Tabs>
 
