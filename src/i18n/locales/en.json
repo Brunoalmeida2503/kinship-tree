@@ -41,13 +41,13 @@
     "tree": "Tree",
     "map": "Map",
     "connections": "Connections",
-    "groups": "Groups"
+    "groups": "Clans"
   },
   "sidebar": {
     "navigation": "Navigation",
     "seasons": "Seasons",
     "tree": "Tree",
-    "groups": "Groups",
+    "groups": "Clans",
     "missions": "Missions",
     "memories": "Memories",
     "profile": "Profile",
@@ -86,7 +86,7 @@
     "deleteErrorDescription": "Could not remove the post",
     "loadError": "Error loading posts",
     "loadErrorDescription": "Could not load the feed",
-    "noGroups": "You are not a member of any groups yet",
+    "noGroups": "You are not a member of any clans yet",
     "uploadImages": "Upload images or videos"
   },
   "memories": {
@@ -98,12 +98,12 @@
     "calendar": "Calendar"
   },
   "groups": {
-    "title": "My Groups",
-    "description": "Groups you are part of",
-    "loading": "Loading groups...",
-    "noGroups": "You are not part of any groups yet",
+    "title": "My Clans",
+    "description": "Clans you are part of",
+    "loading": "Loading clans...",
+    "noGroups": "You are not part of any clans yet",
     "members": "members",
-    "viewGroup": "View Group"
+    "viewGroup": "View Clan"
   },
   "missions": {
     "title": "Six Degrees of Separation",

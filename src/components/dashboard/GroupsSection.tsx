@@ -93,8 +93,8 @@ export function GroupsSection() {
       });
     } else {
       toast({
-        title: 'Grupo criado!',
-        description: 'Seu grupo foi criado com sucesso.'
+        title: 'Clã criado!',
+        description: 'Seu clã foi criado com sucesso.'
       });
       setNewGroup({ name: '', description: '' });
       loadGroups();
@@ -112,7 +112,7 @@ export function GroupsSection() {
             Famílias que a Vida Uniu
           </CardTitle>
           <CardDescription>
-            Crie grupos para amigos, colegas de trabalho, turma da faculdade e mais
+            Crie clãs para amigos, colegas de trabalho, turma da faculdade e mais
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -120,19 +120,19 @@ export function GroupsSection() {
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                Criar Novo Grupo
+                Criar Novo Clã
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Criar Novo Grupo</DialogTitle>
+                <DialogTitle>Criar Novo Clã</DialogTitle>
                 <DialogDescription>
-                  Dê um nome e descrição para seu grupo
+                  Dê um nome e descrição para seu clã
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="groupName">Nome do Grupo</Label>
+                  <Label htmlFor="groupName">Nome do Clã</Label>
                   <Input
                     id="groupName"
                     placeholder="Ex: Turma Engenharia 2020"
@@ -144,14 +144,14 @@ export function GroupsSection() {
                   <Label htmlFor="groupDescription">Descrição</Label>
                   <Textarea
                     id="groupDescription"
-                    placeholder="Conte sobre esse grupo..."
+                    placeholder="Conte sobre esse clã..."
                     value={newGroup.description}
                     onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })}
                     rows={3}
                   />
                 </div>
                 <Button onClick={createGroup} disabled={loading} className="w-full">
-                  {loading ? 'Criando...' : 'Criar Grupo'}
+                  {loading ? 'Criando...' : 'Criar Clã'}
                 </Button>
               </div>
             </DialogContent>
@@ -161,8 +161,8 @@ export function GroupsSection() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Meus Grupos</CardTitle>
-          <CardDescription>{groups.length} grupos</CardDescription>
+          <CardTitle>Meus Clãs</CardTitle>
+          <CardDescription>{groups.length} clãs</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -176,7 +176,7 @@ export function GroupsSection() {
             ))}
             {groups.length === 0 && (
               <p className="text-muted-foreground text-center py-8">
-                Você ainda não faz parte de nenhum grupo. Crie o primeiro!
+                Você ainda não faz parte de nenhum clã. Crie o primeiro!
               </p>
             )}
           </div>
