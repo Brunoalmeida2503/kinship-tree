@@ -551,15 +551,21 @@ const Feed = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="container max-w-2xl mx-auto py-4 sm:py-6 md:py-8 px-3 sm:px-4">
-        <div className="flex items-center justify-between mb-4 sm:mb-6 md:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold truncate">
-            {filterUserId ? 'Timeline do Usuário' : 'Timeline'}
-          </h1>
+    <div className="min-h-screen bg-gradient-subtle">
+      <main className="container max-w-2xl mx-auto py-4 sm:py-6 px-3 sm:px-4">
+        <div className="flex items-center justify-between mb-5 sm:mb-7">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+              {filterUserId ? 'Timeline do Usuário' : 'Timeline'}
+            </h1>
+            {!filterUserId && (
+              <p className="text-sm text-muted-foreground mt-0.5">Veja o que sua rede está compartilhando</p>
+            )}
+          </div>
           {filterUserId && (
             <Button 
               variant="outline" 
+              size="sm"
               onClick={() => {
                 setFilterUserId(null);
                 navigate('/', { replace: true });
@@ -573,16 +579,21 @@ const Feed = () => {
 
         {/* Create Post */}
         {!filterUserId && (
-          <Card className="mb-6">
-          <CardHeader>
-            <h2 className="text-lg font-semibold">Criar Post</h2>
+          <Card className="mb-6 shadow-elegant border-border/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <Send className="h-4 w-4 text-primary" />
+              </div>
+              <h2 className="text-base font-semibold">Criar Post</h2>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <Textarea
               placeholder="No que você está pensando? Cole links do YouTube para incorporá-los!"
               value={newPost}
               onChange={(e) => setNewPost(e.target.value)}
-              className="min-h-[100px]"
+              className="min-h-[100px] resize-none border-border/50 focus-visible:ring-primary/20"
             />
             
             <MediaUploader 
@@ -736,29 +747,38 @@ const Feed = () => {
         {/* Posts Feed */}
         <div className="space-y-4">
           {posts.length === 0 ? (
-            <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
-                Nenhum post ainda. Seja o primeiro a postar!
+            <Card className="shadow-elegant border-border/50">
+              <CardContent className="py-12 text-center">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center">
+                    <Users className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Nenhum post ainda</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">Seja o primeiro a compartilhar algo!</p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           ) : (
             posts.map((post) => (
-              <Card key={post.id}>
-                <CardHeader>
+              <Card key={post.id} className="shadow-elegant border-border/50 card-hover">
+                <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Avatar>
+
+                      <Avatar className="h-10 w-10 ring-2 ring-border/30">
                         <AvatarImage src={post.author_avatar || ""} />
-                        <AvatarFallback>
+                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                           {post.author_name?.charAt(0) || "U"}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-semibold">{post.author_name}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="font-semibold text-sm leading-tight">{post.author_name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
                           {new Date(post.created_at).toLocaleDateString("pt-BR", {
                             day: "2-digit",
-                            month: "long",
+                            month: "short",
                             year: "numeric",
                             hour: "2-digit",
                             minute: "2-digit",
@@ -808,13 +828,13 @@ const Feed = () => {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                   {post.content && (
-                    <p className="whitespace-pre-wrap mb-4">{post.content}</p>
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed mb-4">{post.content}</p>
                   )}
                   
                   {post.media && post.media.length > 0 && (
-                    <div className="mb-4">
+                    <div className="mb-4 rounded-lg overflow-hidden">
                       <MediaGallery media={post.media} />
                     </div>
                   )}
@@ -837,7 +857,7 @@ const Feed = () => {
                   {renderYouTubeEmbeds(post.content)}
 
                   {!post.is_group_post && (
-                    <div className="mt-4 pt-4 border-t">
+                    <div className="mt-3 pt-3 border-t border-border/50">
                       <PostComments postId={post.id} />
                     </div>
                   )}

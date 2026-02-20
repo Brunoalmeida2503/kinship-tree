@@ -36,28 +36,28 @@ export default function Memories() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary to-background">
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+    <div className="min-h-screen bg-gradient-subtle">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div className="w-full sm:w-auto">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-1 sm:mb-2">{t('memories.title')}</h1>
-            <p className="text-sm sm:text-base text-muted-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('memories.title')}</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
               {t('memories.description')}
             </p>
           </div>
-          <Button onClick={() => setIsAddDialogOpen(true)} size="lg" className="w-full sm:w-auto text-sm sm:text-base">
-            <Plus className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+          <Button onClick={() => setIsAddDialogOpen(true)} size="sm" className="w-full sm:w-auto">
+            <Plus className="mr-2 h-4 w-4" />
             {t('memories.newMemory')}
           </Button>
         </div>
 
-        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as 'gallery' | 'calendar')} className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="gallery" className="flex items-center gap-2">
+        <Tabs value={activeView} onValueChange={(v) => setActiveView(v as 'gallery' | 'calendar')} className="space-y-4">
+          <TabsList className="w-auto inline-flex">
+            <TabsTrigger value="gallery" className="flex items-center gap-2 text-sm">
               <Grid className="h-4 w-4" />
               {t('memories.gallery')}
             </TabsTrigger>
-            <TabsTrigger value="calendar" className="flex items-center gap-2">
+            <TabsTrigger value="calendar" className="flex items-center gap-2 text-sm">
               <Calendar className="h-4 w-4" />
               {t('memories.calendar')}
             </TabsTrigger>

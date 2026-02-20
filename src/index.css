@@ -112,6 +112,9 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
@@ -123,4 +126,63 @@ All colors MUST be HSL.
   50% {
     box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
   }
+}
+
+/* Smooth transitions */
+.transition-smooth {
+  transition: all 0.2s ease;
+}
+
+/* Card hover effect */
+.card-hover {
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.card-hover:hover {
+  box-shadow: 0 4px 20px -4px hsl(var(--primary) / 0.15);
+  transform: translateY(-1px);
+}
+
+/* Glass effect */
+.glass {
+  background: hsl(var(--background) / 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Subtle shadow */
+.shadow-elegant {
+  box-shadow: 0 2px 20px -4px hsl(var(--foreground) / 0.08), 0 1px 4px -1px hsl(var(--foreground) / 0.05);
+}
+
+/* Inner glow for inputs */
+.input-focus:focus-within {
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: var(--gradient-hero);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Better scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
 }

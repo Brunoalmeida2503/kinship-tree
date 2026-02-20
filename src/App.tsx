@@ -51,9 +51,10 @@ const AppContent = () => {
                   <div className="flex min-h-screen w-full">
                     <AppSidebar />
                     <main className="flex-1 flex flex-col min-w-0">
-                      <header className="sticky top-0 z-10 flex h-12 sm:h-14 items-center gap-2 sm:gap-4 border-b bg-background px-3 sm:px-6">
-                        <SidebarTrigger />
-                        <h1 className="text-base sm:text-lg font-semibold truncate">Echos</h1>
+                      <header className="sticky top-0 z-10 flex h-12 sm:h-14 items-center gap-2 sm:gap-4 border-b bg-background/95 backdrop-blur-sm px-3 sm:px-6 shadow-sm">
+                        <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
+                        <div className="h-5 w-px bg-border" />
+                        <h1 className="text-sm sm:text-base font-semibold text-foreground truncate">Echos</h1>
                       </header>
                       <div className="flex-1 overflow-auto">
                         <Routes>

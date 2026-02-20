@@ -24,8 +24,11 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background-start to-background-end">
-        <div className="text-lg">{t('dashboard.loading')}</div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-subtle">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <div className="h-5 w-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <span className="text-sm">{t('dashboard.loading')}</span>
+        </div>
       </div>
     );
   }
@@ -35,33 +38,34 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background-start to-background-end">
-      <header className="border-b border-border-subtle bg-background/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-primary">{t('dashboard.title')}</h1>
-          <Button variant="outline" onClick={signOut}>
+    <div className="min-h-screen bg-gradient-subtle">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t('dashboard.title')}</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Visualize suas conexões e árvore genealógica</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={signOut} className="shrink-0">
             <LogOut className="mr-2 h-4 w-4" />
             {t('dashboard.logout')}
           </Button>
         </div>
-      </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
-            <TabsTrigger value="tree" className="flex items-center gap-2">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
+          <TabsList className="w-auto inline-flex">
+            <TabsTrigger value="tree" className="flex items-center gap-2 text-sm">
               <TreePine className="h-4 w-4" />
               <span className="hidden sm:inline">{t('dashboard.tree')}</span>
             </TabsTrigger>
-            <TabsTrigger value="map" className="flex items-center gap-2">
+            <TabsTrigger value="map" className="flex items-center gap-2 text-sm">
               <Map className="h-4 w-4" />
               <span className="hidden sm:inline">{t('dashboard.map')}</span>
             </TabsTrigger>
-            <TabsTrigger value="connections" className="flex items-center gap-2">
+            <TabsTrigger value="connections" className="flex items-center gap-2 text-sm">
               <Network className="h-4 w-4" />
               <span className="hidden sm:inline">{t('dashboard.connections')}</span>
             </TabsTrigger>
-            <TabsTrigger value="groups" className="flex items-center gap-2">
+            <TabsTrigger value="groups" className="flex items-center gap-2 text-sm">
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">{t('dashboard.groups')}</span>
             </TabsTrigger>

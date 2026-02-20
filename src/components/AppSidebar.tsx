@@ -80,23 +80,23 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="w-56">
-      <SidebarHeader>
-        <div className="flex items-center justify-center px-4 py-3">
-          <img src={currentLogo} alt="Tree Logo" className={collapsed ? "h-12 w-auto" : "h-16 w-auto"} />
+      <SidebarHeader className="border-b border-sidebar-border/50">
+        <div className="flex items-center justify-center px-4 py-4">
+          <img src={currentLogo} alt="Tree Logo" className={collapsed ? "h-10 w-auto" : "h-14 w-auto transition-all duration-200"} />
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="px-1">
         <SidebarGroup>
-          <SidebarGroupLabel>{t('sidebar.navigation')}</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-xs font-medium text-sidebar-foreground/50 uppercase tracking-wider px-3 mb-1">{t('sidebar.navigation')}</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-0.5">
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} className="rounded-lg h-9 px-3">
                     <NavLink to={item.url} end onClick={handleNavClick}>
-                      <item.icon />
-                      <span>{item.title}</span>
+                      <item.icon className="shrink-0" />
+                      <span className="font-medium">{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -106,15 +106,15 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="border-t border-sidebar-border/50 pb-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
+            <SidebarMenuButton asChild className="text-muted-foreground hover:text-destructive rounded-lg h-9">
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center gap-2"
               >
-                <LogOut />
+                <LogOut className="shrink-0" />
                 <span>{t('sidebar.logout')}</span>
               </button>
             </SidebarMenuButton>
