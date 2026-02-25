@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Play, Share2, Image as ImageIcon, X } from 'lucide-react';
+import { Calendar, Play, Share2, Image as ImageIcon, X, Globe, Lock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -24,6 +24,7 @@ interface Memory {
   end_date: string | null;
   description: string | null;
   image_url: string | null;
+  share_with_tree: boolean | null;
   created_at: string;
   memory_media: MediaItem[];
 }
@@ -197,9 +198,16 @@ export function MemoryGallery({ filterDate, onClearFilter }: MemoryGalleryProps)
               </div>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-1">
-                  <h3 className="font-semibold text-foreground line-clamp-1 flex-1">
-                    {memory.title}
-                  </h3>
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    {memory.share_with_tree ? (
+                      <Globe className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                    ) : (
+                      <Lock className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                    )}
+                    <h3 className="font-semibold text-foreground line-clamp-1 flex-1">
+                      {memory.title}
+                    </h3>
+                  </div>
                   <Button
                     variant="ghost"
                     size="icon"

@@ -13,6 +13,8 @@ import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
 import { MediaUploader, uploadMediaFiles, MediaFile } from '@/components/feed/MediaUploader';
 import { Trash2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { MemoryParticipantsPicker } from './MemoryParticipantsPicker';
 
 interface EditMemoryDialogProps {
@@ -36,6 +38,7 @@ export function EditMemoryDialog({ open, onOpenChange, memoryId, onMemoryUpdated
   const [newMediaFiles, setNewMediaFiles] = useState<MediaFile[]>([]);
   const [deletingMedia, setDeletingMedia] = useState<Set<string>>(new Set());
   const [participantIds, setParticipantIds] = useState<string[]>([]);
+  const [isPublic, setIsPublic] = useState(true);
 
 
   const form = useForm<z.infer<typeof memorySchema>>({
@@ -77,6 +80,7 @@ export function EditMemoryDialog({ open, onOpenChange, memoryId, onMemoryUpdated
 
       setExistingMedia(memory.memory_media || []);
       setParticipantIds((memory.memory_participants || []).map((p: any) => p.user_id));
+      setIsPublic(memory.share_with_tree ?? true);
     } catch (error) {
       console.error('Erro ao carregar memória:', error);
       toast.error('Erro ao carregar memória');
@@ -121,6 +125,7 @@ export function EditMemoryDialog({ open, onOpenChange, memoryId, onMemoryUpdated
           description: values.description,
           start_date: values.start_date,
           end_date: values.end_date,
+          share_with_tree: isPublic,
         })
         .eq('id', memoryId);
 
@@ -286,10 +291,27 @@ export function EditMemoryDialog({ open, onOpenChange, memoryId, onMemoryUpdated
               />
             </div>
 
-            <MemoryParticipantsPicker
-              selectedIds={participantIds}
-              onChange={setParticipantIds}
-            />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-medium">Visibilidade</Label>
+                  <p className="text-xs text-muted-foreground">
+                    {isPublic ? 'Visível para suas conexões' : 'Apenas você e participantes selecionados'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">{isPublic ? 'Pública' : 'Privada'}</span>
+                  <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+                </div>
+              </div>
+            </div>
+
+            {!isPublic && (
+              <MemoryParticipantsPicker
+                selectedIds={participantIds}
+                onChange={setParticipantIds}
+              />
+            )}
 
             <div className="flex gap-3">
               <Button
