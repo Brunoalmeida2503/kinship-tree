@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { TreePine, User, ZoomIn, ZoomOut, Maximize2, Move, Map as MapIcon } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { TreePine, User, ZoomIn, ZoomOut, Maximize2, Move, Map as MapIcon, Users, Plus, Eye, List, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -548,63 +548,63 @@ export function TreeVisualization() {
     activeGenerations.sort((a, b) => a - b);
 
     return (
-      <div ref={containerRef} className="w-full bg-gradient-to-b from-muted/10 to-muted/30 rounded-xl border border-border/50">
+      <div ref={containerRef} className="w-full bg-gradient-to-b from-muted/5 to-muted/20 rounded-xl border border-border/50 shadow-sm overflow-hidden">
         {/* Controles de navegação */}
-        <div className="flex items-center justify-between gap-2 p-3 sm:p-4 border-b border-border/50 bg-background/50 backdrop-blur-sm rounded-t-xl">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2 px-3 sm:px-4 py-2.5 border-b border-border/30 bg-background/80 backdrop-blur-sm">
+          <div className="flex items-center gap-1.5">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={handleZoomOut}
               title="Reduzir zoom"
-              className="h-9 w-9 rounded-full"
+              className="h-8 w-8 rounded-lg hover:bg-muted/80"
             >
-              <ZoomOut className="h-4 w-4" />
+              <ZoomOut className="h-3.5 w-3.5" />
             </Button>
-            <div className="px-3 py-1 bg-muted rounded-full text-sm font-medium">
+            <div className="px-2.5 py-1 bg-muted/60 rounded-lg text-xs font-medium text-muted-foreground min-w-[42px] text-center">
               {Math.round(zoom * 100)}%
             </div>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={handleZoomIn}
               title="Aumentar zoom"
-              className="h-9 w-9 rounded-full"
+              className="h-8 w-8 rounded-lg hover:bg-muted/80"
             >
-              <ZoomIn className="h-4 w-4" />
+              <ZoomIn className="h-3.5 w-3.5" />
             </Button>
-            <div className="w-px h-6 bg-border mx-2 hidden sm:block" />
+            <div className="w-px h-5 bg-border/50 mx-1 hidden sm:block" />
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={handleFitToScreen}
               title="Ajustar à tela"
-              className="h-9 w-9 rounded-full hidden sm:flex"
+              className="h-8 w-8 rounded-lg hover:bg-muted/80 hidden sm:flex"
             >
-              <Maximize2 className="h-4 w-4" />
+              <Maximize2 className="h-3.5 w-3.5" />
             </Button>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={handleResetView}
               title="Resetar visualização"
-              className="h-9 w-9 rounded-full hidden sm:flex"
+              className="h-8 w-8 rounded-lg hover:bg-muted/80 hidden sm:flex"
             >
-              <Move className="h-4 w-4" />
+              <Move className="h-3.5 w-3.5" />
             </Button>
           </div>
           
           {/* Legenda de cores */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2.5">
             {activeGenerations.map(gen => {
               const colors = getGenerationColor(gen, gen === 0);
               return (
-                <div key={gen} className="flex items-center gap-1.5">
+                <div key={gen} className="flex items-center gap-1">
                   <div 
-                    className="w-3 h-3 rounded-full"
+                    className="w-2.5 h-2.5 rounded-full ring-1 ring-offset-1 ring-offset-background"
                     style={{ backgroundColor: colors.bg }}
                   />
-                  <span className="text-xs text-muted-foreground">{getGenerationLabel(gen)}</span>
+                  <span className="text-[10px] text-muted-foreground font-medium">{getGenerationLabel(gen)}</span>
                 </div>
               );
             })}
@@ -1362,144 +1362,90 @@ export function TreeVisualization() {
     const grandchildren = generations.get(2) || [];
     const grandparents = generations.get(-2) || [];
 
-    const PersonRow = ({ node }: { node: TreeNode }) => (
-      <div className="flex items-center gap-2 p-3 bg-card border border-border rounded-lg">
-        <Avatar className="w-10 h-10 border border-primary/50">
-          <AvatarImage src={node.avatar_url} alt={node.name} />
-          <AvatarFallback className="bg-primary/20">
-            <User className="w-5 h-5 text-primary" />
-          </AvatarFallback>
-        </Avatar>
-        <div>
-          <p className="font-medium">{node.name}</p>
-          {node.relationship !== 'root' && (
-            <p className="text-xs text-muted-foreground capitalize">{node.relationship}</p>
+    const PersonRow = ({ node }: { node: TreeNode }) => {
+      const colors = getGenerationColor(node.generation || 0, node.isRoot);
+      return (
+        <div className="flex items-center gap-3 p-3 bg-card border border-border/50 rounded-xl card-hover group">
+          <Avatar className="w-11 h-11 border-2 ring-2 ring-offset-1 ring-offset-background" style={{ borderColor: colors.bg }}>
+            <AvatarImage src={node.avatar_url} alt={node.name} />
+            <AvatarFallback style={{ backgroundColor: `${colors.bg}20`, color: colors.bg }}>
+              <User className="w-5 h-5" />
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm text-foreground truncate">{node.isRoot ? 'Você' : node.name}</p>
+            {node.relationship !== 'root' && (
+              <span
+                className="text-[10px] font-medium capitalize px-2 py-0.5 rounded-full inline-block mt-0.5"
+                style={{ backgroundColor: `${colors.bg}15`, color: colors.bg }}
+              >
+                {node.relationship}
+              </span>
+            )}
+            {node.isRoot && (
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full inline-block mt-0.5 bg-primary/10 text-primary">
+                Principal
+              </span>
+            )}
+          </div>
+          {node.spouse && (
+            <>
+              <div className="flex items-center justify-center w-6">
+                <span className="text-xs">❤️</span>
+              </div>
+              <Avatar className="w-11 h-11 border-2" style={{ borderColor: colors.bg }}>
+                <AvatarImage src={node.spouse.avatar_url} alt={node.spouse.name} />
+                <AvatarFallback style={{ backgroundColor: `${colors.bg}20`, color: colors.bg }}>
+                  <User className="w-5 h-5" />
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="font-medium text-sm text-foreground truncate">{node.spouse.name}</p>
+                <span
+                  className="text-[10px] font-medium capitalize px-2 py-0.5 rounded-full inline-block mt-0.5"
+                  style={{ backgroundColor: `${colors.bg}15`, color: colors.bg }}
+                >
+                  {node.spouse.relationship}
+                </span>
+              </div>
+            </>
           )}
         </div>
-        {node.spouse && (
-          <>
-            <span className="text-muted-foreground mx-2">+</span>
-            <Avatar className="w-10 h-10 border border-primary/50">
-              <AvatarImage src={node.spouse.avatar_url} alt={node.spouse.name} />
-              <AvatarFallback className="bg-primary/20">
-                <User className="w-5 h-5 text-primary" />
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-medium">{node.spouse.name}</p>
-              <p className="text-xs text-muted-foreground capitalize">{node.spouse.relationship}</p>
-            </div>
-          </>
-        )}
-      </div>
-    );
+      );
+    };
 
-    return (
-      <div className="space-y-6">
-        {/* Você (somente o usuário) */}
+    const SectionBlock = ({ title, nodes, color }: { title: string; nodes: TreeNode[]; color: string }) => {
+      if (nodes.length === 0) return null;
+      return (
         <div className="space-y-2">
-          <h3 className="font-semibold text-sm text-muted-foreground">Você</h3>
+          <div className="flex items-center gap-2 px-1">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+            <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">{title}</h3>
+            <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">{nodes.length}</span>
+          </div>
           <div className="grid gap-2">
-            <PersonRow node={root} />
+            {nodes.map((n) => <PersonRow key={n.id} node={n} />)}
           </div>
         </div>
+      );
+    };
 
-        {/* Irmãos */}
-        {siblings.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="font-semibold text-sm text-muted-foreground">Irmãos</h3>
-            <div className="grid gap-2">
-              {siblings.map((n) => (
-                <PersonRow key={n.id} node={n} />
-              ))}
-            </div>
+    return (
+      <Card className="border border-border/50">
+        <CardContent className="p-4 sm:p-6">
+          <div className="space-y-5">
+            <SectionBlock title="Você" nodes={[root]} color={getGenerationColor(0, true).bg} />
+            <SectionBlock title="Avós" nodes={grandparents} color={getGenerationColor(-2).bg} />
+            <SectionBlock title="Pais" nodes={parents} color={getGenerationColor(-1).bg} />
+            <SectionBlock title="Tios" nodes={unclesAunts} color={getGenerationColor(-1).bg} />
+            <SectionBlock title="Irmãos" nodes={siblings} color={getGenerationColor(0).bg} />
+            <SectionBlock title="Primos" nodes={cousins} color={getGenerationColor(0).bg} />
+            <SectionBlock title="Filhos" nodes={children} color={getGenerationColor(1).bg} />
+            <SectionBlock title="Sobrinhos" nodes={nephewsNieces} color={getGenerationColor(3).bg} />
+            <SectionBlock title="Netos" nodes={grandchildren} color={getGenerationColor(2).bg} />
           </div>
-        )}
-
-        {/* Pais */}
-        {parents.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="font-semibold text-sm text-muted-foreground">Pais</h3>
-            <div className="grid gap-2">
-              {parents.map((n) => (
-                <PersonRow key={n.id} node={n} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Tios */}
-        {unclesAunts.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="font-semibold text-sm text-muted-foreground">Tios</h3>
-            <div className="grid gap-2">
-              {unclesAunts.map((n) => (
-                <PersonRow key={n.id} node={n} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Primos */}
-        {cousins.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="font-semibold text-sm text-muted-foreground">Primos</h3>
-            <div className="grid gap-2">
-              {cousins.map((n) => (
-                <PersonRow key={n.id} node={n} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Filhos */}
-        {children.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="font-semibold text-sm text-muted-foreground">Filhos</h3>
-            <div className="grid gap-2">
-              {children.map((n) => (
-                <PersonRow key={n.id} node={n} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Sobrinhos */}
-        {nephewsNieces.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="font-semibold text-sm text-muted-foreground">Sobrinhos</h3>
-            <div className="grid gap-2">
-              {nephewsNieces.map((n) => (
-                <PersonRow key={n.id} node={n} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Netos */}
-        {grandchildren.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="font-semibold text-sm text-muted-foreground">Netos</h3>
-            <div className="grid gap-2">
-              {grandchildren.map((n) => (
-                <PersonRow key={n.id} node={n} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Avós */}
-        {grandparents.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="font-semibold text-sm text-muted-foreground">Avós</h3>
-            <div className="grid gap-2">
-              {grandparents.map((n) => (
-                <PersonRow key={n.id} node={n} />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+        </CardContent>
+      </Card>
     );
   };
 
@@ -2069,61 +2015,86 @@ export function TreeVisualization() {
     );
   };
 
+  const viewModes = [
+    { key: 'graph' as const, label: 'Gráfico', icon: BarChart3 },
+    { key: 'list' as const, label: 'Lista', icon: List },
+    { key: 'map' as const, label: 'Mapa', icon: MapIcon },
+  ];
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <TreePine className="h-6 w-6" />
-              Sua Árvore Genealógica
-            </CardTitle>
-            <CardDescription>
-              Visualização da sua rede de conexões familiares
-            </CardDescription>
+    <div className="space-y-4">
+      {/* Header com view switcher integrado */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <TreePine className="h-5 w-5 text-primary" />
           </div>
-          <div className="flex gap-2">
-            <Button
-              variant={viewMode === 'graph' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('graph')}
-            >
-              Gráfico
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('list')}
-            >
-              Lista
-            </Button>
-            <Button
-              variant={viewMode === 'map' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setViewMode('map')}
-            >
-              <MapIcon className="h-4 w-4 mr-1" />
-              Mapa
-            </Button>
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Sua Árvore Genealógica</h2>
+            <p className="text-xs text-muted-foreground">Visualização da sua rede familiar</p>
           </div>
         </div>
-      </CardHeader>
-      <CardContent>
-        {viewMode === 'map' ? (
-          renderMapView()
-        ) : treeData ? (
-          <div>
-            {viewMode === 'graph' ? renderGraphView() : renderListView()}
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <TreePine className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">
-              Sua árvore está vazia. Comece adicionando conexões familiares!
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg border border-border/50">
+          {viewModes.map(mode => (
+            <button
+              key={mode.key}
+              onClick={() => setViewMode(mode.key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                viewMode === mode.key
+                  ? 'bg-background text-foreground shadow-sm border border-border/50'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+              }`}
+            >
+              <mode.icon className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{mode.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Content */}
+      {viewMode === 'map' ? (
+        renderMapView()
+      ) : treeData ? (
+        <div>
+          {viewMode === 'graph' ? renderGraphView() : renderListView()}
+        </div>
+      ) : (
+        /* Empty State aprimorado */
+        <Card className="border-dashed border-2 border-border/60 bg-gradient-to-br from-muted/20 via-background to-muted/30">
+          <CardContent className="py-16">
+            <div className="text-center max-w-sm mx-auto">
+              <div className="relative mx-auto mb-6 w-24 h-24">
+                <div className="absolute inset-0 rounded-full bg-primary/10 animate-pulse" />
+                <div className="relative w-full h-full rounded-full bg-gradient-to-br from-primary/20 to-accent/10 flex items-center justify-center">
+                  <TreePine className="h-10 w-10 text-primary" />
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center border-2 border-background">
+                  <Users className="h-4 w-4 text-accent" />
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                Sua árvore está vazia
+              </h3>
+              <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                Comece adicionando seus familiares para construir sua árvore genealógica e visualizar suas conexões.
+              </p>
+              <Button 
+                variant="default" 
+                size="sm"
+                className="gap-2"
+                onClick={() => {
+                  const tabTrigger = document.querySelector('[value="connections"]') as HTMLElement;
+                  tabTrigger?.click();
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                Adicionar Conexões
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }
