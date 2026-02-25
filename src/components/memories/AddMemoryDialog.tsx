@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { memorySchema } from '@/lib/validation';
 import { z } from 'zod';
 import { MediaUploader, MediaFile, uploadMediaFiles } from '@/components/feed/MediaUploader';
@@ -32,6 +33,7 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [participantIds, setParticipantIds] = useState<string[]>([]);
+  const [isPublic, setIsPublic] = useState(true);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,6 +79,7 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
           description: description.trim() || null,
           start_date: format(startDate, 'yyyy-MM-dd'),
           end_date: isPeriod && endDate ? format(endDate, 'yyyy-MM-dd') : null,
+          share_with_tree: isPublic,
         })
         .select()
         .single();
@@ -132,6 +135,7 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
     setIsPeriod(false);
     setMediaFiles([]);
     setParticipantIds([]);
+    setIsPublic(true);
   };
 
   return (
@@ -242,10 +246,27 @@ export function AddMemoryDialog({ open, onOpenChange }: AddMemoryDialogProps) {
             />
           </div>
 
-          <MemoryParticipantsPicker
-            selectedIds={participantIds}
-            onChange={setParticipantIds}
-          />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-sm font-medium">Visibilidade</Label>
+                <p className="text-xs text-muted-foreground">
+                  {isPublic ? 'Visível para suas conexões' : 'Apenas você e participantes selecionados'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">{isPublic ? 'Pública' : 'Privada'}</span>
+                <Switch checked={isPublic} onCheckedChange={setIsPublic} />
+              </div>
+            </div>
+          </div>
+
+          {!isPublic && (
+            <MemoryParticipantsPicker
+              selectedIds={participantIds}
+              onChange={setParticipantIds}
+            />
+          )}
 
           <div className="flex gap-3 pt-4">
             <Button
