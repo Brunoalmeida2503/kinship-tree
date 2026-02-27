@@ -504,6 +504,23 @@ export function ProfileSection() {
             />
           </div>
 
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="flex items-center gap-3">
+              <EyeOff className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <Label htmlFor="mission_anonymous" className="font-medium">Missões Anônimas</Label>
+                <p className="text-sm text-muted-foreground">
+                  Seu nome e foto ficam ocultos para outros participantes de missões
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="mission_anonymous"
+              checked={profile.mission_anonymous}
+              onCheckedChange={(checked) => setProfile({ ...profile, mission_anonymous: checked })}
+            />
+          </div>
+
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Volume2 className="h-4 w-4 text-muted-foreground" />

@@ -31,11 +31,22 @@ export const MissionFlowchart = ({ path, targetName }: MissionFlowchartProps) =>
             {displayPath.map((node, index) => (
               <div key={index} className="flex flex-col items-center">
                 <div className="flex flex-col items-center bg-accent/50 rounded-lg p-4 min-w-[200px]">
-                  <Avatar className="h-16 w-16 border-2 border-primary mb-2">
-                    <AvatarImage src={node.avatar_url} />
-                    <AvatarFallback>{node.name?.[0] || "?"}</AvatarFallback>
-                  </Avatar>
-                  <span className="font-medium text-center">{node.name}</span>
+                  {node.anonymous ? (
+                    <>
+                      <div className="h-16 w-16 rounded-full border-2 border-muted-foreground mb-2 flex items-center justify-center bg-muted">
+                        <UserRound className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                      <span className="font-medium text-center text-muted-foreground">Anônimo</span>
+                    </>
+                  ) : (
+                    <>
+                      <Avatar className="h-16 w-16 border-2 border-primary mb-2">
+                        <AvatarImage src={node.avatar_url} />
+                        <AvatarFallback>{node.name?.[0] || "?"}</AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium text-center">{node.name}</span>
+                    </>
+                  )}
                   {node.action && (
                     <span className="text-xs text-primary font-medium mt-1">
                       {node.action}
