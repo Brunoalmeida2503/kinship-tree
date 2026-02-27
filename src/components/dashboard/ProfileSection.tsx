@@ -103,7 +103,8 @@ export function ProfileSection() {
         state: data.state || '',
         city: data.city || '',
         world_enabled: data.world_enabled || false,
-        aura_voice: data.aura_voice || 'sarah'
+        aura_voice: data.aura_voice || 'sarah',
+        mission_anonymous: (data as any).mission_anonymous || false
       };
       
       setProfile(profileData);
