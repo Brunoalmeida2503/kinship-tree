@@ -236,7 +236,8 @@ export function ProfileSection() {
       state: profile.state || null,
       city: profile.city || null,
       world_enabled: profile.world_enabled,
-      aura_voice: profile.aura_voice
+      aura_voice: profile.aura_voice,
+      mission_anonymous: profile.mission_anonymous
     };
 
     const { error } = await supabase
