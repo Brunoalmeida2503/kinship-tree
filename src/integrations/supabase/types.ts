@@ -1091,6 +1091,7 @@ export type Database = {
           latitude: number | null
           location: string | null
           longitude: number | null
+          mission_anonymous: boolean | null
           state: string | null
           theme_color: string | null
           updated_at: string | null
@@ -1110,6 +1111,7 @@ export type Database = {
           latitude?: number | null
           location?: string | null
           longitude?: number | null
+          mission_anonymous?: boolean | null
           state?: string | null
           theme_color?: string | null
           updated_at?: string | null
@@ -1129,6 +1131,7 @@ export type Database = {
           latitude?: number | null
           location?: string | null
           longitude?: number | null
+          mission_anonymous?: boolean | null
           state?: string | null
           theme_color?: string | null
           updated_at?: string | null

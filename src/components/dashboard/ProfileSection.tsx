@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Camera, Globe, Volume2 } from 'lucide-react';
+import { Camera, Globe, Volume2, EyeOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/contexts/ThemeContext';
 import { fetchCountries, fetchStates, fetchCities, fetchCoordinates, Country, State, City } from '@/services/geoService';
@@ -42,7 +42,8 @@ export function ProfileSection() {
     state: '',
     city: '',
     world_enabled: false,
-    aura_voice: 'sarah'
+    aura_voice: 'sarah',
+    mission_anonymous: false
   });
 
   const [countries, setCountries] = useState<Country[]>([]);
@@ -102,7 +103,8 @@ export function ProfileSection() {
         state: data.state || '',
         city: data.city || '',
         world_enabled: data.world_enabled || false,
-        aura_voice: data.aura_voice || 'sarah'
+        aura_voice: data.aura_voice || 'sarah',
+        mission_anonymous: (data as any).mission_anonymous || false
       };
       
       setProfile(profileData);
@@ -234,7 +236,8 @@ export function ProfileSection() {
       state: profile.state || null,
       city: profile.city || null,
       world_enabled: profile.world_enabled,
-      aura_voice: profile.aura_voice
+      aura_voice: profile.aura_voice,
+      mission_anonymous: profile.mission_anonymous
     };
 
     const { error } = await supabase
@@ -498,6 +501,23 @@ export function ProfileSection() {
               id="world_enabled"
               checked={profile.world_enabled}
               onCheckedChange={(checked) => setProfile({ ...profile, world_enabled: checked })}
+            />
+          </div>
+
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="flex items-center gap-3">
+              <EyeOff className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <Label htmlFor="mission_anonymous" className="font-medium">Missões Anônimas</Label>
+                <p className="text-sm text-muted-foreground">
+                  Seu nome e foto ficam ocultos para outros participantes de missões
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="mission_anonymous"
+              checked={profile.mission_anonymous}
+              onCheckedChange={(checked) => setProfile({ ...profile, mission_anonymous: checked })}
             />
           </div>
 

@@ -64,12 +64,17 @@ export const MissionMap = ({ path, targetProfile }: MissionMapProps) => {
               el.style.boxShadow = "0 2px 8px rgba(0,0,0,0.3)";
               el.textContent = index.toString();
 
+              const isAnonymous = node.anonymous === true;
+              if (isAnonymous) {
+                el.style.backgroundColor = "#6B7280";
+              }
+
               new mapboxgl.Marker(el)
                 .setLngLat([node.longitude, node.latitude])
                 .setPopup(
                   new mapboxgl.Popup({ offset: 25 }).setHTML(
                     `<div class="p-2">
-                      <p class="font-semibold">${node.name}</p>
+                      <p class="font-semibold">${isAnonymous ? 'Anônimo' : node.name}</p>
                       <p class="text-xs text-muted-foreground">Grau ${index}</p>
                     </div>`
                   )
