@@ -155,10 +155,10 @@ export const SixDegreesMission = () => {
         const pathWithProfiles = [];
         for (const userId of shortestPath) {
           const { data: profile } = await supabase
-158:             .from("profiles")
-159:             .select("id, full_name, avatar_url, latitude, longitude, mission_anonymous")
-160:             .eq("id", userId)
-161:             .single();
+            .from("profiles")
+            .select("id, full_name, avatar_url, latitude, longitude, mission_anonymous")
+            .eq("id", userId)
+            .single();
           
           if (profile) {
             const isAnon = (profile as any).mission_anonymous === true;
