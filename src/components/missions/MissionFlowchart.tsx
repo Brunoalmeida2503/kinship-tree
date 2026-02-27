@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowDown, Target } from "lucide-react";
+import { ArrowDown, Target, UserRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface MissionFlowchartProps {
