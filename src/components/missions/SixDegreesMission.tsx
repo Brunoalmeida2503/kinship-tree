@@ -155,18 +155,20 @@ export const SixDegreesMission = () => {
         const pathWithProfiles = [];
         for (const userId of shortestPath) {
           const { data: profile } = await supabase
-            .from("profiles")
-            .select("id, full_name, avatar_url, latitude, longitude")
-            .eq("id", userId)
-            .single();
+158:             .from("profiles")
+159:             .select("id, full_name, avatar_url, latitude, longitude, mission_anonymous")
+160:             .eq("id", userId)
+161:             .single();
           
           if (profile) {
+            const isAnon = (profile as any).mission_anonymous === true;
             pathWithProfiles.push({
               id: profile.id,
-              name: profile.full_name,
-              avatar_url: profile.avatar_url,
+              name: isAnon ? 'Anônimo' : profile.full_name,
+              avatar_url: isAnon ? '' : profile.avatar_url,
               latitude: profile.latitude,
               longitude: profile.longitude,
+              anonymous: isAnon,
             });
           }
         }
