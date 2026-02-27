@@ -42,7 +42,8 @@ export function ProfileSection() {
     state: '',
     city: '',
     world_enabled: false,
-    aura_voice: 'sarah'
+    aura_voice: 'sarah',
+    mission_anonymous: false
   });
 
   const [countries, setCountries] = useState<Country[]>([]);
