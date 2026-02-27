@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN mission_anonymous boolean DEFAULT false;
