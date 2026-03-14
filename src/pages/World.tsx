@@ -282,6 +282,37 @@ const World = () => {
     }
   };
 
+  const handleDirectPriceSearch = async () => {
+    if (!priceSearchQuery.trim()) {
+      toast.error("Digite o nome do produto");
+      return;
+    }
+    setPriceSearching(true);
+    setHasSearched(true);
+    setPriceSearchResults([]);
+    try {
+      const { data, error } = await supabase.functions.invoke("search-prices", {
+        body: { 
+          directSearch: true, 
+          query: priceSearchQuery.trim(),
+          brand: priceSearchBrand.trim() || undefined,
+        },
+      });
+      if (error) throw error;
+      setPriceSearchResults(data.results || []);
+      if ((data.results || []).length === 0) {
+        toast.info("Nenhum resultado encontrado");
+      } else {
+        toast.success(`${data.results.length} resultados encontrados!`);
+      }
+    } catch (error) {
+      console.error("Error searching prices:", error);
+      toast.error("Erro ao buscar preços. Tente novamente.");
+    } finally {
+      setPriceSearching(false);
+    }
+  };
+
   const unseenAlerts = priceAlerts.filter((a) => !a.seen && a.is_below_target).length;
 
   const getDaysRemaining = (expiresAt: string) => {
