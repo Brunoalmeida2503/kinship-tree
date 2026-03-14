@@ -99,6 +99,13 @@ const defaultServices: Service[] = [
   { id: "picpay", name: "PicPay", icon: "💚", url: "https://picpay.com", category: "finance", color: "#21C25E", canEmbed: false },
 ];
 
+interface DirectSearchResult {
+  marketplace: string;
+  product_name: string;
+  found_price: number;
+  product_url: string;
+}
+
 const World = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -115,6 +122,13 @@ const World = () => {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
+  
+  // Direct price search state
+  const [priceSearchQuery, setPriceSearchQuery] = useState("");
+  const [priceSearchBrand, setPriceSearchBrand] = useState("");
+  const [priceSearchResults, setPriceSearchResults] = useState<DirectSearchResult[]>([]);
+  const [priceSearching, setPriceSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
     if (user) {
