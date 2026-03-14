@@ -99,6 +99,13 @@ const defaultServices: Service[] = [
   { id: "picpay", name: "PicPay", icon: "💚", url: "https://picpay.com", category: "finance", color: "#21C25E", canEmbed: false },
 ];
 
+interface DirectSearchResult {
+  marketplace: string;
+  product_name: string;
+  found_price: number;
+  product_url: string;
+}
+
 const World = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -115,6 +122,13 @@ const World = () => {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
+  
+  // Direct price search state
+  const [priceSearchQuery, setPriceSearchQuery] = useState("");
+  const [priceSearchBrand, setPriceSearchBrand] = useState("");
+  const [priceSearchResults, setPriceSearchResults] = useState<DirectSearchResult[]>([]);
+  const [priceSearching, setPriceSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -265,6 +279,37 @@ const World = () => {
       toast.error("Erro ao buscar preços");
     } finally {
       setSearching(false);
+    }
+  };
+
+  const handleDirectPriceSearch = async () => {
+    if (!priceSearchQuery.trim()) {
+      toast.error("Digite o nome do produto");
+      return;
+    }
+    setPriceSearching(true);
+    setHasSearched(true);
+    setPriceSearchResults([]);
+    try {
+      const { data, error } = await supabase.functions.invoke("search-prices", {
+        body: { 
+          directSearch: true, 
+          query: priceSearchQuery.trim(),
+          brand: priceSearchBrand.trim() || undefined,
+        },
+      });
+      if (error) throw error;
+      setPriceSearchResults(data.results || []);
+      if ((data.results || []).length === 0) {
+        toast.info("Nenhum resultado encontrado");
+      } else {
+        toast.success(`${data.results.length} resultados encontrados!`);
+      }
+    } catch (error) {
+      console.error("Error searching prices:", error);
+      toast.error("Erro ao buscar preços. Tente novamente.");
+    } finally {
+      setPriceSearching(false);
     }
   };
 
@@ -467,6 +512,101 @@ const World = () => {
               )}
             </TabsContent>
           </Tabs>
+
+          {/* Real Price Search Section */}
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Search className="h-5 w-5 text-primary" />
+                Pesquisar Preços Reais
+              </CardTitle>
+              <CardDescription>
+                Busque preços reais em Amazon, Mercado Livre, Magazine Luiza e Americanas
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1">
+                  <Input
+                    placeholder="Nome do produto (ex: iPhone 15 Pro)"
+                    value={priceSearchQuery}
+                    onChange={(e) => setPriceSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && !priceSearching && handleDirectPriceSearch()}
+                  />
+                </div>
+                <div className="w-full sm:w-48">
+                  <Input
+                    placeholder="Marca (opcional)"
+                    value={priceSearchBrand}
+                    onChange={(e) => setPriceSearchBrand(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && !priceSearching && handleDirectPriceSearch()}
+                  />
+                </div>
+                <Button 
+                  onClick={handleDirectPriceSearch} 
+                  disabled={priceSearching || !priceSearchQuery.trim()}
+                  className="gap-2"
+                >
+                  {priceSearching ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
+                  {priceSearching ? "Buscando..." : "Buscar"}
+                </Button>
+              </div>
+
+              {priceSearching && (
+                <div className="text-center py-8 space-y-3">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                  <p className="text-sm text-muted-foreground">
+                    Pesquisando em marketplaces... isso pode levar alguns segundos.
+                  </p>
+                </div>
+              )}
+
+              {!priceSearching && hasSearched && priceSearchResults.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <ShoppingCart className="h-10 w-10 mx-auto mb-3 opacity-20" />
+                  <p>Nenhum resultado encontrado</p>
+                  <p className="text-sm">Tente outro termo de busca</p>
+                </div>
+              )}
+
+              {priceSearchResults.length > 0 && (
+                <ScrollArea className="max-h-96">
+                  <div className="space-y-2">
+                    {priceSearchResults.map((result, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm line-clamp-2">{result.product_name}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="text-xs">
+                              {result.marketplace}
+                            </Badge>
+                            <span className="font-bold text-primary">
+                              R$ {result.found_price.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(result.product_url, "_blank")}
+                          className="ml-3 shrink-0"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Wishlist Section */}
           <Card className="mt-8">

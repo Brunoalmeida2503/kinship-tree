@@ -103,12 +103,45 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Check if this is a manual search for a single item
-    let itemsToSearch: WishlistItem[] = [];
     const body = await req.json().catch(() => ({}));
+
+    // === Direct search mode (no wishlist, just return results) ===
+    if (body.directSearch) {
+      const { query, brand, selectedMarketplaces } = body;
+      if (!query) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Query is required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const marketsToSearch = selectedMarketplaces?.length
+        ? marketplaces.filter(m => selectedMarketplaces.includes(m.name))
+        : marketplaces;
+
+      const allResults: SearchResult[] = [];
+
+      for (const marketplace of marketsToSearch) {
+        const results = await searchMarketplace(firecrawlApiKey, query, brand || null, marketplace);
+        allResults.push(...results);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      // Sort by price ascending
+      allResults.sort((a, b) => a.found_price - b.found_price);
+
+      console.log(`Direct search complete. Found ${allResults.length} results.`);
+
+      return new Response(
+        JSON.stringify({ success: true, results: allResults }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // === Wishlist item search mode ===
+    let itemsToSearch: WishlistItem[] = [];
     
     if (body.wishlistItemId) {
-      // Single item search
       const { data: item, error } = await supabase
         .from('wishlist_items')
         .select('*')
@@ -123,7 +156,6 @@ Deno.serve(async (req) => {
       }
       itemsToSearch = [item];
     } else {
-      // Scheduled search - get all active items that haven't expired
       const { data: items, error } = await supabase
         .from('wishlist_items')
         .select('*')
@@ -146,20 +178,12 @@ Deno.serve(async (req) => {
 
     for (const item of itemsToSearch) {
       const targetPrice = parseFloat(item.target_price.toString());
-      const maxPrice = targetPrice * 1.20; // 20% above target
+      const maxPrice = targetPrice * 1.20;
       
-      console.log(`Searching for: ${item.name}, target: R$${targetPrice}, max: R$${maxPrice}`);
-
-      // Search each marketplace
       for (const marketplace of marketplaces) {
         const results = await searchMarketplace(firecrawlApiKey, item.name, item.brand, marketplace);
-        
-        // Filter results: below target OR up to 20% above
         const relevantResults = results.filter(r => r.found_price <= maxPrice);
-        
-        console.log(`Found ${relevantResults.length} relevant results from ${marketplace.name}`);
 
-        // Insert price alerts
         for (const result of relevantResults) {
           const isBelowTarget = result.found_price <= targetPrice;
           const priceDiffPercent = ((result.found_price - targetPrice) / targetPrice) * 100;
@@ -183,12 +207,9 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Add a small delay between marketplace searches to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
-
-    console.log(`Search complete. Created ${totalAlertsCreated} price alerts.`);
 
     return new Response(
       JSON.stringify({ 
